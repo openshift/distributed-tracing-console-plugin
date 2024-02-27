@@ -7,9 +7,27 @@ import {
   TextContent,
   Title,
 } from '@patternfly/react-core';
+import { k8sList } from '@openshift-console/dynamic-plugin-sdk';
 import './example.css';
 
+export const LokiModel = {
+  kind: 'LokiStack',
+  label: 'LokiStack',
+  labelKey: 'public~LokiStack',
+  labelPlural: 'LokiStacks',
+  labelPluralKey: 'public~LokiStacks',
+  apiGroup: 'loki.grafana.com',
+  apiVersion: 'v1',
+  abbr: 'LS',
+  namespaced: true,
+  plural: 'lokistacks',
+};
+
 export default function TracingPage() {
+  const list = k8sList({ model: LokiModel, queryParams: [] }).then(
+    (resolvedList) => console.log(resolvedList),
+  );
+  console.log(list);
   return (
     <>
       <HelmetProvider>
