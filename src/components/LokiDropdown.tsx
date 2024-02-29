@@ -7,6 +7,7 @@ import {
 } from '@patternfly/react-core';
 
 type LokiDropdownProps = {
+  id: string;
   selectionOptions: SelectOptionProps[];
   selectedLokiList: string | undefined;
   setLokiList: (selectedLokiStack?: string) => void;
@@ -35,6 +36,7 @@ export const LokiDropdown = (props: LokiDropdownProps) => {
 
   const clearSelection = () => {
     setSelected(null);
+    props.setLokiList();
     setIsOpen(false);
   };
   const titleId = 'loki-stack-select';
@@ -44,6 +46,7 @@ export const LokiDropdown = (props: LokiDropdownProps) => {
         Select a LokiStack
       </span>
       <Select
+        id={props.id}
         variant={SelectVariant.typeahead}
         typeAheadAriaLabel="Select a LokiStack"
         onToggle={onToggle}
@@ -53,6 +56,7 @@ export const LokiDropdown = (props: LokiDropdownProps) => {
         isOpen={isOpen}
         aria-labelledby={titleId}
         placeholderText="Select a LokiStack"
+        width={200}
       >
         {props.selectionOptions.map((option, index) => (
           <SelectOption
