@@ -10,13 +10,16 @@ type LokiDropdownProps = {
   id: string;
   selectionOptions: SelectOptionProps[];
   selectedLokiList: string | undefined;
-  setLokiList: (selectedLokiStack?: string) => void;
+  selectedNamespace: string | undefined;
+  setLokiList: (selectedLokiStack?: string, selectedNamespace?: string) => void;
 };
 
 export const LokiDropdown = (props: LokiDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<string>(
-    props.selectedLokiList ?? '',
+    props.selectedLokiList && props.selectedNamespace
+      ? props.selectedNamespace + ' / ' + props.selectedLokiList
+      : '',
   );
 
   const onToggle = () => {
@@ -30,7 +33,8 @@ export const LokiDropdown = (props: LokiDropdownProps) => {
     if (value && value !== 'no results') {
       setSelected(value as string);
     }
-    props.setLokiList(value as string);
+    const [namespace, lokiStackName] = String(value).split(' / ');
+    props.setLokiList(lokiStackName, namespace);
     setIsOpen(false);
   };
 
@@ -56,7 +60,7 @@ export const LokiDropdown = (props: LokiDropdownProps) => {
         isOpen={isOpen}
         aria-labelledby={titleId}
         placeholderText="Select a LokiStack"
-        width={200}
+        width={400}
       >
         {props.selectionOptions.map((option, index) => (
           <SelectOption

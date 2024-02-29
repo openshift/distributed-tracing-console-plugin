@@ -28,7 +28,7 @@ export const LokiModel = {
 };
 
 export default function TracingPage() {
-  const { lokiStack, setLokiStackInURL } = useURLState();
+  const { lokiStack, namespace, setLokiStackInURL } = useURLState();
   const [lokiList, setLokiList] = React.useState<Array<SelectOptionProps>>([]);
   React.useEffect(() => {
     /**
@@ -36,20 +36,14 @@ export default function TracingPage() {
      * Consider using one of the watch resources rather than a static fetch
      */
     k8sList({ model: LokiModel, queryParams: [] }).then((list) => {
-      console.log(list);
       const dropdownOptions: Array<SelectOptionProps> = [];
       if (Array.isArray(list)) {
-        /**
-         * TODO: Name isn't unique across namespaces, so find some display which
-         * includes both name and namespace. Might need to have this moved into the select
-         *
-         * may also want to include some information on the state of the lokistack (is it active
-         * or is it down) here?
-         */
         list.forEach((lokiStack) => {
           dropdownOptions.push({
-            value: lokiStack.metadata.name,
-            children: lokiStack.metadata.name,
+            value:
+              lokiStack.metadata.namespace + ' / ' + lokiStack.metadata.name,
+            children:
+              lokiStack.metadata.namespace + ' / ' + lokiStack.metadata.name,
           });
         });
       } else {
@@ -83,9 +77,12 @@ export default function TracingPage() {
             id="lokistack-dropdown"
             selectionOptions={lokiList}
             selectedLokiList={lokiStack}
+            selectedNamespace={namespace}
             setLokiList={setLokiStackInURL}
           />
-          {lokiStack && (
+          {lokiList.find(
+            (listItem) => listItem.value === namespace + ' / ' + lokiStack,
+          ) && (
             <TextContent>
               <Text component="p">You have selected {lokiStack}</Text>
             </TextContent>
