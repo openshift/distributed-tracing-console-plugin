@@ -66,10 +66,6 @@ export default function TracingPage() {
   if (!lokiList) {
     return <div>Loading...</div>;
   }
-  /**
-   * TODO: Move dropdown content upwards in the page, similar to the namespace selector
-   * in the Developer > Topology view
-   */
   return (
     <>
       <HelmetProvider>
