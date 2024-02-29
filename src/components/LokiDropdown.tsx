@@ -6,11 +6,17 @@ import {
   SelectOptionProps,
 } from '@patternfly/react-core';
 
-export const LokiDropdown = (props: {
+type LokiDropdownProps = {
   selectionOptions: SelectOptionProps[];
-}) => {
+  selectedLokiList: string | undefined;
+  setLokiList: (selectedLokiStack?: string) => void;
+};
+
+export const LokiDropdown = (props: LokiDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string>('');
+  const [selected, setSelected] = React.useState<string>(
+    props.selectedLokiList ?? '',
+  );
 
   const onToggle = () => {
     setIsOpen(!isOpen);
@@ -20,16 +26,10 @@ export const LokiDropdown = (props: {
     _event: React.MouseEvent<Element, MouseEvent> | undefined,
     value: string | number | undefined,
   ) => {
-    // eslint-disable-next-line no-console
-    console.log('selected', value);
-
-    /**
-     * TODO: Migrate this selection to also update some global state
-     * much like how dashboard dropdown works in the monitoring-plugin
-     */
     if (value && value !== 'no results') {
       setSelected(value as string);
     }
+    props.setLokiList(value as string);
     setIsOpen(false);
   };
 
@@ -37,22 +37,22 @@ export const LokiDropdown = (props: {
     setSelected(null);
     setIsOpen(false);
   };
-  const titleId = 'type-ahead-select-id-1';
+  const titleId = 'loki-stack-select';
   return (
     <div>
       <span id={titleId} hidden>
-        Select a state
+        Select a LokiStack
       </span>
       <Select
         variant={SelectVariant.typeahead}
-        typeAheadAriaLabel="Select a state"
+        typeAheadAriaLabel="Select a LokiStack"
         onToggle={onToggle}
         onSelect={onSelect}
         onClear={clearSelection}
         selections={selected}
         isOpen={isOpen}
         aria-labelledby={titleId}
-        placeholderText="Select a state"
+        placeholderText="Select a LokiStack"
       >
         {props.selectionOptions.map((option, index) => (
           <SelectOption
