@@ -3,11 +3,14 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 import {
   Page,
   PageSection,
+  SelectOptionProps,
   Text,
   TextContent,
   Title,
 } from '@patternfly/react-core';
 import { k8sList } from '@openshift-console/dynamic-plugin-sdk';
+import { LokiDropdown } from './LokiDropdown';
+
 import './example.css';
 
 export const LokiModel = {
@@ -24,10 +27,44 @@ export const LokiModel = {
 };
 
 export default function TracingPage() {
-  const list = k8sList({ model: LokiModel, queryParams: [] }).then(
-    (resolvedList) => console.log(resolvedList),
-  );
-  console.log(list);
+  const [lokiList, setLokiList] = React.useState<Array<SelectOptionProps>>([]);
+  React.useEffect(() => {
+    /**
+     * TODO: move the data fetching out of a specific component
+     * Consider using one of the watch resources rather than a static fetch
+     */
+    k8sList({ model: LokiModel, queryParams: [] }).then((list) => {
+      console.log(list);
+      const dropdownOptions: Array<SelectOptionProps> = [];
+      if (Array.isArray(list)) {
+        /**
+         * TODO: Name isn't unique across namespaces, so find some display which
+         * includes both name and namespace. Might need to have this moved into the select
+         */
+        list.forEach((lokiStack) => {
+          dropdownOptions.push({
+            value: lokiStack.metadata.name,
+            children: lokiStack.metadata.name,
+          });
+        });
+      } else {
+        list.items.forEach((lokiStack) => {
+          dropdownOptions.push({
+            value: lokiStack.metadata.name,
+            children: lokiStack.metadata.name,
+          });
+        });
+      }
+      setLokiList(dropdownOptions);
+    });
+  }, []);
+  if (!lokiList) {
+    return <div>Loading...</div>;
+  }
+  /**
+   * TODO: Move dropdown content upwards in the page, similar to the namespace selector
+   * in the Developer > Topology view
+   */
   return (
     <>
       <HelmetProvider>
@@ -59,6 +96,7 @@ export default function TracingPage() {
               <code>console-template-plugin</code> and other plugin metadata in
               package.json with values for your plugin.
             </Text>
+            <LokiDropdown selectionOptions={lokiList} />
           </TextContent>
         </PageSection>
       </Page>
