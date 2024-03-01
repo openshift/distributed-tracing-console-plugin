@@ -10,12 +10,22 @@ import {
 import { TempoDropdown } from './TempoDropdown';
 import { useURLState } from '../hooks/useURLState';
 import { useTempoStack } from '../hooks/useTempoStack';
+import { SelectOptionProps } from '@patternfly/react-core';
 
 import './example.css';
 
 export default function TracingPage() {
   const { tempoStack, namespace, setTempoStackInURL } = useURLState();
   const { tempoStackList } = useTempoStack();
+  const dropdownOptions: Array<SelectOptionProps> = tempoStackList.map(
+    (tempoStack) => {
+      return {
+        value: tempoStack.metadata.namespace + ' / ' + tempoStack.metadata.name,
+        children:
+          tempoStack.metadata.namespace + ' / ' + tempoStack.metadata.name,
+      };
+    },
+  );
 
   if (!tempoStackList) {
     return <div>Loading...</div>;
@@ -35,12 +45,12 @@ export default function TracingPage() {
           <label htmlFor="tempostack-dropdown">Select a TempoStack</label>
           <TempoDropdown
             id="tempostack-dropdown"
-            selectionOptions={tempoStackList}
+            selectionOptions={dropdownOptions}
             selectedTempoList={tempoStack}
             selectedNamespace={namespace}
             setTempoList={setTempoStackInURL}
           />
-          {tempoStackList.find(
+          {dropdownOptions.find(
             (listItem) => listItem.value === namespace + ' / ' + tempoStack,
           ) && (
             <TextContent>

@@ -1,6 +1,8 @@
 import * as React from 'react';
-import { SelectOptionProps } from '@patternfly/react-core';
-import { k8sList } from '@openshift-console/dynamic-plugin-sdk';
+import {
+  K8sResourceCommon,
+  k8sList,
+} from '@openshift-console/dynamic-plugin-sdk';
 
 const TempoModel = {
   kind: 'TempoStack',
@@ -17,30 +19,22 @@ const TempoModel = {
 
 export const useTempoStack = () => {
   const [tempoStackList, setTempoStackList] = React.useState<
-    Array<SelectOptionProps>
+    Array<K8sResourceCommon>
   >([]);
 
   React.useEffect(() => {
     k8sList({ model: TempoModel, queryParams: [] }).then((list) => {
-      const dropdownOptions: Array<SelectOptionProps> = [];
+      const tempoList: Array<K8sResourceCommon> = [];
       if (Array.isArray(list)) {
         list.forEach((tempoStack) => {
-          dropdownOptions.push({
-            value:
-              tempoStack.metadata.namespace + ' / ' + tempoStack.metadata.name,
-            children:
-              tempoStack.metadata.namespace + ' / ' + tempoStack.metadata.name,
-          });
+          tempoList.push(tempoStack);
         });
       } else {
         list.items.forEach((tempoStack) => {
-          dropdownOptions.push({
-            value: tempoStack.metadata.name,
-            children: tempoStack.metadata.name,
-          });
+          tempoList.push(tempoStack);
         });
       }
-      setTempoStackList(dropdownOptions);
+      setTempoStackList(tempoList);
     });
   }, []);
 
