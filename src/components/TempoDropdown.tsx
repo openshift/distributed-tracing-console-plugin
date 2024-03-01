@@ -6,19 +6,22 @@ import {
   SelectOptionProps,
 } from '@patternfly/react-core';
 
-type LokiDropdownProps = {
+type TempoDropdownProps = {
   id: string;
   selectionOptions: SelectOptionProps[];
-  selectedLokiList: string | undefined;
+  selectedTempoList: string | undefined;
   selectedNamespace: string | undefined;
-  setLokiList: (selectedLokiStack?: string, selectedNamespace?: string) => void;
+  setTempoList: (
+    selectedTempoStack?: string,
+    selectedNamespace?: string,
+  ) => void;
 };
 
-export const LokiDropdown = (props: LokiDropdownProps) => {
+export const TempoDropdown = (props: TempoDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<string>(
-    props.selectedLokiList && props.selectedNamespace
-      ? props.selectedNamespace + ' / ' + props.selectedLokiList
+    props.selectedTempoList && props.selectedNamespace
+      ? props.selectedNamespace + ' / ' + props.selectedTempoList
       : '',
   );
 
@@ -33,33 +36,33 @@ export const LokiDropdown = (props: LokiDropdownProps) => {
     if (value && value !== 'no results') {
       setSelected(value as string);
     }
-    const [namespace, lokiStackName] = String(value).split(' / ');
-    props.setLokiList(lokiStackName, namespace);
+    const [namespace, tempoStackName] = String(value).split(' / ');
+    props.setTempoList(tempoStackName, namespace);
     setIsOpen(false);
   };
 
   const clearSelection = () => {
     setSelected(null);
-    props.setLokiList();
+    props.setTempoList();
     setIsOpen(false);
   };
-  const titleId = 'loki-stack-select';
+  const titleId = 'tempo-stack-select';
   return (
     <div>
       <span id={titleId} hidden>
-        Select a LokiStack
+        Select a TempoStack
       </span>
       <Select
         id={props.id}
         variant={SelectVariant.typeahead}
-        typeAheadAriaLabel="Select a LokiStack"
+        typeAheadAriaLabel="Select a TempoStack"
         onToggle={onToggle}
         onSelect={onSelect}
         onClear={clearSelection}
         selections={selected}
         isOpen={isOpen}
         aria-labelledby={titleId}
-        placeholderText="Select a LokiStack"
+        placeholderText="Select a TempoStack"
         width={400}
       >
         {props.selectionOptions.map((option, index) => (

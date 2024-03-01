@@ -3,7 +3,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { useQueryParams } from './useQueryParam';
 
 const QUERY_PARAM_KEY = 'q';
-const LOKISTACK_PARAM_KEY = 'lokistack';
+const TEMPOSTACK_PARAM_KEY = 'tempostack';
 const NAMESPACE_KEY = 'namespace';
 
 export const useURLState = () => {
@@ -12,12 +12,12 @@ export const useURLState = () => {
   const location = useLocation();
 
   const initialQuery = queryParams.get(QUERY_PARAM_KEY);
-  const initialLokiStack = queryParams.get(LOKISTACK_PARAM_KEY) ?? undefined;
+  const initialTempoStack = queryParams.get(TEMPOSTACK_PARAM_KEY) ?? undefined;
   const initialNamespace = queryParams.get(NAMESPACE_KEY) ?? undefined;
 
   const [query, setQuery] = React.useState(initialQuery);
-  const [lokiStack, setLokiStack] = React.useState<string | undefined>(
-    initialLokiStack,
+  const [tempoStack, setTempoStack] = React.useState<string | undefined>(
+    initialTempoStack,
   );
   const [namespace, setNamespace] = React.useState<string | undefined>(
     initialNamespace,
@@ -29,15 +29,15 @@ export const useURLState = () => {
     history.push(`${location.pathname}?${queryParams.toString()}`);
   };
 
-  const setLokiStackInURL = (
-    selectedLokiStack?: string,
+  const setTempoStackInURL = (
+    selectedTempoStack?: string,
     selectedNamespace?: string,
   ) => {
-    if (selectedLokiStack && selectedNamespace) {
-      queryParams.set(LOKISTACK_PARAM_KEY, selectedLokiStack);
+    if (selectedTempoStack && selectedNamespace) {
+      queryParams.set(TEMPOSTACK_PARAM_KEY, selectedTempoStack);
       queryParams.set(NAMESPACE_KEY, selectedNamespace);
     } else {
-      queryParams.delete(LOKISTACK_PARAM_KEY);
+      queryParams.delete(TEMPOSTACK_PARAM_KEY);
       queryParams.delete(NAMESPACE_KEY);
     }
     history.push(`${location.pathname}?${queryParams.toString()}`);
@@ -45,19 +45,19 @@ export const useURLState = () => {
 
   React.useEffect(() => {
     const queryValue = queryParams.get(QUERY_PARAM_KEY) ?? initialQuery ?? '';
-    const lokiStackValue = queryParams.get(LOKISTACK_PARAM_KEY) ?? undefined;
+    const tempoStackValue = queryParams.get(TEMPOSTACK_PARAM_KEY) ?? undefined;
     const namespaceValue = queryParams.get(NAMESPACE_KEY) ?? undefined;
 
     setQuery(queryValue.trim());
-    setLokiStack(lokiStackValue);
+    setTempoStack(tempoStackValue);
     setNamespace(namespaceValue);
   }, [queryParams]);
 
   return {
     query,
     setQueryInURL,
-    lokiStack,
-    setLokiStackInURL,
+    tempoStack,
+    setTempoStackInURL,
     namespace,
     setNamespace,
   };

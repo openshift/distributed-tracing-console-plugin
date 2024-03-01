@@ -7,17 +7,17 @@ import {
   TextContent,
   Title,
 } from '@patternfly/react-core';
-import { LokiDropdown } from './LokiDropdown';
+import { TempoDropdown } from './TempoDropdown';
 import { useURLState } from '../hooks/useURLState';
-import { useLokiStack } from '../hooks/useLokiStack';
+import { useTempoStack } from '../hooks/useTempoStack';
 
 import './example.css';
 
 export default function TracingPage() {
-  const { lokiStack, namespace, setLokiStackInURL } = useURLState();
-  const { lokiStackList } = useLokiStack();
+  const { tempoStack, namespace, setTempoStackInURL } = useURLState();
+  const { tempoStackList } = useTempoStack();
 
-  if (!lokiStackList) {
+  if (!tempoStackList) {
     return <div>Loading...</div>;
   }
   return (
@@ -32,19 +32,19 @@ export default function TracingPage() {
           <Title headingLevel="h1"> Tracing </Title>
         </PageSection>
         <PageSection variant="light">
-          <label htmlFor="lokistack-dropdown">Select a LokiStack</label>
-          <LokiDropdown
-            id="lokistack-dropdown"
-            selectionOptions={lokiStackList}
-            selectedLokiList={lokiStack}
+          <label htmlFor="tempostack-dropdown">Select a TempoStack</label>
+          <TempoDropdown
+            id="tempostack-dropdown"
+            selectionOptions={tempoStackList}
+            selectedTempoList={tempoStack}
             selectedNamespace={namespace}
-            setLokiList={setLokiStackInURL}
+            setTempoList={setTempoStackInURL}
           />
-          {lokiStackList.find(
-            (listItem) => listItem.value === namespace + ' / ' + lokiStack,
+          {tempoStackList.find(
+            (listItem) => listItem.value === namespace + ' / ' + tempoStack,
           ) && (
             <TextContent>
-              <Text component="p">You have selected {lokiStack}</Text>
+              <Text component="p">You have selected {tempoStack}</Text>
             </TextContent>
           )}
         </PageSection>
