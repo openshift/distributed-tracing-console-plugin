@@ -10,29 +10,35 @@ import {
 import { TempoStackDropdown } from './TempoStackDropdown';
 import { useURLState } from '../hooks/useURLState';
 import { useTempoStack } from '../hooks/useTempoStack';
+import { useTranslation } from 'react-i18next';
 
 import './example.css';
 
 export default function TracingPage() {
   const { tempoStack, namespace, setTempoStackInURL } = useURLState();
   const { tempoStackList } = useTempoStack();
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   if (!tempoStackList) {
-    return <div>Loading...</div>;
+    return <div>{t('Loading...')}</div>;
   }
   return (
     <>
       <HelmetProvider>
         <Helmet>
-          <title data-test="distributed-tracing-page-title"> Tracing</title>
+          <title data-test="distributed-tracing-page-title">
+            {t('Tracing')}
+          </title>
         </Helmet>
       </HelmetProvider>
       <Page>
         <PageSection variant="light">
-          <Title headingLevel="h1"> Tracing </Title>
+          <Title headingLevel="h1"> {t('Tracing')} </Title>
         </PageSection>
         <PageSection variant="light">
-          <label htmlFor="tempostack-dropdown">Select a TempoStack</label>
+          <label htmlFor="tempostack-dropdown">
+            {t('Select a TempoStack')}
+          </label>
           <TempoStackDropdown
             id="tempostack-dropdown"
             tempoStackOptions={tempoStackList}
@@ -46,7 +52,9 @@ export default function TracingPage() {
               listItem.metadata.name === tempoStack,
           ) && (
             <TextContent>
-              <Text component="p">You have selected {tempoStack}</Text>
+              <Text component="p">
+                {t('You have selected')} {tempoStack}
+              </Text>
             </TextContent>
           )}
         </PageSection>

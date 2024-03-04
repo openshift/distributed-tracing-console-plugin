@@ -69,5 +69,11 @@
     "dependencies": {
       "@console/pluginAPI": "*"
     }
+  },
+  "dependencies": {
+    "copy-webpack-plugin": "^12.0.2",
+    "i18next": "^23.10.0",
+    "i18next-http-backend": "^2.5.0",
+    "i18next-parser": "^8.13.0"
   }
 }

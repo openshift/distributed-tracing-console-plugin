@@ -6,6 +6,7 @@ import {
   SelectOptionObject,
 } from '@patternfly/react-core';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { useTranslation } from 'react-i18next';
 
 type TempoStackDropdownProps = {
   id: string;
@@ -40,6 +41,7 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
         )
       : undefined,
   );
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   const onToggle = () => {
     setIsOpen(!isOpen);
@@ -92,7 +94,7 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
       <Select
         id={props.id}
         variant={SelectVariant.typeahead}
-        typeAheadAriaLabel="Select a TempoStack"
+        typeAheadAriaLabel={t('Select a TempoStack')}
         onFilter={tempoStackOptionFilter}
         onToggle={onToggle}
         onSelect={onSelect}
@@ -100,7 +102,7 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
         selections={selected}
         isOpen={isOpen}
         aria-labelledby={titleId}
-        placeholderText="Select a TempoStack"
+        placeholderText={t('Select a TempoStack')}
         width={400}
       >
         {tempoStackSelectOptions.map((option, index) => (
