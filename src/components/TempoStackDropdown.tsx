@@ -3,26 +3,42 @@ import {
   Select,
   SelectOption,
   SelectVariant,
-  SelectOptionProps,
+  SelectOptionObject,
 } from '@patternfly/react-core';
+import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 
 type TempoStackDropdownProps = {
   id: string;
-  selectionOptions: SelectOptionProps[];
-  selectedTempoList: string | undefined;
+  tempoStackOptions: K8sResourceCommon[];
   selectedNamespace: string | undefined;
+  selectedTempoList: string | undefined;
   setTempoList: (
-    selectedTempoStack?: string,
     selectedNamespace?: string,
+    selectedTempoStack?: string,
   ) => void;
 };
 
+class TempoStackSelectOption implements SelectOptionObject {
+  constructor(public namespace: string, public name: string) {}
+  public toString() {
+    return this.namespace + ' / ' + this.name;
+  }
+  public compareTo(other: TempoStackSelectOption) {
+    return this.namespace === other.namespace && this.name === other.name;
+  }
+}
+
 export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string>(
-    props.selectedTempoList && props.selectedNamespace
-      ? props.selectedNamespace + ' / ' + props.selectedTempoList
-      : '',
+  const [selected, setSelected] = React.useState<
+    TempoStackSelectOption | undefined
+  >(() =>
+    props.selectedNamespace && props.selectedTempoList
+      ? new TempoStackSelectOption(
+          props.selectedNamespace,
+          props.selectedTempoList,
+        )
+      : undefined,
   );
 
   const onToggle = () => {
@@ -31,13 +47,13 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
 
   const onSelect = (
     _event: React.MouseEvent<Element, MouseEvent> | undefined,
-    value: string | number | undefined,
+    value: TempoStackSelectOption | undefined,
   ) => {
-    if (value && value !== 'no results') {
-      setSelected(value as string);
+    if (!value) {
+      setSelected(undefined);
     }
-    const [namespace, tempoStackName] = String(value).split(' / ');
-    props.setTempoList(tempoStackName, namespace);
+    props.setTempoList(value.namespace, value.name);
+    setSelected(value);
     setIsOpen(false);
   };
 
@@ -46,6 +62,27 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
     props.setTempoList();
     setIsOpen(false);
   };
+
+  const tempoStackSelectOptions = props.tempoStackOptions.map((tempoStack) => {
+    return new TempoStackSelectOption(
+      tempoStack.metadata.namespace,
+      tempoStack.metadata.name,
+    );
+  });
+
+  const tempoStackOptionFilter = (
+    _: React.ChangeEvent<HTMLInputElement>,
+    value: string,
+  ) => {
+    return tempoStackSelectOptions
+      .filter((option) => {
+        return !option.toString().search(value);
+      })
+      .map((item, index) => {
+        return <SelectOption key={index} value={item}></SelectOption>;
+      });
+  };
+
   const titleId = 'tempo-stack-select';
   return (
     <div>
@@ -56,6 +93,7 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
         id={props.id}
         variant={SelectVariant.typeahead}
         typeAheadAriaLabel="Select a TempoStack"
+        onFilter={tempoStackOptionFilter}
         onToggle={onToggle}
         onSelect={onSelect}
         onClear={clearSelection}
@@ -65,13 +103,8 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
         placeholderText="Select a TempoStack"
         width={400}
       >
-        {props.selectionOptions.map((option, index) => (
-          <SelectOption
-            isDisabled={option.disabled}
-            key={index}
-            value={option.value}
-            {...(option.description && { description: option.description })}
-          />
+        {tempoStackSelectOptions.map((option, index) => (
+          <SelectOption key={index} value={option} />
         ))}
       </Select>
     </div>

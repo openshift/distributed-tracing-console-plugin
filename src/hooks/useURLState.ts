@@ -30,8 +30,8 @@ export const useURLState = () => {
   };
 
   const setTempoStackInURL = (
-    selectedTempoStack?: string,
     selectedNamespace?: string,
+    selectedTempoStack?: string,
   ) => {
     if (selectedTempoStack && selectedNamespace) {
       queryParams.set(TEMPOSTACK_PARAM_KEY, selectedTempoStack);
