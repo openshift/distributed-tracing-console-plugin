@@ -6,7 +6,7 @@ import {
   SelectOptionProps,
 } from '@patternfly/react-core';
 
-type TempoDropdownProps = {
+type TempoStackDropdownProps = {
   id: string;
   selectionOptions: SelectOptionProps[];
   selectedTempoList: string | undefined;
@@ -17,7 +17,7 @@ type TempoDropdownProps = {
   ) => void;
 };
 
-export const TempoDropdown = (props: TempoDropdownProps) => {
+export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<string>(
     props.selectedTempoList && props.selectedNamespace

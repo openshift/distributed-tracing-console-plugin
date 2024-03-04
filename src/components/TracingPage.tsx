@@ -7,7 +7,7 @@ import {
   TextContent,
   Title,
 } from '@patternfly/react-core';
-import { TempoDropdown } from './TempoDropdown';
+import { TempoStackDropdown } from './TempoStackDropdown';
 import { useURLState } from '../hooks/useURLState';
 import { useTempoStack } from '../hooks/useTempoStack';
 import { SelectOptionProps } from '@patternfly/react-core';
@@ -43,7 +43,7 @@ export default function TracingPage() {
         </PageSection>
         <PageSection variant="light">
           <label htmlFor="tempostack-dropdown">Select a TempoStack</label>
-          <TempoDropdown
+          <TempoStackDropdown
             id="tempostack-dropdown"
             selectionOptions={dropdownOptions}
             selectedTempoList={tempoStack}
