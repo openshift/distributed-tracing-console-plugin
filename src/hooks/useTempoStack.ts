@@ -24,15 +24,11 @@ export const useTempoStack = () => {
 
   React.useEffect(() => {
     k8sList({ model: TempoModel, queryParams: [] }).then((list) => {
-      const tempoList: Array<K8sResourceCommon> = [];
+      let tempoList: Array<K8sResourceCommon> = [];
       if (Array.isArray(list)) {
-        list.forEach((tempoStack) => {
-          tempoList.push(tempoStack);
-        });
+        tempoList = list;
       } else {
-        list.items.forEach((tempoStack) => {
-          tempoList.push(tempoStack);
-        });
+        tempoList = list.items;
       }
       setTempoStackList(tempoList);
     });
