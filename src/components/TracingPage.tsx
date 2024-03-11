@@ -7,41 +7,56 @@ import {
   TextContent,
   Title,
 } from '@patternfly/react-core';
+import { TempoStackDropdown } from './TempoStackDropdown';
+import { useURLState } from '../hooks/useURLState';
+import { useTempoStack } from '../hooks/useTempoStack';
+import { useTranslation } from 'react-i18next';
+
 import './example.css';
 
 export default function TracingPage() {
+  const { tempoStack, namespace, setTempoStackInURL } = useURLState();
+  const { tempoStackList } = useTempoStack();
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+
+  if (!tempoStackList) {
+    return <div>{t('Loading...')}</div>;
+  }
   return (
     <>
       <HelmetProvider>
         <Helmet>
-          <title data-test="distributed-tracing-page-title"> Tracing</title>
+          <title data-test="distributed-tracing-page-title">
+            {t('Tracing')}
+          </title>
         </Helmet>
       </HelmetProvider>
       <Page>
         <PageSection variant="light">
-          <Title headingLevel="h1"> Hello, Tracing Plugin! </Title>
+          <Title headingLevel="h1"> {t('Tracing')} </Title>
         </PageSection>
         <PageSection variant="light">
-          <TextContent>
-            <Text component="p">
-              <span className="console-plugin-template__nice">Nice!</span> Your
-              plugin is working.
-            </Text>
-            <Text component="p">
-              This is a custom page contributed by the console plugin template.
-              The extension that adds the page is declared in
-              console-extensions.json in the project root along with the
-              corresponding nav item. Update console-extensions.json to change
-              or add extensions. Code references in console-extensions.json must
-              have a corresonding property <code>exposedModules</code> in
-              package.json mapping the reference to the module.
-            </Text>
-            <Text component="p">
-              After cloning this project, replace references to{' '}
-              <code>console-template-plugin</code> and other plugin metadata in
-              package.json with values for your plugin.
-            </Text>
-          </TextContent>
+          <label htmlFor="tempostack-dropdown">
+            {t('Select a TempoStack')}
+          </label>
+          <TempoStackDropdown
+            id="tempostack-dropdown"
+            tempoStackOptions={tempoStackList}
+            selectedTempoList={tempoStack}
+            selectedNamespace={namespace}
+            setTempoList={setTempoStackInURL}
+          />
+          {tempoStackList.find(
+            (listItem) =>
+              listItem.metadata.namespace === namespace &&
+              listItem.metadata.name === tempoStack,
+          ) && (
+            <TextContent>
+              <Text component="p">
+                {t('You have selected')} {tempoStack}
+              </Text>
+            </TextContent>
+          )}
         </PageSection>
       </Page>
     </>
