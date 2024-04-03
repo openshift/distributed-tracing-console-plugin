@@ -37,12 +37,27 @@ if [ -x "$(command -v podman)" ]; then
     if [ "$(uname -s)" = "Linux" ]; then
         # Use host networking on Linux since host.containers.internal is unreachable in some environments.
         BRIDGE_PLUGINS="${npm_package_consolePlugin_name}=http://localhost:9001"
-        podman run --pull always --rm --network=host --env-file <(set | grep BRIDGE) $CONSOLE_IMAGE
+        podman run --pull always \
+        --rm --network=host \
+        --env-file <(set | grep BRIDGE) \
+        --env BRIDGE_PLUGIN_PROXY='{"services": [{"consoleAPIPath": "/api/proxy/plugin/distributed-tracing-plugin/backend/", "endpoint":"http://localhost:3200","authorize":true}]}' \
+        $CONSOLE_IMAGE
     else
         BRIDGE_PLUGINS="${npm_package_consolePlugin_name}=http://host.containers.internal:9001"
-        podman run --pull always --rm -p "$CONSOLE_PORT":9000 --env-file <(set | grep BRIDGE) $CONSOLE_IMAGE
+        podman run \
+        --pull always \
+        --rm -p "$CONSOLE_PORT":9000 \
+        --env-file <(set | grep BRIDGE)  \
+        --env BRIDGE_PLUGIN_PROXY='{"services": [{"consoleAPIPath": "/api/proxy/plugin/distributed-tracing-plugin/backend/", "endpoint":"http://localhost:3200","authorize":true}]}' \
+        $CONSOLE_IMAGE
     fi
 else
     BRIDGE_PLUGINS="${npm_package_consolePlugin_name}=http://host.docker.internal:9001"
-    docker run --pull always --rm -p "$CONSOLE_PORT":9000 --env-file <(set | grep BRIDGE) $CONSOLE_IMAGE
+    docker run \
+    --pull always \
+    --rm -p "$CONSOLE_PORT":9000 \
+    --env-file <(set | grep BRIDGE) \
+    --env BRIDGE_PLUGIN_PROXY='{"services": [{"consoleAPIPath": "/api/proxy/plugin/distributed-tracing-plugin/backend/", "endpoint":"http://localhost:3200","authorize":true}]}' \
+    $CONSOLE_IMAGE 
+
 fi

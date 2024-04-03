@@ -7,9 +7,23 @@ This is an OpenShift Console dynamic plugin that adds UI for tracing. This can b
 ### Option 1: Local
 
 **Prerequisite** </br>
-You need to have a OpenShift Cluster.
+You need to have 
+- a OpenShift Cluster.
+- a [Tempo](https://grafana.com/oss/tempo/) instance. 
 
-**Instructions** </br>
+The current `start-console.sh` script is configured to proxy to a local tempo instance at http://localhost:3200. 
+To change this to a different endpoint modify this line: 
+
+```
+# start-console.sh
+
+# Replace <NewEndpoint> (e.g., replace 'http://localhost:3200' with 'http://example-tempo-instance.com')
+    ...
+    --env BRIDGE_PLUGIN_PROXY='{"services": [{"consoleAPIPath": "/api/proxy/plugin/distributed-tracing-plugin/backend/", "endpoint": <NewEndpoint> ,"authorize":true}]}' \
+    ...
+```
+
+**Instructions to start the plugin** </br>
 In one terminal window, run:
 
 1. `yarn install`
@@ -23,6 +37,7 @@ In another terminal window, run:
 This will run the OpenShift console in a container connected to the cluster
 you've logged into. The plugin HTTP server runs on port 9001 with CORS enabled.
 Navigate to <http://localhost:9000/example> to see the running plugin.
+
 
 #### Running start-console with Apple silicon and podman
 
