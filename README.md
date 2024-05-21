@@ -102,6 +102,8 @@ NOTE: If you have a Mac with Apple silicon, you will need to add the flag
 `--platform=linux/amd64` when building the image to target the correct platform
 to run in-cluster.
 
+For development purposes you can modify the ./script/build-dev-images.sh script to point to your repository. In the variable `REGISTRY_ORG="${REGISTRY_ORG:-<my-repositroy>}"` change `<your-repository>` to the name of your quay.io repository. For example, `REGISTRY_ORG="${REGISTRY_ORG:-janesmith}"`.
+
 ## Deployment on cluster
 
 A [Helm](https://helm.sh) chart is available to deploy the plugin to an OpenShift environment.
