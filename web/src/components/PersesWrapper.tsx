@@ -27,7 +27,7 @@ import {
 import { DatasourceApi } from '@perses-dev/dashboards';
 import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { PersesChartsTheme } from '@perses-dev/components';
-import TraceQueryBrowser from './TraceQueryBrowser';
+import { TraceQueryBrowser } from './TraceQueryBrowser';
 import { TraceEmptyState } from './TraceEmptyState';
 
 class DatasourceApiImpl implements DatasourceApi {
@@ -102,13 +102,13 @@ type SelectedTempoStackProps = {
   selectedTempoStack: string | undefined;
 };
 
-function PersesWrapper(props: SelectedTempoStackProps) {
+export const PersesWrapper = (props: SelectedTempoStackProps) => {
   const [query, setQuery] = React.useState('{}');
 
   if (!props.selectedTempoStack || !props.selectedNamespace) {
     return <TraceEmptyState />;
   }
-  
+
   const url = `/api/plugins/distributed-tracing-console-plugin/proxy/${props.selectedNamespace}/${props.selectedTempoStack}`;
   const proxyDatasource: GlobalDatasource = {
     kind: 'GlobalDatasource',
@@ -164,6 +164,4 @@ function PersesWrapper(props: SelectedTempoStackProps) {
       </ChartsProvider>
     </ThemeProvider>
   );
-}
-
-export default PersesWrapper;
+};
