@@ -6,7 +6,11 @@ import React from 'react';
 
 import './TraceQueryBrowser.css';
 
-export default function TraceQueryBrowser({ setQuery }) {
+type TraceQueryBrowserProps = {
+  setQuery: (query?: string) => void;
+};
+
+export const TraceQueryBrowser = (props: TraceQueryBrowserProps) => {
   // Use ref to prevent reload on each key tap in TraceQL input box
   const ref = React.useRef<HTMLInputElement>(null);
 
@@ -37,7 +41,7 @@ export default function TraceQueryBrowser({ setQuery }) {
               className="tracing-query-browser-input-button"
               variant="primary"
               onClick={() => {
-                setQuery(ref.current.value);
+                props.setQuery(ref.current.value);
               }}
             >
               Run Query
@@ -50,4 +54,4 @@ export default function TraceQueryBrowser({ setQuery }) {
       </StackItem>
     </Stack>
   );
-}
+};

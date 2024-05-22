@@ -10,7 +10,7 @@ import {
 import { TempoStackDropdown } from './TempoStackDropdown';
 import { useURLState } from '../hooks/useURLState';
 import { useTranslation } from 'react-i18next';
-import PersesWrapper from './PersesWrapper';
+import { PersesWrapper } from './PersesWrapper';
 
 import { useTempoStack } from '../hooks/useTempoStack';
 

@@ -4,12 +4,12 @@ import { cancellableFetch } from '../cancellable-fetch';
 type TempoStackListResponse = {
   namespace: string;
   name: string;
-}
+};
 
 export const useTempoStack = () => {
   const [tempoStackList, setTempoStackList] = React.useState<
-  Array<TempoStackListResponse>
->([]);
+    Array<TempoStackListResponse>
+  >([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -20,11 +20,10 @@ export const useTempoStack = () => {
       let response: Array<TempoStackListResponse> = [];
       response = await request();
 
-      setTempoStackList(response)
-    }
-    fetchData()
-      .catch(console.error);
-  }, [])
+      setTempoStackList(response);
+    };
+    fetchData().catch(console.error);
+  }, []);
 
   return {
     tempoStackList,
