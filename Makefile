@@ -1,14 +1,14 @@
 .PHONY: install-frontend
 install-frontend:
-	cd web && npm install --legacy-peer-deps
+	cd web && npm install
 
 .PHONY: install-frontend-ci
 install-frontend-ci:
-	cd web && npm ci --legacy-peer-deps
+	cd web && npm ci
 
 .PHONY: install-frontend-ci-clean
 install-frontend-ci-clean: install-frontend-ci
-	cd web && npm cache clean --force --legacy-peer-deps
+	cd web && npm cache clean --force
 
 .PHONY: build-frontend
 build-frontend:
