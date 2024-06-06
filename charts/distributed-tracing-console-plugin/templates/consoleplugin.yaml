@@ -14,3 +14,12 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.plugin.port }}
       basePath: {{ .Values.plugin.basePath }}
+  proxy: 
+  - alias: backend
+    authorization: UserToken
+    endpoint:
+      service:
+        name: {{ template "openshift-console-plugin.name" . }}
+        namespace: {{ .Release.Namespace }}
+        port: {{ .Values.plugin.port }}
+      type: Service
