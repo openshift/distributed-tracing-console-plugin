@@ -150,6 +150,15 @@ spec:
       namespace: openshift-tracing
       basePath: "/"
       port: 9443
+  proxy: 
+  - alias: backend
+    authorization: UserToken
+    endpoint:
+      service:
+        name: distributed-tracing-console-plugin
+        namespace: openshift-tracing
+        port: 9443
+      type: Service
 
 ---
 apiVersion: v1
