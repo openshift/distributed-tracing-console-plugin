@@ -34,3 +34,6 @@ if [[ $PUSH == 1 ]]; then
     echo "Pushing to registry with ${OCI_BIN}"
     $OCI_BIN push $IMAGE
 fi
+
+export DISTRIBUTED_TRACING_CONSOLE_PLUGIN_DEV_IMAGE=${IMAGE}
+echo "Your newly built image has been exported as the variable: \n DISTRIBUTED_TRACING_CONSOLE_PLUGIN_DEV_IMAGE = ${DISTRIBUTED_TRACING_CONSOLE_PLUGIN_DEV_IMAGE}"

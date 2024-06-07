@@ -49,4 +49,5 @@ echo
 title4="Opening web browser to Openshift console "
 add_title "\${title4}"
 
+oc login --token=$(oc whoami --show-token) --server=$(oc whoami --show-server)
 open $(oc whoami --show-console)
