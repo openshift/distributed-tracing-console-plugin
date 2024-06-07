@@ -109,7 +109,7 @@ export const PersesWrapper = (props: SelectedTempoStackProps) => {
     return <TraceEmptyState />;
   }
 
-  const url = `/api/plugins/distributed-tracing-console-plugin/proxy/${props.selectedNamespace}/${props.selectedTempoStack}`;
+  const url = `/api/proxy/plugin/distributed-tracing-console-plugin/backend/proxy/${props.selectedNamespace}/${props.selectedTempoStack}`;
   const proxyDatasource: GlobalDatasource = {
     kind: 'GlobalDatasource',
     metadata: { name: 'TempoProxy' },
