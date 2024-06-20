@@ -19,10 +19,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
-
-	proxy "github.com/openshift/distributed-tracing-console-plugin/pkg/proxy"
-
 	"k8s.io/client-go/rest"
+
+	cache "github.com/openshift/distributed-tracing-console-plugin/pkg/cache"
+	proxy "github.com/openshift/distributed-tracing-console-plugin/pkg/proxy"
 )
 
 var log = logrus.WithField("module", "server")
@@ -38,7 +38,7 @@ type Config struct {
 }
 
 type PluginConfig struct {
-	Timeout                         time.Duration `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout time.Duration `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 func (pluginConfig *PluginConfig) MarshalJSON() ([]byte, error) {
@@ -86,6 +86,8 @@ func Start(cfg *Config) {
 }
 
 func setupRoutes(cfg *Config) (*mux.Router, *PluginConfig) {
+	cacheManager := cache.NewCacheManager()
+
 	configHandlerFunc, pluginConfig := configHandler(cfg)
 
 	r := mux.NewRouter()
@@ -95,8 +97,8 @@ func setupRoutes(cfg *Config) (*mux.Router, *PluginConfig) {
 	// serve list of TempoStacks found on the cluster
 	r.PathPrefix("/api/v1/list-tempostacks").HandlerFunc(TempoStackHandler(cfg))
 
-	// uses the namespace and name to fetch a particular tempo instance 
-	r.PathPrefix("/proxy/{namespace}/{name}").HandlerFunc(proxy.CreateProxyHandler(cfg.CertFile))
+	// uses the namespace and name to fetch a particular tempo instance
+	r.PathPrefix("/proxy/{namespace}/{name}").HandlerFunc(proxy.CreateProxyHandler(cfg.CertFile, cacheManager))
 
 	// serve plugin manifest according to enabled features
 	r.Path("/plugin-manifest.json").Handler(manifestHandler(cfg))

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	cache "github.com/openshift/distributed-tracing-console-plugin/pkg/cache"
 	oscrypto "github.com/openshift/library-go/pkg/crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -39,7 +40,13 @@ func FilterHeaders(r *http.Response) error {
 	return nil
 }
 
-func getProxy(namespace string, name string, serviceCAfile string ) *httputil.ReverseProxy {
+func getProxy(namespace string, name string, serviceCAfile string, cacheManager *cache.CacheManager) *httputil.ReverseProxy {
+	// Check for an exisiting proxy in the cache 
+	proxiesMapKey := namespace + "-" + name
+	existingProxy := cacheManager.GetProxy(proxiesMapKey)
+	if existingProxy != nil {
+		return existingProxy
+	}
 
 	// TODO: allow custom CA per datasource
 	serviceCertPEM, err := os.ReadFile(serviceCAfile)
@@ -87,11 +94,12 @@ func getProxy(namespace string, name string, serviceCAfile string ) *httputil.Re
 		reverseProxy.FlushInterval = time.Millisecond * 100
 		reverseProxy.Transport = transport
 		reverseProxy.ModifyResponse = FilterHeaders
+		cacheManager.SetProxy(proxiesMapKey, reverseProxy)
 		return reverseProxy
 	}
 }
 
-func CreateProxyHandler(serviceCAfile string) func(http.ResponseWriter, *http.Request) {
+func CreateProxyHandler(serviceCAfile string, cacheManager *cache.CacheManager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		namespace := vars["namespace"]
@@ -109,7 +117,7 @@ func CreateProxyHandler(serviceCAfile string) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		tempoProxy := getProxy(namespace, name, serviceCAfile)
+		tempoProxy := getProxy(namespace, name, serviceCAfile, cacheManager)
 
 		if tempoProxy == nil {
 			log.Errorf("cannot proxy request, invalid tempo proxy: %s, %s", namespace, name)
