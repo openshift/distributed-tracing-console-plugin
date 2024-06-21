@@ -22,7 +22,7 @@ export default function TracingPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   if (!tempoStackList) {
-    return <div>{t('Loading...')}</div>;
+    return <div>{t("Loading")}</div>;
   }
 
   return (
