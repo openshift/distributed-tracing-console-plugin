@@ -6,26 +6,38 @@ type TempoStackListResponse = {
   name: string;
 };
 
+const backendURL =
+  '/api/proxy/plugin/distributed-tracing-console-plugin/backend/api/v1/list-tempostacks';
+
 export const useTempoStack = () => {
   const [tempoStackList, setTempoStackList] = React.useState<
     Array<TempoStackListResponse>
   >([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const { request } = cancellableFetch<TempoStackListResponse[]>(
-        `/api/plugins/distributed-tracing-console-plugin/api/v1/list-tempostacks`,
-      );
+      try {
+        setLoading(true);
 
-      let response: Array<TempoStackListResponse> = [];
-      response = await request();
+        const { request } =
+          cancellableFetch<TempoStackListResponse[]>(backendURL);
 
-      setTempoStackList(response);
+        const response: Array<TempoStackListResponse> = await request();
+
+        setTempoStackList(response);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchData().catch(console.error);
+
+    fetchData();
   }, []);
 
   return {
+    loading,
     tempoStackList,
   };
 };
