@@ -1,9 +1,9 @@
 {
-  "No Data": "No Data",
   "Select a TempoStack": "Select a TempoStack",
-  "Loading...": "Loading...",
+  "No Tempo Stack selected": "No Tempo Stack selected",
+  "Select a Tempo Stack instance to explore data": "Select a Tempo Stack instance to explore data",
+  "No Data": "No Data",
+  "Loading": "Loading",
   "Tracing": "Tracing",
-  "You have selected": "You have selected",
-  "Empty state": "Empty state",
-  "No a TempoStack instance has been selected." :  "No a TempoStack instance has been selected."
+  "You have selected": "You have selected"
 }
