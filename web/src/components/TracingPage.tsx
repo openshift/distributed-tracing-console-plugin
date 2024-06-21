@@ -1,29 +1,19 @@
+import { Page, PageSection, Title } from '@patternfly/react-core';
 import * as React from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
-import {
-  Page,
-  PageSection,
-  Text,
-  TextContent,
-  Title,
-} from '@patternfly/react-core';
-import { TempoStackDropdown } from './TempoStackDropdown';
-import { useURLState } from '../hooks/useURLState';
 import { useTranslation } from 'react-i18next';
+import { useURLState } from '../hooks/useURLState';
 import { PersesWrapper } from './PersesWrapper';
+import { TempoStackDropdown } from './TempoStackDropdown';
 
 import { useTempoStack } from '../hooks/useTempoStack';
 
 export default function TracingPage() {
   const { tempoStack, namespace, setTempoStackInURL } = useURLState();
 
-  const { tempoStackList } = useTempoStack();
+  const { loading, tempoStackList } = useTempoStack();
 
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-
-  if (!tempoStackList) {
-    return <div>{t("Loading")}</div>;
-  }
 
   return (
     <>
@@ -45,20 +35,11 @@ export default function TracingPage() {
           <TempoStackDropdown
             id="tempostack-dropdown"
             tempoStackOptions={tempoStackList}
-            selectedTempoList={tempoStack}
+            selectedTempoStackName={tempoStack}
             selectedNamespace={namespace}
             setTempoList={setTempoStackInURL}
+            isLoading={loading}
           />
-          {tempoStackList.find(
-            (listItem) =>
-              listItem.namespace === namespace && listItem.name === tempoStack,
-          ) && (
-            <TextContent>
-              <Text component="p">
-                {t('You have selected')} {tempoStack}
-              </Text>
-            </TextContent>
-          )}
           <PersesWrapper
             selectedNamespace={namespace}
             selectedTempoStack={tempoStack}
