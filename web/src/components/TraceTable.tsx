@@ -86,7 +86,9 @@ export const TraceTable: React.FunctionComponent = () => {
         {traces.map((trace) => (
           <Tr key={trace.traceId}>
             <Td dataLabel={columnNames.traceId}>{trace.traceId}</Td>
-            <Td dataLabel={columnNames.durationMs}>{trace.durationMs}</Td>
+            <Td dataLabel={columnNames.durationMs}>
+              {!trace.durationMs ? '<1ms' : trace.durationMs}
+            </Td>
             <Td dataLabel={columnNames.spanCount}>{trace.spanCount}</Td>
             <Td dataLabel={columnNames.errorCount}>{trace.errorCount}</Td>
             <Td dataLabel={columnNames.startTime}>
