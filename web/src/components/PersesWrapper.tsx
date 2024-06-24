@@ -29,6 +29,7 @@ import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { PersesChartsTheme } from '@perses-dev/components';
 import { TraceQueryBrowser } from './TraceQueryBrowser';
 import { TraceEmptyState } from './TraceEmptyState';
+import { DurationString } from '@perses-dev/prometheus-plugin';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasource) {}
@@ -100,6 +101,7 @@ const queryClient = new QueryClient({
 type SelectedTempoStackProps = {
   selectedNamespace: string | undefined;
   selectedTempoStack: string | undefined;
+  duration: DurationString;
 };
 
 export const PersesWrapper = (props: SelectedTempoStackProps) => {
@@ -139,7 +141,7 @@ export const PersesWrapper = (props: SelectedTempoStackProps) => {
           <QueryClientProvider client={queryClient}>
             <TimeRangeProvider
               refreshInterval="0s"
-              timeRange={{ pastDuration: '30m' }}
+              timeRange={{ pastDuration: props.duration }}
             >
               <TemplateVariableProvider>
                 <DatasourceStoreProvider

@@ -42,6 +42,10 @@ build-backend:
 start-backend:
 	go run ./cmd/plugin-backend.go -port='9002' -config-path='./web/dist' -static-path='./web/dist'
 
+.PHONY: start-backend-k8
+start-backend-k8:
+	./scripts/start-backend.sh
+
 .PHONY: build-image
 build-image:install
 	./scripts/build-image.sh

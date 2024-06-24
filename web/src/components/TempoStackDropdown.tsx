@@ -5,6 +5,8 @@ import {
   SelectVariant,
   SelectOptionObject,
   Spinner,
+  Grid,
+  GridItem,
 } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 
@@ -86,33 +88,39 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
   const titleId = 'tempo-stack-select';
   return (
     <div>
-      <span id={titleId} hidden>
-        Select a TempoStack
-      </span>
-      <Select
-        id={props.id}
-        variant={SelectVariant.typeahead}
-        typeAheadAriaLabel={t('Select a TempoStack')}
-        onFilter={tempoStackOptionFilter}
-        onToggle={onToggle}
-        onSelect={onSelect}
-        onClear={clearSelection}
-        selections={selected}
-        isOpen={isOpen}
-        aria-labelledby={titleId}
-        placeholderText={t('Select a TempoStack')}
-        width={400}
-      >
-        {props.isLoading
-          ? [
-              <SelectOption isLoading key="custom-loading" value="loading">
-                <Spinner size="lg" />
-              </SelectOption>,
-            ]
-          : tempoStackSelectOptions.map((option, index) => (
-              <SelectOption key={index} value={option} />
-            ))}
-      </Select>
+      <Grid component="ul">
+        <GridItem component="li">
+          <label htmlFor="tempostack-dropdown">
+            {t('Select a TempoStack')}
+          </label>
+        </GridItem>
+        <GridItem component="li">
+          <Select
+            id={props.id}
+            variant={SelectVariant.typeahead}
+            typeAheadAriaLabel={t('Select a TempoStack')}
+            onFilter={tempoStackOptionFilter}
+            onToggle={onToggle}
+            onSelect={onSelect}
+            onClear={clearSelection}
+            selections={selected}
+            isOpen={isOpen}
+            aria-labelledby={titleId}
+            placeholderText={t('Select a TempoStack')}
+            width={400}
+          >
+            {props.isLoading
+              ? [
+                  <SelectOption isLoading key="custom-loading" value="loading">
+                    <Spinner size="lg" />
+                  </SelectOption>,
+                ]
+              : tempoStackSelectOptions.map((option, index) => (
+                  <SelectOption key={index} value={option} />
+                ))}
+          </Select>
+        </GridItem>
+      </Grid>
     </div>
   );
 };
