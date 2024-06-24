@@ -59,6 +59,7 @@ export const TraceTable: React.FunctionComponent = () => {
   }
 
   const columnNames = {
+    name: 'Name',
     traceId: 'Trace Id',
     durationMs: 'Duration (ms)',
     spanCount: 'Span count',
@@ -75,6 +76,7 @@ export const TraceTable: React.FunctionComponent = () => {
     >
       <Thead>
         <Tr>
+          <Th modifier="wrap">{t(columnNames.name)}</Th>
           <Th modifier="wrap">{t(columnNames.traceId)}</Th>
           <Th modifier="wrap">{t(columnNames.durationMs)}</Th>
           <Th modifier="wrap">{t(columnNames.spanCount)}</Th>
@@ -85,6 +87,7 @@ export const TraceTable: React.FunctionComponent = () => {
       <Tbody>
         {traces.map((trace) => (
           <Tr key={trace.traceId}>
+            <Td dataLabel={columnNames.name}>{trace?.name}</Td>
             <Td dataLabel={columnNames.traceId}>{trace.traceId}</Td>
             <Td dataLabel={columnNames.durationMs}>
               {!trace.durationMs ? '<1ms' : trace.durationMs}
