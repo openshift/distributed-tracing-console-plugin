@@ -1,9 +1,18 @@
 {
+  "Last 5 minutes": "Last 5 minutes",
+  "Last 15 minutes": "Last 15 minutes",
+  "Last 30 minutes": "Last 30 minutes",
+  "Last 1 hour": "Last 1 hour",
+  "Last 6 hours": "Last 6 hours",
+  "Last 12 hours": "Last 12 hours",
+  "Last 1 day": "Last 1 day",
+  "Last 7 days": "Last 7 days",
+  "Last 14 days": "Last 14 days",
+  "Time Range": "Time Range",
+  "Select a Time Range": "Select a Time Range",
   "Select a TempoStack": "Select a TempoStack",
   "No Tempo Stack selected": "No Tempo Stack selected",
   "Select a Tempo Stack instance to explore data": "Select a Tempo Stack instance to explore data",
   "No Data": "No Data",
-  "Loading": "Loading",
-  "Tracing": "Tracing",
-  "You have selected": "You have selected"
+  "Tracing": "Tracing"
 }
