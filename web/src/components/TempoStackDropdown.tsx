@@ -4,6 +4,7 @@ import {
   SelectOption,
   SelectVariant,
   SelectOptionObject,
+  Spinner,
 } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 
@@ -11,11 +12,12 @@ type TempoStackDropdownProps = {
   id: string;
   tempoStackOptions: { namespace: string; name: string }[];
   selectedNamespace: string | undefined;
-  selectedTempoList: string | undefined;
+  selectedTempoStackName: string | undefined;
   setTempoList: (
     selectedNamespace?: string,
-    selectedTempoStack?: string,
+    selectedTempoStackName?: string,
   ) => void;
+  isLoading: boolean;
 };
 
 class TempoStackSelectOption implements SelectOptionObject {
@@ -33,10 +35,10 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
   const [selected, setSelected] = React.useState<
     TempoStackSelectOption | undefined
   >(() =>
-    props.selectedNamespace && props.selectedTempoList
+    props.selectedNamespace && props.selectedTempoStackName
       ? new TempoStackSelectOption(
           props.selectedNamespace,
-          props.selectedTempoList,
+          props.selectedTempoStackName,
         )
       : undefined,
   );
@@ -101,9 +103,15 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
         placeholderText={t('Select a TempoStack')}
         width={400}
       >
-        {tempoStackSelectOptions.map((option, index) => (
-          <SelectOption key={index} value={option} />
-        ))}
+        {props.isLoading
+          ? [
+              <SelectOption isLoading key="custom-loading" value="loading">
+                <Spinner size="lg" />
+              </SelectOption>,
+            ]
+          : tempoStackSelectOptions.map((option, index) => (
+              <SelectOption key={index} value={option} />
+            ))}
       </Select>
     </div>
   );
