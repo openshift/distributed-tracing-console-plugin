@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/nodejs-18:latest AS web-builder 
+FROM registry.redhat.io/ubi9/nodejs-18:latest AS web-builder
 
 WORKDIR /opt/app-root
 
@@ -11,7 +11,7 @@ RUN make install-frontend-ci-clean
 COPY web/ web/
 RUN make build-frontend
 
-FROM registry.access.redhat.com/ubi9/go-toolset:1.20 as go-builder
+FROM registry.redhat.io/ubi9/go-toolset:1.20 as go-builder
 
 WORKDIR /opt/app-root
 
@@ -26,7 +26,7 @@ COPY pkg/ pkg/
 
 RUN make build-backend
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal  
+FROM registry.redhat.io/ubi9/ubi-minimal
 
 COPY --from=web-builder /opt/app-root/web/dist /opt/app-root/web/dist
 COPY --from=go-builder /opt/app-root/plugin-backend /opt/app-root
