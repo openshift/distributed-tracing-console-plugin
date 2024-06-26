@@ -1,13 +1,13 @@
-import * as React from 'react';
 import {
-  Select,
-  SelectOption,
-  SelectVariant,
-  SelectOptionObject,
-  Spinner,
   Grid,
   GridItem,
+  Select,
+  SelectOption,
+  SelectOptionObject,
+  SelectVariant,
+  Spinner,
 } from '@patternfly/react-core';
+import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TempoStackDropdownProps = {
@@ -32,16 +32,20 @@ class TempoStackSelectOption implements SelectOptionObject {
   }
 }
 
-export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
+export const TempoStackDropdown = ({
+  selectedNamespace,
+  selectedTempoStackName,
+  tempoStackOptions,
+  setTempoList,
+  isLoading,
+  id,
+}: TempoStackDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<
     TempoStackSelectOption | undefined
   >(() =>
-    props.selectedNamespace && props.selectedTempoStackName
-      ? new TempoStackSelectOption(
-          props.selectedNamespace,
-          props.selectedTempoStackName,
-        )
+    selectedNamespace && selectedTempoStackName
+      ? new TempoStackSelectOption(selectedNamespace, selectedTempoStackName)
       : undefined,
   );
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -57,18 +61,18 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
     if (!value) {
       setSelected(undefined);
     }
-    props.setTempoList(value.namespace, value.name);
+    setTempoList(value.namespace, value.name);
     setSelected(value);
     setIsOpen(false);
   };
 
   const clearSelection = () => {
     setSelected(null);
-    props.setTempoList();
+    setTempoList();
     setIsOpen(false);
   };
 
-  const tempoStackSelectOptions = props.tempoStackOptions.map((tempoStack) => {
+  const tempoStackSelectOptions = tempoStackOptions.map((tempoStack) => {
     return new TempoStackSelectOption(tempoStack.namespace, tempoStack.name);
   });
 
@@ -96,7 +100,7 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
         </GridItem>
         <GridItem component="li">
           <Select
-            id={props.id}
+            id={id}
             variant={SelectVariant.typeahead}
             typeAheadAriaLabel={t('Select a TempoStack')}
             onFilter={tempoStackOptionFilter}
@@ -109,7 +113,7 @@ export const TempoStackDropdown = (props: TempoStackDropdownProps) => {
             placeholderText={t('Select a TempoStack')}
             width={400}
           >
-            {props.isLoading
+            {isLoading
               ? [
                   <SelectOption isLoading key="custom-loading" value="loading">
                     <Spinner size="lg" />
