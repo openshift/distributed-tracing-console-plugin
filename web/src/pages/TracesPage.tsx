@@ -3,18 +3,20 @@ import * as React from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { useURLState } from '../hooks/useURLState';
-import { PersesWrapper } from './PersesWrapper';
-import { TempoStackDropdown } from './TempoStackDropdown';
+import { PersesWrapper } from '../components/PersesWrapper';
+import { TempoStackDropdown } from '../components/TempoStackDropdown';
 import { useTempoStack } from '../hooks/useTempoStack';
-import { DurationDropdown } from './DurationDropdown';
+import { DurationDropdown } from '../components/DurationDropdown';
 import { Grid, GridItem } from '@patternfly/react-core';
 import { DurationString } from '@perses-dev/prometheus-plugin';
+import { TraceQueryBrowser } from '../components/TraceQueryBrowser';
 
-export default function TracingPage() {
+export function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { tempoStack, namespace, setTempoStackInURL } = useURLState();
   const { loading, tempoStackList } = useTempoStack();
   const [duration, setDuration] = React.useState<DurationString>('30m');
+  const [query, setQuery] = React.useState('{}');
 
   const handleDurationChange = (timeRange: DurationString) => {
     setDuration(timeRange);
@@ -50,10 +52,11 @@ export default function TracingPage() {
             </GridItem>
           </Grid>
           <PersesWrapper
-            selectedNamespace={namespace}
-            selectedTempoStack={tempoStack}
+            queries={[{ kind: 'TempoTraceQuery', spec: { query } }]}
             duration={duration}
-          />
+          >
+            <TraceQueryBrowser setQuery={setQuery} />
+          </PersesWrapper>
         </PageSection>
       </Page>
     </>

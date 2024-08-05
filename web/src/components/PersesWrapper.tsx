@@ -1,10 +1,11 @@
 import React from 'react';
-
 import {
   ChartsProvider,
   generateChartsTheme,
   getTheme,
+  PersesChartsTheme,
 } from '@perses-dev/components';
+import { ThemeProvider } from '@mui/material';
 import {
   DataQueriesProvider,
   dynamicImportPluginLoader,
@@ -12,50 +13,42 @@ import {
   PluginRegistry,
   TimeRangeProvider,
 } from '@perses-dev/plugin-system';
-import { ThemeProvider } from '@mui/material';
+import {
+  DatasourceResource,
+  Definition,
+  DurationString,
+  GlobalDatasourceResource,
+  UnknownSpec,
+} from '@perses-dev/core';
+import panelsResource from '@perses-dev/panels-plugin/plugin.json';
+import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  DatasourceApi,
   DatasourceStoreProvider,
-  TemplateVariableProvider,
+  VariableProvider,
 } from '@perses-dev/dashboards';
-import panelsResource from '@perses-dev/panels-plugin/plugin.json';
-import {
-  DashboardResource,
-  GlobalDatasource,
-  ProjectDatasource,
-} from '@perses-dev/core';
-import { DatasourceApi } from '@perses-dev/dashboards';
-import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
-import { PersesChartsTheme } from '@perses-dev/components';
-import { TraceQueryBrowser } from './TraceQueryBrowser';
-import { TraceEmptyState } from './TraceEmptyState';
-import { DurationString } from '@perses-dev/prometheus-plugin';
+import { useURLState } from '../hooks/useURLState';
 
 class DatasourceApiImpl implements DatasourceApi {
-  constructor(public proxyDatasource: GlobalDatasource) {}
+  constructor(public proxyDatasource: GlobalDatasourceResource) {}
 
-  getDatasource(): Promise<ProjectDatasource | undefined> {
+  getDatasource(): Promise<DatasourceResource | undefined> {
     return Promise.resolve(undefined);
   }
-  getGlobalDatasource(): Promise<GlobalDatasource | undefined> {
+  getGlobalDatasource(): Promise<GlobalDatasourceResource | undefined> {
     return Promise.resolve(this.proxyDatasource);
   }
-  listDatasources(): Promise<ProjectDatasource[]> {
+  listDatasources(): Promise<DatasourceResource[]> {
     return Promise.resolve([]);
   }
-  listGlobalDatasources(): Promise<GlobalDatasource[]> {
+  listGlobalDatasources(): Promise<GlobalDatasourceResource[]> {
     return Promise.resolve([this.proxyDatasource]);
   }
   buildProxyUrl(): string {
     return '/';
   }
 }
-
-export const dashboard = {
-  kind: 'Dashboard',
-  metadata: {},
-  spec: {},
-} as DashboardResource;
 
 // Override eChart defaults with PatternFly colors.
 const patternflyBlue300 = '#2b9af3';
@@ -98,21 +91,21 @@ const queryClient = new QueryClient({
   },
 });
 
-type SelectedTempoStackProps = {
-  selectedNamespace: string | undefined;
-  selectedTempoStack: string | undefined;
-  duration: DurationString;
-};
+interface PersesWrapperProps {
+  queries: Definition<UnknownSpec>[];
+  duration?: DurationString;
+  children?: React.ReactNode;
+}
 
-export const PersesWrapper = (props: SelectedTempoStackProps) => {
-  const [query, setQuery] = React.useState('{}');
+export function PersesWrapper({
+  queries,
+  duration,
+  children,
+}: PersesWrapperProps) {
+  const { namespace, tempoStack } = useURLState();
 
-  if (!props.selectedTempoStack || !props.selectedNamespace) {
-    return <TraceEmptyState />;
-  }
-
-  const url = `/api/proxy/plugin/distributed-tracing-console-plugin/backend/proxy/${props.selectedNamespace}/${props.selectedTempoStack}`;
-  const proxyDatasource: GlobalDatasource = {
+  const url = `/api/proxy/plugin/distributed-tracing-console-plugin/backend/proxy/${namespace}/${tempoStack}`;
+  const proxyDatasource: GlobalDatasourceResource = {
     kind: 'GlobalDatasource',
     metadata: { name: 'TempoProxy' },
     spec: {
@@ -130,40 +123,20 @@ export const PersesWrapper = (props: SelectedTempoStackProps) => {
   return (
     <ThemeProvider theme={muiTheme}>
       <ChartsProvider chartsTheme={chartsTheme}>
-        <PluginRegistry
-          pluginLoader={pluginLoader}
-          defaultPluginKinds={{
-            Panel: 'ScatterChart',
-            TimeSeriesQuery: 'PrometheusTimeSeriesQuery',
-            TraceQuery: 'TempoTraceQuery',
-          }}
-        >
+        <PluginRegistry pluginLoader={pluginLoader}>
           <QueryClientProvider client={queryClient}>
-            <TimeRangeProvider
-              refreshInterval="0s"
-              timeRange={{ pastDuration: props.duration }}
-            >
-              <TemplateVariableProvider>
-                <DatasourceStoreProvider
-                  dashboardResource={dashboard}
-                  datasourceApi={datasourceApi}
-                >
-                  <DataQueriesProvider
-                    definitions={[
-                      {
-                        kind: 'TempoTraceQuery',
-                        spec: { query: query },
-                      },
-                    ]}
-                  >
-                    <TraceQueryBrowser setQuery={setQuery} />
+            <TimeRangeProvider timeRange={{ pastDuration: duration ?? '0s' }}>
+              <VariableProvider>
+                <DatasourceStoreProvider datasourceApi={datasourceApi}>
+                  <DataQueriesProvider definitions={queries}>
+                    {children}
                   </DataQueriesProvider>
                 </DatasourceStoreProvider>
-              </TemplateVariableProvider>
+              </VariableProvider>
             </TimeRangeProvider>
           </QueryClientProvider>
         </PluginRegistry>
       </ChartsProvider>
     </ThemeProvider>
   );
-};
+}

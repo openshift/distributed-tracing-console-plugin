@@ -70,6 +70,12 @@ const config: Configuration = {
     devMiddleware: {
       writeToDisk: true,
     },
+    client: {
+      overlay: {
+        warnings: false,
+        errors: false,
+      },
+    },
   },
   plugins: [
     new ConsoleRemotePlugin(),
