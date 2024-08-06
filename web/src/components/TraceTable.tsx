@@ -12,6 +12,7 @@ import {
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { Title, EmptyState, EmptyStateIcon } from '@patternfly/react-core';
 import CubesIcon from '@patternfly/react-icons/dist/esm/icons/cubes-icon';
+import { Link } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
 
@@ -53,7 +54,7 @@ export const TraceTable: React.FunctionComponent = () => {
     return <LoadingTable />;
   }
 
-  const traces = traceData?.queryResults[0]?.data?.traces;
+  const traces = traceData?.queryResults[0]?.data?.searchResult;
   if (traces === undefined || traces === null || traces.length < 1) {
     return <EmptyTable />;
   }
@@ -87,13 +88,27 @@ export const TraceTable: React.FunctionComponent = () => {
       <Tbody>
         {traces.map((trace) => (
           <Tr key={trace.traceId}>
-            <Td dataLabel={columnNames.name}>{trace?.name}</Td>
+            <Td dataLabel={columnNames.name}>
+              <Link to={traceDetailLink(trace.traceId)}>
+                {trace?.rootServiceName} {trace?.rootTraceName}
+              </Link>
+            </Td>
             <Td dataLabel={columnNames.traceId}>{trace.traceId}</Td>
             <Td dataLabel={columnNames.durationMs}>
               {!trace.durationMs ? '<1ms' : trace.durationMs}
             </Td>
-            <Td dataLabel={columnNames.spanCount}>{trace.spanCount}</Td>
-            <Td dataLabel={columnNames.errorCount}>{trace.errorCount}</Td>
+            <Td dataLabel={columnNames.spanCount}>
+              {Object.values(trace.serviceStats).reduce(
+                (acc, s) => acc + s.spanCount,
+                0,
+              )}
+            </Td>
+            <Td dataLabel={columnNames.errorCount}>
+              {Object.values(trace.serviceStats).reduce(
+                (acc, s) => acc + (s.errorCount ?? 0),
+                0,
+              )}
+            </Td>
             <Td dataLabel={columnNames.startTime}>
               {new Date(trace.startTimeUnixMs).toString()}
             </Td>
@@ -103,3 +118,9 @@ export const TraceTable: React.FunctionComponent = () => {
     </Table>
   );
 };
+
+function traceDetailLink(traceId: string) {
+  return `/observe/traces/${traceId}?${new URLSearchParams(
+    window.location.search,
+  ).toString()}`;
+}

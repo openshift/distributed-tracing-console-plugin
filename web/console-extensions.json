@@ -2,9 +2,9 @@
   {
     "type": "console.page/route",
     "properties": {
-      "exact": true,
+      "exact": false,
       "path": "/observe/traces",
-      "component": { "$codeRef": "TracingPage" }
+      "component": { "$codeRef": "TracingUI" }
     }
   },
   {
