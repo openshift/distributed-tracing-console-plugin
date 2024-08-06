@@ -12,7 +12,6 @@ export default function TracingUI() {
         exact
         component={TraceDetailPage}
       />
-      <Route component={TracesPage} />
     </Switch>
   );
 }
