@@ -1,6 +1,4 @@
 import {
-  Grid,
-  GridItem,
   Select,
   SelectOption,
   SelectOptionObject,
@@ -91,40 +89,29 @@ export const TempoStackDropdown = ({
 
   const titleId = 'tempo-stack-select';
   return (
-    <div>
-      <Grid component="ul">
-        <GridItem component="li">
-          <label htmlFor="tempostack-dropdown">
-            {t('Select a TempoStack')}
-          </label>
-        </GridItem>
-        <GridItem component="li">
-          <Select
-            id={id}
-            variant={SelectVariant.typeahead}
-            typeAheadAriaLabel={t('Select a TempoStack')}
-            onFilter={tempoStackOptionFilter}
-            onToggle={onToggle}
-            onSelect={onSelect}
-            onClear={clearSelection}
-            selections={selected}
-            isOpen={isOpen}
-            aria-labelledby={titleId}
-            placeholderText={t('Select a TempoStack')}
-            width={400}
-          >
-            {isLoading
-              ? [
-                  <SelectOption isLoading key="custom-loading" value="loading">
-                    <Spinner size="lg" />
-                  </SelectOption>,
-                ]
-              : tempoStackSelectOptions.map((option, index) => (
-                  <SelectOption key={index} value={option} />
-                ))}
-          </Select>
-        </GridItem>
-      </Grid>
-    </div>
+    <Select
+      id={id}
+      variant={SelectVariant.typeahead}
+      typeAheadAriaLabel={t('Select a TempoStack')}
+      onFilter={tempoStackOptionFilter}
+      onToggle={onToggle}
+      onSelect={onSelect}
+      onClear={clearSelection}
+      selections={selected}
+      isOpen={isOpen}
+      aria-labelledby={titleId}
+      placeholderText={t('Select a TempoStack')}
+      width={400}
+    >
+      {isLoading
+        ? [
+            <SelectOption isLoading key="custom-loading" value="loading">
+              <Spinner size="lg" />
+            </SelectOption>,
+          ]
+        : tempoStackSelectOptions.map((option, index) => (
+            <SelectOption key={index} value={option} />
+          ))}
+    </Select>
   );
 };

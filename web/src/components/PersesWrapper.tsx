@@ -12,6 +12,7 @@ import {
   PluginModuleResource,
   PluginRegistry,
   TimeRangeProvider,
+  useDataQueries,
 } from '@perses-dev/plugin-system';
 import {
   DatasourceResource,
@@ -28,6 +29,19 @@ import {
   DatasourceStoreProvider,
   VariableProvider,
 } from '@perses-dev/dashboards';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorAlert } from './ErrorAlert';
+import {
+  Bullseye,
+  Button,
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateIcon,
+  Title,
+} from '@patternfly/react-core';
+import { SearchIcon } from '@patternfly/react-icons';
+import { useTranslation } from 'react-i18next';
+import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { useURLState } from '../hooks/useURLState';
 
 class DatasourceApiImpl implements DatasourceApi {
@@ -92,17 +106,21 @@ const queryClient = new QueryClient({
 });
 
 interface PersesWrapperProps {
-  queries: Definition<UnknownSpec>[];
+  definitions: Definition<UnknownSpec>[];
   duration?: DurationString;
   children?: React.ReactNode;
 }
 
 export function PersesWrapper({
-  queries,
-  duration,
+  definitions,
+  duration = '0s',
   children,
 }: PersesWrapperProps) {
   const { namespace, tempoStack } = useURLState();
+
+  if (!namespace || !tempoStack) {
+    return <NoTempoInstanceSelectedState />;
+  }
 
   const url = `/api/proxy/plugin/distributed-tracing-console-plugin/backend/proxy/${namespace}/${tempoStack}`;
   const proxyDatasource: GlobalDatasourceResource = {
@@ -125,10 +143,10 @@ export function PersesWrapper({
       <ChartsProvider chartsTheme={chartsTheme}>
         <PluginRegistry pluginLoader={pluginLoader}>
           <QueryClientProvider client={queryClient}>
-            <TimeRangeProvider timeRange={{ pastDuration: duration ?? '0s' }}>
+            <TimeRangeProvider timeRange={{ pastDuration: duration }}>
               <VariableProvider>
                 <DatasourceStoreProvider datasourceApi={datasourceApi}>
-                  <DataQueriesProvider definitions={queries}>
+                  <DataQueriesProvider definitions={definitions}>
                     {children}
                   </DataQueriesProvider>
                 </DatasourceStoreProvider>
@@ -138,5 +156,99 @@ export function PersesWrapper({
         </PluginRegistry>
       </ChartsProvider>
     </ThemeProvider>
+  );
+}
+
+interface TracePanelWrapperProps {
+  noResults?: React.ReactNode;
+  children?: React.ReactNode;
+}
+
+/**
+ * TraceQueryPanelWrapper intercepts the trace query status and displays PatternFly native empty and loading states
+ * instead of the Material UI empty and loading states used by Perses.
+ */
+export function TraceQueryPanelWrapper({
+  noResults = <NoResultsOverlay />,
+  children,
+}: TracePanelWrapperProps) {
+  const { isFetching, isLoading, queryResults } = useDataQueries('TraceQuery');
+
+  if (isLoading || isFetching) {
+    return <LoadingOverlay />;
+  }
+
+  const queryError = queryResults.find((d) => d.error);
+  if (queryError) {
+    return <ErrorAlert error={queryError.error as Error} />;
+  }
+
+  const dataFound = queryResults.some(
+    (traceData) =>
+      (traceData.data?.searchResult ?? []).length > 0 || traceData.data?.trace,
+  );
+  if (!dataFound) {
+    return <>{noResults}</>;
+  }
+
+  return (
+    <ErrorBoundary FallbackComponent={ErrorAlert} resetKeys={[]}>
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+function LoadingOverlay() {
+  return (
+    <Bullseye>
+      <div
+        className="co-m-loader co-an-fade-in-out"
+        data-test="loading-indicator"
+      >
+        <div className="co-m-loader-dot__one" />
+        <div className="co-m-loader-dot__two" />
+        <div className="co-m-loader-dot__three" />
+      </div>
+    </Bullseye>
+  );
+}
+
+function NoResultsOverlay() {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+
+  return (
+    <Bullseye>
+      <EmptyState>
+        <EmptyStateIcon icon={SearchIcon} />
+        <Title headingLevel="h2" size="lg">
+          {t('No results found')}
+        </Title>
+      </EmptyState>
+    </Bullseye>
+  );
+}
+
+interface NoResultsOverlayWithClearFilterButtonProps {
+  onClick: () => void;
+}
+
+export function NoResultsOverlayWithClearFilterButton({
+  onClick,
+}: NoResultsOverlayWithClearFilterButtonProps) {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+
+  return (
+    <Bullseye>
+      <EmptyState>
+        <EmptyStateIcon icon={SearchIcon} />
+        <Title headingLevel="h2" size="lg">
+          {t('No results found')}
+        </Title>
+        <EmptyStateBody>{t('Clear all filters and try again.')}</EmptyStateBody>
+        <Button variant="link" onClick={onClick}>
+          {t('Clear all filters')}
+        </Button>
+      </EmptyState>
+    </Bullseye>
   );
 }

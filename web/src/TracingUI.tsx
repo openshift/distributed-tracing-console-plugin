@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Switch, Route } from 'react-router-dom';
 import { TraceDetailPage } from './pages/TraceDetailPage';
-import { TracesPage } from './pages/TracesPage';
+import { TracesPage } from './pages/TracesPage/TracesPage';
 
 export default function TracingUI() {
   return (
