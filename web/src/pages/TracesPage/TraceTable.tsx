@@ -16,10 +16,7 @@ export function TraceTable({ setQuery }: TraceTableProps) {
 
   return (
     <TraceQueryPanelWrapper noResults={noResultsOverlay}>
-      <PersesTraceTable.PanelComponent
-        spec={{}}
-        traceLink={traceDetailLink}
-      />
+      <PersesTraceTable.PanelComponent spec={{}} traceLink={traceDetailLink} />
     </TraceQueryPanelWrapper>
   );
 }
