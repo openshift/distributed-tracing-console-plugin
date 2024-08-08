@@ -7,11 +7,7 @@ export default function TracingUI() {
   return (
     <Switch>
       <Route path="/observe/traces" exact component={TracesPage} />
-      <Route
-        path="/observe/traces/:traceId"
-        exact
-        component={TraceDetailPage}
-      />
+      <Route path="/observe/traces/:traceId" exact component={TraceDetailPage} />
     </Switch>
   );
 }

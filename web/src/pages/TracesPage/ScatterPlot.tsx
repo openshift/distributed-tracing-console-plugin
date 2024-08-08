@@ -39,8 +39,7 @@ export function ScatterPlot() {
           style={{
             height: '200px',
             flexShrink: 0,
-            border:
-              'var(--pf-global--BorderWidth--sm) solid var(--pf-global--BorderColor--100)',
+            border: 'var(--pf-global--BorderWidth--sm) solid var(--pf-global--BorderColor--100)',
           }}
         >
           <TraceQueryPanelWrapper>

@@ -10,9 +10,7 @@ interface TraceTableProps {
 }
 
 export function TraceTable({ setQuery }: TraceTableProps) {
-  const noResultsOverlay = (
-    <NoResultsOverlayWithClearFilterButton onClick={() => setQuery('{}')} />
-  );
+  const noResultsOverlay = <NoResultsOverlayWithClearFilterButton onClick={() => setQuery('{}')} />;
 
   return (
     <TraceQueryPanelWrapper noResults={noResultsOverlay}>
@@ -22,7 +20,5 @@ export function TraceTable({ setQuery }: TraceTableProps) {
 }
 
 export function traceDetailLink({ traceId }: { traceId: string }) {
-  return `/observe/traces/${traceId}?${new URLSearchParams(
-    window.location.search,
-  ).toString()}`;
+  return `/observe/traces/${traceId}?${new URLSearchParams(window.location.search).toString()}`;
 }

@@ -9,9 +9,7 @@ type TempoStackListResponse = {
 const backendURL =
   '/api/proxy/plugin/distributed-tracing-console-plugin/backend/api/v1/list-tempostacks';
 
-const isTempoStackListResponse = (
-  value: unknown,
-): value is TempoStackListResponse => {
+const isTempoStackListResponse = (value: unknown): value is TempoStackListResponse => {
   const obj = value as TempoStackListResponse;
   return (
     obj.namespace !== undefined &&
@@ -22,9 +20,7 @@ const isTempoStackListResponse = (
 };
 
 export const useTempoStack = () => {
-  const [tempoStackList, setTempoStackList] = React.useState<
-    Array<TempoStackListResponse>
-  >([]);
+  const [tempoStackList, setTempoStackList] = React.useState<Array<TempoStackListResponse>>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -32,17 +28,11 @@ export const useTempoStack = () => {
       try {
         setLoading(true);
 
-        const { request } =
-          cancellableFetch<TempoStackListResponse[]>(backendURL);
+        const { request } = cancellableFetch<TempoStackListResponse[]>(backendURL);
 
-        const response: Array<TempoStackListResponse | undefined | null> =
-          await request();
+        const response: Array<TempoStackListResponse | undefined | null> = await request();
 
-        if (
-          response &&
-          Array.isArray(response) &&
-          response.every(isTempoStackListResponse)
-        ) {
+        if (response && Array.isArray(response) && response.every(isTempoStackListResponse)) {
           setTempoStackList(response);
         } else {
           throw new Error('Invalid TempoStackList response');
