@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Split } from '@patternfly/react-core';
 import { Button } from '@patternfly/react-core';
 import { TraceQLEditor } from './TraceQLEditor';
+import { useTranslation } from 'react-i18next';
 
 interface QueryEditorProps {
   query: string;
@@ -9,6 +10,7 @@ interface QueryEditorProps {
 }
 
 export function QueryEditor(props: QueryEditorProps) {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   // Parent query will be updated only on "run query" click, not on every change
   const [pendingQuery, setPendingQuery] = useState(props.query);
 
@@ -21,12 +23,8 @@ export function QueryEditor(props: QueryEditorProps) {
   return (
     <Split hasGutter>
       <TraceQLEditor query={pendingQuery} setQuery={setPendingQuery} />
-      <Button
-        variant="primary"
-        aria-label="run query"
-        onClick={() => props.setQuery(pendingQuery)}
-      >
-        Run Query
+      <Button variant="primary" onClick={() => props.setQuery(pendingQuery)}>
+        {t('Run query')}
       </Button>
     </Split>
   );
