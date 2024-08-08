@@ -13,10 +13,7 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
-import {
-  PersesWrapper,
-  TraceQueryPanelWrapper,
-} from '../components/PersesWrapper';
+import { PersesWrapper, TraceQueryPanelWrapper } from '../components/PersesWrapper';
 import { useDataQueries } from '@perses-dev/plugin-system';
 
 interface RouteParams {
@@ -42,18 +39,12 @@ export function TraceDetailPage() {
           <Stack>
             <Breadcrumb>
               <BreadcrumbItem>
-                <Link to={`/observe/traces${location.search}`}>
-                  {t('Traces')}
-                </Link>
+                <Link to={`/observe/traces${location.search}`}>{t('Traces')}</Link>
               </BreadcrumbItem>
               <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
             </Breadcrumb>
 
-            <PersesWrapper
-              definitions={[
-                { kind: 'TempoTraceQuery', spec: { query: traceId } },
-              ]}
-            >
+            <PersesWrapper definitions={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}>
               <Title headingLevel="h1">
                 <TraceTitle />
               </Title>

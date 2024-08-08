@@ -13,10 +13,7 @@ type TempoStackDropdownProps = {
   tempoStackOptions: { namespace: string; name: string }[];
   selectedNamespace: string | undefined;
   selectedTempoStackName: string | undefined;
-  setTempoList: (
-    selectedNamespace?: string,
-    selectedTempoStackName?: string,
-  ) => void;
+  setTempoList: (selectedNamespace?: string, selectedTempoStackName?: string) => void;
   isLoading: boolean;
 };
 
@@ -39,9 +36,7 @@ export const TempoStackDropdown = ({
   id,
 }: TempoStackDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<
-    TempoStackSelectOption | undefined
-  >(() =>
+  const [selected, setSelected] = React.useState<TempoStackSelectOption | undefined>(() =>
     selectedNamespace && selectedTempoStackName
       ? new TempoStackSelectOption(selectedNamespace, selectedTempoStackName)
       : undefined,
@@ -74,10 +69,7 @@ export const TempoStackDropdown = ({
     return new TempoStackSelectOption(tempoStack.namespace, tempoStack.name);
   });
 
-  const tempoStackOptionFilter = (
-    _: React.ChangeEvent<HTMLInputElement>,
-    value: string,
-  ) => {
+  const tempoStackOptionFilter = (_: React.ChangeEvent<HTMLInputElement>, value: string) => {
     return tempoStackSelectOptions
       .filter((option) => {
         return !option.toString().search(value);

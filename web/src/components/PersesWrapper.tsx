@@ -24,11 +24,7 @@ import {
 import panelsResource from '@perses-dev/panels-plugin/plugin.json';
 import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  DatasourceApi,
-  DatasourceStoreProvider,
-  VariableProvider,
-} from '@perses-dev/dashboards';
+import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorAlert } from './ErrorAlert';
 import {
@@ -69,11 +65,7 @@ const patternflyBlue300 = '#2b9af3';
 const patternflyBlue400 = '#0066cc';
 const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
-const defaultPaletteColors = [
-  patternflyBlue400,
-  patternflyBlue500,
-  patternflyBlue600,
-];
+const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
 const muiTheme = getTheme('light');
 const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
   thresholds: {
@@ -111,11 +103,7 @@ interface PersesWrapperProps {
   children?: React.ReactNode;
 }
 
-export function PersesWrapper({
-  definitions,
-  duration = '0s',
-  children,
-}: PersesWrapperProps) {
+export function PersesWrapper({ definitions, duration = '0s', children }: PersesWrapperProps) {
   const { namespace, tempoStack } = useURLState();
 
   if (!namespace || !tempoStack) {
@@ -146,9 +134,7 @@ export function PersesWrapper({
             <TimeRangeProvider timeRange={{ pastDuration: duration }}>
               <VariableProvider>
                 <DatasourceStoreProvider datasourceApi={datasourceApi}>
-                  <DataQueriesProvider definitions={definitions}>
-                    {children}
-                  </DataQueriesProvider>
+                  <DataQueriesProvider definitions={definitions}>{children}</DataQueriesProvider>
                 </DatasourceStoreProvider>
               </VariableProvider>
             </TimeRangeProvider>
@@ -184,8 +170,7 @@ export function TraceQueryPanelWrapper({
   }
 
   const dataFound = queryResults.some(
-    (traceData) =>
-      (traceData.data?.searchResult ?? []).length > 0 || traceData.data?.trace,
+    (traceData) => (traceData.data?.searchResult ?? []).length > 0 || traceData.data?.trace,
   );
   if (!dataFound) {
     return <>{noResults}</>;
@@ -201,10 +186,7 @@ export function TraceQueryPanelWrapper({
 function LoadingOverlay() {
   return (
     <Bullseye>
-      <div
-        className="co-m-loader co-an-fade-in-out"
-        data-test="loading-indicator"
-      >
+      <div className="co-m-loader co-an-fade-in-out" data-test="loading-indicator">
         <div className="co-m-loader-dot__one" />
         <div className="co-m-loader-dot__two" />
         <div className="co-m-loader-dot__three" />

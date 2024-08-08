@@ -16,12 +16,8 @@ export const useURLState = () => {
   const initialNamespace = queryParams.get(NAMESPACE_KEY) ?? undefined;
 
   const [query, setQuery] = React.useState(initialQuery);
-  const [tempoStack, setTempoStack] = React.useState<string | undefined>(
-    initialTempoStack,
-  );
-  const [namespace, setNamespace] = React.useState<string | undefined>(
-    initialNamespace,
-  );
+  const [tempoStack, setTempoStack] = React.useState<string | undefined>(initialTempoStack);
+  const [namespace, setNamespace] = React.useState<string | undefined>(initialNamespace);
 
   const setQueryInURL = (newQuery: string) => {
     const trimmedQuery = newQuery.trim();
@@ -29,10 +25,7 @@ export const useURLState = () => {
     history.push(`${location.pathname}?${queryParams.toString()}`);
   };
 
-  const setTempoStackInURL = (
-    selectedNamespace?: string,
-    selectedTempoStack?: string,
-  ) => {
+  const setTempoStackInURL = (selectedNamespace?: string, selectedTempoStack?: string) => {
     if (selectedTempoStack && selectedNamespace) {
       queryParams.set(TEMPOSTACK_PARAM_KEY, selectedTempoStack);
       queryParams.set(NAMESPACE_KEY, selectedNamespace);

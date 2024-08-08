@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Divider,
-  Page,
-  PageSection,
-  Split,
-  Stack,
-  Title,
-} from '@patternfly/react-core';
+import { Divider, Page, PageSection, Split, Stack, Title } from '@patternfly/react-core';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { DurationDropdown } from '../../components/DurationDropdown';
