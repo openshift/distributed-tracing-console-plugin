@@ -11,12 +11,13 @@ import {
 } from '@patternfly/react-core';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
-import { PersesWrapper } from '../components/PersesWrapper';
+import {
+  PersesWrapper,
+  TraceQueryPanelWrapper,
+} from '../components/PersesWrapper';
 import { useDataQueries } from '@perses-dev/plugin-system';
-import { ErrorBoundary } from '@perses-dev/components';
-import { ErrorAlert } from '../components/ErrorAlert';
 
 interface RouteParams {
   traceId: string;
@@ -25,6 +26,7 @@ interface RouteParams {
 export function TraceDetailPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { traceId } = useParams<RouteParams>();
+  const location = useLocation();
 
   return (
     <>
@@ -40,22 +42,26 @@ export function TraceDetailPage() {
           <Stack>
             <Breadcrumb>
               <BreadcrumbItem>
-                <Link to="/observe/traces">{t('Traces')}</Link>
+                <Link to={`/observe/traces${location.search}`}>
+                  {t('Traces')}
+                </Link>
               </BreadcrumbItem>
               <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
             </Breadcrumb>
 
             <PersesWrapper
-              queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+              definitions={[
+                { kind: 'TempoTraceQuery', spec: { query: traceId } },
+              ]}
             >
               <Title headingLevel="h1">
                 <TraceTitle />
               </Title>
               <Divider className="pf-v5-u-my-md" />
               <StackItem isFilled>
-                <ErrorBoundary FallbackComponent={ErrorAlert}>
+                <TraceQueryPanelWrapper>
                   <TracingGanttChart.PanelComponent spec={{}} />
-                </ErrorBoundary>
+                </TraceQueryPanelWrapper>
               </StackItem>
             </PersesWrapper>
           </Stack>
