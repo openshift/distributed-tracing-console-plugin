@@ -9,14 +9,13 @@ type TimeRangeSelectOption = {
 };
 
 type DurationDropDownProps = {
-  handleDurationChange: (timeRange: DurationString) => void;
+  duration: DurationString;
+  setDuration: (timeRange: DurationString) => void;
 };
 
-export const DurationDropdown = (props: DurationDropDownProps) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState('30m');
-
+export const DurationDropdown = ({ duration, setDuration }: DurationDropDownProps) => {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const [isOpen, setIsOpen] = React.useState(false);
 
   // The time range selection mirrors the options on the Metrics Page
   const timeRangeSelectOptions: TimeRangeSelectOption[] = [
@@ -66,9 +65,8 @@ export const DurationDropdown = (props: DurationDropDownProps) => {
     _event: React.MouseEvent | React.ChangeEvent,
     value: string | SelectOptionObject,
   ) => {
-    setSelected(value.toString());
+    setDuration(value.toString() as DurationString);
     setIsOpen(false);
-    props.handleDurationChange(value.toString() as DurationString);
   };
 
   const titleId = 'time-range-select';
@@ -78,7 +76,7 @@ export const DurationDropdown = (props: DurationDropDownProps) => {
       typeAheadAriaLabel={t('Select a Time Range')}
       onToggle={onToggle}
       onSelect={onSelect}
-      selections={selected}
+      selections={duration}
       isOpen={isOpen}
       aria-labelledby={titleId}
       placeholderText={t('Select a Time Range')}
