@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Select, SelectVariant, SelectOption } from '@patternfly/react-core';
+import { Select, SelectVariant, SelectOption, SelectOptionObject } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { DurationString } from '@perses-dev/prometheus-plugin';
 
@@ -63,21 +63,17 @@ export const DurationDropdown = (props: DurationDropDownProps) => {
   };
 
   const onSelect = (
-    _event: React.MouseEvent<Element, MouseEvent> | undefined,
-    value: DurationString | undefined,
+    _event: React.MouseEvent | React.ChangeEvent,
+    value: string | SelectOptionObject,
   ) => {
-    if (!value) {
-      setSelected(undefined);
-    }
-    setSelected(value);
+    setSelected(value.toString());
     setIsOpen(false);
-    props.handleDurationChange(value);
+    props.handleDurationChange(value.toString() as DurationString);
   };
 
   const titleId = 'time-range-select';
   return (
     <Select
-      id={selected}
       variant={SelectVariant.typeahead}
       typeAheadAriaLabel={t('Select a Time Range')}
       onToggle={onToggle}

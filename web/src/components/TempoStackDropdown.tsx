@@ -47,20 +47,15 @@ export const TempoStackDropdown = ({
     setIsOpen(!isOpen);
   };
 
-  const onSelect = (
-    _event: React.MouseEvent<Element, MouseEvent> | undefined,
-    value: TempoStackSelectOption | undefined,
-  ) => {
-    if (!value) {
-      setSelected(undefined);
-    }
-    setTempoList(value.namespace, value.name);
-    setSelected(value);
+  const onSelect = (_event: React.MouseEvent | React.ChangeEvent, value: SelectOptionObject) => {
+    const tempoOption = value as TempoStackSelectOption;
+    setTempoList(tempoOption.namespace, tempoOption.name);
+    setSelected(tempoOption);
     setIsOpen(false);
   };
 
   const clearSelection = () => {
-    setSelected(null);
+    setSelected(undefined);
     setTempoList();
     setIsOpen(false);
   };
@@ -69,7 +64,7 @@ export const TempoStackDropdown = ({
     return new TempoStackSelectOption(tempoStack.namespace, tempoStack.name);
   });
 
-  const tempoStackOptionFilter = (_: React.ChangeEvent<HTMLInputElement>, value: string) => {
+  const onFilter = (_event: React.ChangeEvent<HTMLInputElement> | null, value: string) => {
     return tempoStackSelectOptions
       .filter((option) => {
         return !option.toString().search(value);
@@ -85,7 +80,7 @@ export const TempoStackDropdown = ({
       id={id}
       variant={SelectVariant.typeahead}
       typeAheadAriaLabel={t('Select a TempoStack')}
-      onFilter={tempoStackOptionFilter}
+      onFilter={onFilter}
       onToggle={onToggle}
       onSelect={onSelect}
       onClear={clearSelection}
