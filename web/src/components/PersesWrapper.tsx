@@ -66,7 +66,10 @@ const patternflyBlue400 = '#0066cc';
 const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
+
 const muiTheme = getTheme('light');
+muiTheme.shape.borderRadius = 0;
+
 const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
   thresholds: {
     defaultColor: patternflyBlue300,

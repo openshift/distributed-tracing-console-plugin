@@ -30,7 +30,7 @@ export function TraceDetailPage() {
       <HelmetProvider>
         <Helmet>
           <title>
-            {traceId} · {t('Tracing')}
+            {t('Trace')} {traceId} · {t('Tracing')}
           </title>
         </Helmet>
       </HelmetProvider>
