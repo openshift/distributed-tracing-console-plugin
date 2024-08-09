@@ -14,25 +14,25 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: list-tempostacks
+  name: list-tempo-resources
   namespace: openshift-tracing
 rules:
 - apiGroups: ["tempo.grafana.com"]
-  resources: ["tempostacks"]
+  resources: ["tempostacks", "tempomonolithics"]
   verbs: ["list"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: list-tempostacks
+  name: list-tempo-resources
 subjects:
 - kind: ServiceAccount
   name: openshift-tracing-deployment
   namespace: openshift-tracing
 roleRef:
   kind: ClusterRole
-  name: list-tempostacks
+  name: list-tempo-resources
   apiGroup: rbac.authorization.k8s.io
 
 ---

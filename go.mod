@@ -6,6 +6,7 @@ require (
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/openshift/library-go v0.0.0-20240412173449-eb2f24c36528
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.9.0
