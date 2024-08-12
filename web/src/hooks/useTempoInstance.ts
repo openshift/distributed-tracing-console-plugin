@@ -8,15 +8,17 @@ export interface TempoInstance {
   tenant: string | undefined;
 }
 
+const tempoQueryParams = {
+  namespace: undefined,
+  name: undefined,
+  tenant: undefined,
+};
+
 export function useTempoInstance(): [
   TempoInstance | undefined,
   (tempo: TempoInstance | undefined) => void,
 ] {
-  const [queryParams, setQueryParams] = useQueryParams({
-    namespace: undefined,
-    name: undefined,
-    tenant: undefined,
-  });
+  const [queryParams, setQueryParams] = useQueryParams(tempoQueryParams);
 
   // either return a fully populated TempoInstance if all required params are set, or undefined
   const tempo = useMemo(() => {
