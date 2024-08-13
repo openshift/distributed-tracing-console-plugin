@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQueryParams } from './useQueryParams';
+import { StringParam, useQueryParams } from 'use-query-params';
 
 /** a selected Tempo instance, including the tenant for multi-tenant instances */
 export interface TempoInstance {
@@ -9,16 +9,18 @@ export interface TempoInstance {
 }
 
 const tempoQueryParams = {
-  namespace: undefined,
-  name: undefined,
-  tenant: undefined,
+  namespace: StringParam,
+  name: StringParam,
+  tenant: StringParam,
 };
 
 export function useTempoInstance(): [
   TempoInstance | undefined,
   (tempo: TempoInstance | undefined) => void,
 ] {
-  const [queryParams, setQueryParams] = useQueryParams(tempoQueryParams);
+  const [queryParams, setQueryParams] = useQueryParams(tempoQueryParams, {
+    updateType: 'replaceIn',
+  });
 
   // either return a fully populated TempoInstance if all required params are set, or undefined
   const tempo = useMemo(() => {
@@ -26,7 +28,7 @@ export function useTempoInstance(): [
       ? {
           namespace: queryParams.namespace,
           name: queryParams.name,
-          tenant: queryParams.tenant,
+          tenant: queryParams.tenant ?? undefined, // convert null to undefined,
         }
       : undefined;
   }, [queryParams]);

@@ -9,7 +9,12 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TempoResource, useTempoResources } from '../hooks/useTempoResources';
 import { TypeaheadSelect } from './TypeaheadSelect';
-import { useTempoInstance } from '../hooks/useTempoInstance';
+import { TempoInstance } from '../hooks/useTempoInstance';
+
+interface TempoInstanceDropdownProps {
+  tempo: TempoInstance | undefined;
+  setTempo: (tempo: TempoInstance) => void;
+}
 
 class TempoResourceSelectOption implements SelectOptionObject {
   constructor(public tempo: TempoResource) {}
@@ -25,29 +30,33 @@ class TempoResourceSelectOption implements SelectOptionObject {
   }
 }
 
-export const TempoInstanceDropdown = () => {
+export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdownProps) => {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { loading, tempoResources } = useTempoResources();
-  const [tempo, setTempo] = useTempoInstance();
+  const { loading: tempoResourcesLoading, tempoResources } = useTempoResources();
   const [isOpen, setIsOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<TempoResourceSelectOption | undefined>();
-  const options = tempoResources
-    .map((tempo) => new TempoResourceSelectOption(tempo))
-    .sort((a, b) => a.toString().localeCompare(b.toString()));
+
+  const options = React.useMemo(
+    () =>
+      tempoResources
+        .map((tempo) => new TempoResourceSelectOption(tempo))
+        .sort((a, b) => a.toString().localeCompare(b.toString())),
+    [tempoResources],
+  );
 
   // This dropdown works with TempoResource[], i.e. a list of Tempo CRs (including all tenants).
   // We cannot set the initial state of the 'selected' variable based on the query parameters,
   // because TempoResource needs a list of tenants, which is returned from the API.
   React.useEffect(() => {
     if (tempo) {
-      const tempoCR = tempoResources.find(
-        (res) => res.namespace == tempo.namespace && res.name == tempo.name,
+      const option = options.find(
+        (o) => o.tempo.namespace == tempo.namespace && o.tempo.name == tempo.name,
       );
-      setSelected(tempoCR ? new TempoResourceSelectOption(tempoCR) : undefined);
+      setSelected(option);
     } else {
       setSelected(undefined);
     }
-  }, [tempo, tempoResources]);
+  }, [tempo, options]);
 
   const onToggle = () => {
     setIsOpen(!isOpen);
@@ -55,18 +64,11 @@ export const TempoInstanceDropdown = () => {
 
   const onSelect = (_event: React.MouseEvent | React.ChangeEvent, value: SelectOptionObject) => {
     const option = value as TempoResourceSelectOption;
-    setSelected(option);
     setTempo({
       namespace: option.tempo.namespace,
       name: option.tempo.name,
       tenant: option.tempo.tenants?.[0], // select first tenant by default, or undefined if no tenants
     });
-    setIsOpen(false);
-  };
-
-  const clearSelection = () => {
-    setSelected(undefined);
-    setTempo(undefined);
     setIsOpen(false);
   };
 
@@ -88,14 +90,13 @@ export const TempoInstanceDropdown = () => {
         onFilter={onFilter}
         onToggle={onToggle}
         onSelect={onSelect}
-        onClear={clearSelection}
         selections={selected}
         isOpen={isOpen}
         placeholderText={t('Select a Tempo instance')}
         typeAheadAriaLabel={t('Select a Tempo instance')}
         width={350}
       >
-        {loading
+        {tempoResourcesLoading
           ? [
               <SelectOption isLoading key="custom-loading" value="loading">
                 <Spinner size="lg" />

@@ -142,6 +142,7 @@ func handleError(w http.ResponseWriter, code int, err error) {
 
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	// all path params are unescaped by gorilla/mux
 	namespace := vars["namespace"]
 	name := vars["name"]
 	tenant := vars["tenant"]
@@ -179,7 +180,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.proxyCache.Add(cacheKey, proxy)
 	}
 
-	http.StripPrefix(fmt.Sprintf("/proxy/%s/%s/%s", namespace, name, tenant), proxy).ServeHTTP(w, r)
+	http.StripPrefix(fmt.Sprintf("/proxy/%s/%s/%s", url.PathEscape(namespace), url.PathEscape(name), url.PathEscape(tenant)), proxy).ServeHTTP(w, r)
 }
 
 func (h *ProxyHandler) lookupTempoResource(ctx context.Context, namespace string, name string) (api.TempoResource, error) {

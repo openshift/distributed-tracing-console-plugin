@@ -25,7 +25,7 @@ import panelsResource from '@perses-dev/panels-plugin/plugin.json';
 import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
-import { useTempoInstance } from '../hooks/useTempoInstance';
+import { TempoInstance } from '../hooks/useTempoInstance';
 import { getProxyURLFor } from '../hooks/api';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorAlert } from './ErrorAlert';
@@ -102,14 +102,18 @@ const queryClient = new QueryClient({
 });
 
 interface PersesWrapperProps {
+  tempo: TempoInstance | undefined;
   definitions: Definition<UnknownSpec>[];
   duration?: DurationString;
   children?: React.ReactNode;
 }
 
-export function PersesWrapper({ definitions, duration = '0s', children }: PersesWrapperProps) {
-  const [tempo] = useTempoInstance();
-
+export function PersesWrapper({
+  tempo,
+  definitions,
+  duration = '0s',
+  children,
+}: PersesWrapperProps) {
   if (!tempo) {
     return <NoTempoInstanceSelectedState />;
   }

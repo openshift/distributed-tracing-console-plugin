@@ -86,7 +86,8 @@
     "copy-webpack-plugin": "^12.0.2",
     "i18next": "^23.10.0",
     "i18next-http-backend": "^2.5.0",
-    "i18next-parser": "^8.13.0", 
-    "pluralize": "^8.0.0"
+    "i18next-parser": "^8.13.0",
+    "pluralize": "^8.0.0",
+    "use-query-params": "^2.2.1"
   }
 }

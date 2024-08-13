@@ -15,6 +15,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
 import { PersesWrapper, TraceQueryPanelWrapper } from '../components/PersesWrapper';
 import { useDataQueries } from '@perses-dev/plugin-system';
+import { useTempoInstance } from '../hooks/useTempoInstance';
 
 interface RouteParams {
   traceId: string;
@@ -23,6 +24,7 @@ interface RouteParams {
 export function TraceDetailPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { traceId } = useParams<RouteParams>();
+  const [tempo] = useTempoInstance();
   const location = useLocation();
 
   return (
@@ -44,7 +46,10 @@ export function TraceDetailPage() {
               <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
             </Breadcrumb>
 
-            <PersesWrapper definitions={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}>
+            <PersesWrapper
+              tempo={tempo}
+              definitions={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+            >
               <Title headingLevel="h1">
                 <TraceTitle />
               </Title>
