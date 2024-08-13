@@ -24,7 +24,7 @@ export function TypeaheadSelect({
 
   function onFilter(_event: React.ChangeEvent<HTMLInputElement> | null, value: string) {
     return options
-      .filter((option) => !option.search(value))
+      .filter((option) => option.includes(value))
       .map((item, i) => <SelectOption key={i} value={item}></SelectOption>);
   }
 

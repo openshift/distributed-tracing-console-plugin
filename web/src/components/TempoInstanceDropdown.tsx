@@ -75,7 +75,7 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   const onFilter = (_event: React.ChangeEvent<HTMLInputElement> | null, value: string) => {
     return options
       .filter((option) => {
-        return !option.toString().search(value);
+        return option.toString().includes(value);
       })
       .map((item, index) => {
         return <SelectOption key={index} value={item}></SelectOption>;
