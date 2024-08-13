@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Flex, FlexItem } from '@patternfly/react-core';
+import { Bullseye, Button, EmptyState, Flex, FlexItem, Title } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
 import { ScatterChart } from '@perses-dev/panels-plugin';
@@ -10,6 +10,16 @@ export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const [isVisible, setVisible] = useState(true);
   const [ref, width] = useRefWidth();
+
+  const noResults = (
+    <Bullseye>
+      <EmptyState>
+        <Title headingLevel="h2" size="lg">
+          {t('No results found')}
+        </Title>
+      </EmptyState>
+    </Bullseye>
+  );
 
   return (
     <div>
@@ -42,7 +52,7 @@ export function ScatterPlot() {
             border: 'var(--pf-global--BorderWidth--sm) solid var(--pf-global--BorderColor--100)',
           }}
         >
-          <TraceQueryPanelWrapper>
+          <TraceQueryPanelWrapper noResults={noResults}>
             <ScatterChart.PanelComponent
               contentDimensions={{
                 width,

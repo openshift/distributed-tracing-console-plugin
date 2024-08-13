@@ -1,5 +1,14 @@
 import React from 'react';
-import { Divider, Page, PageSection, Split, Stack, Title } from '@patternfly/react-core';
+import {
+  Divider,
+  Level,
+  Page,
+  PageSection,
+  Split,
+  SplitItem,
+  Stack,
+  Title,
+} from '@patternfly/react-core';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { DurationDropdown, DurationValues } from '../../components/DurationDropdown';
@@ -32,11 +41,16 @@ export function TracesPage() {
       <Page>
         <PageSection variant="light">
           <Stack hasGutter>
-            <Title headingLevel="h1">{t('Traces')}</Title>
+            <Level hasGutter>
+              <Title headingLevel="h1">{t('Traces')}</Title>
+              <DurationDropdown duration={duration as DurationString} setDuration={setDuration} />
+            </Level>
             <Divider />
             <Split hasGutter>
               <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
-              <DurationDropdown duration={duration as DurationString} setDuration={setDuration} />
+              <SplitItem isFilled>
+                <QueryEditor query={query} setQuery={setQuery} />
+              </SplitItem>
             </Split>
             <PersesWrapper
               tempo={tempo}
@@ -44,7 +58,6 @@ export function TracesPage() {
               duration={duration as DurationString}
             >
               <ScatterPlot />
-              <QueryEditor query={query} setQuery={setQuery} />
               <TraceTable setQuery={setQuery} />
             </PersesWrapper>
           </Stack>

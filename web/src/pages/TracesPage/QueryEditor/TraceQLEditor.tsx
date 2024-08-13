@@ -13,6 +13,7 @@ export function TraceQLEditor({ query, setQuery }: TraceQLEditorProps) {
 
   return (
     <TextInput
+      id="traceql-input"
       aria-label="trace query input"
       placeholder={placeholder}
       value={query}

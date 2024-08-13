@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Split } from '@patternfly/react-core';
+import { Split, Stack } from '@patternfly/react-core';
 import { Button } from '@patternfly/react-core';
 import { TraceQLEditor } from './TraceQLEditor';
 import { useTranslation } from 'react-i18next';
@@ -21,11 +21,14 @@ export function QueryEditor(props: QueryEditorProps) {
   }, [props.query]);
 
   return (
-    <Split hasGutter>
-      <TraceQLEditor query={pendingQuery} setQuery={setPendingQuery} />
-      <Button variant="primary" onClick={() => props.setQuery(pendingQuery)}>
-        {t('Run query')}
-      </Button>
-    </Split>
+    <Stack>
+      <label htmlFor="traceql-input">{t('Query')}</label>
+      <Split hasGutter>
+        <TraceQLEditor query={pendingQuery} setQuery={setPendingQuery} />
+        <Button variant="primary" onClick={() => props.setQuery(pendingQuery)}>
+          {t('Run query')}
+        </Button>
+      </Split>
+    </Stack>
   );
 }
