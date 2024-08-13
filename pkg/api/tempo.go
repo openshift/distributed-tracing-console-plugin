@@ -96,6 +96,7 @@ func listTempos(ctx context.Context, k8sclient *dynamic.DynamicClient, gvr schem
 			continue
 		}
 
+		// Fix for https://issues.redhat.com/browse/OU-467
 		if len(tenants) == 0 {
 			itemLogger.Debug("skipping Tempo instance without multi-tenancy")
 			continue
