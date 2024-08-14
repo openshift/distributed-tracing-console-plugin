@@ -94,9 +94,8 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
             headerContent={<div>{t('Select a Tempo instance')}</div>}
             bodyContent={
               <div>
-                {t(
-                  'TempoStack and TempoMonolithic instances with multi-tenancy are supported. Instances without multi-tenancy are not supported.',
-                )}
+                {t('TempoStack and TempoMonolithic instances with multi-tenancy are supported.')}{' '}
+                {t('Instances without multi-tenancy are not supported.')}
               </div>
             }
           >
