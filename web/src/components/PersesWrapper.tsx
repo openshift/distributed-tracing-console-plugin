@@ -25,6 +25,8 @@ import panelsResource from '@perses-dev/panels-plugin/plugin.json';
 import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
+import { TempoInstance } from '../hooks/useTempoInstance';
+import { getProxyURLFor } from '../hooks/api';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorAlert } from './ErrorAlert';
 import {
@@ -38,7 +40,6 @@ import {
 import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
-import { useURLState } from '../hooks/useURLState';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -101,19 +102,22 @@ const queryClient = new QueryClient({
 });
 
 interface PersesWrapperProps {
+  tempo: TempoInstance | undefined;
   definitions: Definition<UnknownSpec>[];
   duration?: DurationString;
   children?: React.ReactNode;
 }
 
-export function PersesWrapper({ definitions, duration = '0s', children }: PersesWrapperProps) {
-  const { namespace, tempoStack } = useURLState();
-
-  if (!namespace || !tempoStack) {
+export function PersesWrapper({
+  tempo,
+  definitions,
+  duration = '0s',
+  children,
+}: PersesWrapperProps) {
+  if (!tempo) {
     return <NoTempoInstanceSelectedState />;
   }
 
-  const url = `/api/proxy/plugin/distributed-tracing-console-plugin/backend/proxy/${namespace}/${tempoStack}`;
   const proxyDatasource: GlobalDatasourceResource = {
     kind: 'GlobalDatasource',
     metadata: { name: 'TempoProxy' },
@@ -122,7 +126,7 @@ export function PersesWrapper({ definitions, duration = '0s', children }: Perses
       plugin: {
         kind: 'TempoDatasource',
         spec: {
-          directUrl: url,
+          directUrl: getProxyURLFor(tempo),
         },
       },
     },

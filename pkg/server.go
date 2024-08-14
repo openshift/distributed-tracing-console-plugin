@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -15,14 +14,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 
-	cache "github.com/openshift/distributed-tracing-console-plugin/pkg/cache"
-	proxy "github.com/openshift/distributed-tracing-console-plugin/pkg/proxy"
+	"github.com/openshift/distributed-tracing-console-plugin/pkg/api"
+	"github.com/openshift/distributed-tracing-console-plugin/pkg/proxy"
 )
 
 var log = logrus.WithField("module", "server")
@@ -53,7 +49,20 @@ func (pluginConfig *PluginConfig) MarshalJSON() ([]byte, error) {
 }
 
 func Start(cfg *Config) {
-	router, pluginConfig := setupRoutes(cfg)
+	// Uncomment the following line for local development:
+	// k8sconfig, err := clientcmd.BuildConfigFromFlags("", "/home/<username>/.kube/config")
+
+	k8sconfig, err := rest.InClusterConfig()
+	if err != nil {
+		panic(fmt.Errorf("cannot get in cluster config: %w", err))
+	}
+
+	k8sclient, err := dynamic.NewForConfig(k8sconfig)
+	if err != nil {
+		panic(fmt.Errorf("error creating dynamicClient: %w", err))
+	}
+
+	router, pluginConfig := setupRoutes(cfg, k8sclient)
 	router.Use(corsHeaderMiddleware())
 
 	loggedRouter := handlers.LoggingHandler(log.Logger.Out, router)
@@ -85,20 +94,18 @@ func Start(cfg *Config) {
 	}
 }
 
-func setupRoutes(cfg *Config) (*mux.Router, *PluginConfig) {
-	cacheManager := cache.NewCacheManager()
-
+func setupRoutes(cfg *Config, k8sclient *dynamic.DynamicClient) (*mux.Router, *PluginConfig) {
 	configHandlerFunc, pluginConfig := configHandler(cfg)
 
 	r := mux.NewRouter()
 
 	r.PathPrefix("/health").HandlerFunc(healthHandler())
 
-	// serve list of TempoStacks found on the cluster
-	r.PathPrefix("/api/v1/list-tempostacks").HandlerFunc(TempoStackHandler(cfg))
+	// serve list of Tempo CRs found on the cluster
+	r.Path("/api/v1/list-tempo-resources").HandlerFunc(api.ListTempoResourcesHandler(k8sclient))
 
-	// uses the namespace and name to fetch a particular tempo instance
-	r.PathPrefix("/proxy/{namespace}/{name}").HandlerFunc(proxy.CreateProxyHandler(cfg.CertFile, cacheManager))
+	// uses the namespace and name to forward requests to a particular Tempo instance
+	r.PathPrefix("/proxy/{namespace}/{name}/{tenant}").Handler(proxy.NewProxyHandler(k8sclient, cfg.CertFile))
 
 	// serve plugin manifest according to enabled features
 	r.Path("/plugin-manifest.json").Handler(manifestHandler(cfg))
@@ -133,56 +140,6 @@ func filesHandler(root http.FileSystem) http.Handler {
 func healthHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
-	})
-}
-
-func TempoStackHandler(cfg *Config) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			log.WithError(err).Error("cannot get in cluster config")
-			return
-		}
-
-		dynamicClient, err := dynamic.NewForConfig(config)
-		if err != nil {
-			w.Write([]byte("[]"))
-			log.WithError(err).Errorf("dynamicClient error")
-			return
-		}
-
-		gvr := schema.GroupVersionResource{
-			Group:    "tempo.grafana.com",
-			Version:  "v1alpha1",
-			Resource: "tempostacks",
-		}
-
-		resource, err := dynamicClient.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			w.Write([]byte("[]"))
-			log.WithError(err).Errorf("resource error")
-			return
-		}
-
-		type TempoStackInfo struct {
-			Name      string `json:"name"`
-			Namespace string `json:"namespace"`
-		}
-
-		var tempoStackList []TempoStackInfo
-
-		for _, tempo := range resource.Items {
-			tempoStackList = append(tempoStackList, TempoStackInfo{Name: tempo.GetName(), Namespace: tempo.GetNamespace()})
-		}
-
-		marshalledTempoStackList, err := json.Marshal(tempoStackList)
-		if err != nil {
-			w.Write([]byte("[]"))
-			log.WithError(err).Errorf("resource error")
-			return
-		}
-
-		w.Write(marshalledTempoStackList)
 	})
 }
 
