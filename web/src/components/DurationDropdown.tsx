@@ -1,5 +1,11 @@
 import * as React from 'react';
-import { Select, SelectVariant, SelectOption, SelectOptionObject } from '@patternfly/react-core';
+import {
+  Select,
+  SelectVariant,
+  SelectOption,
+  SelectOptionObject,
+  Stack,
+} from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { DurationString } from '@perses-dev/prometheus-plugin';
 
@@ -70,24 +76,26 @@ export const DurationDropdown = ({ duration, setDuration }: DurationDropDownProp
     setIsOpen(false);
   };
 
-  const titleId = 'time-range-select';
   return (
-    <Select
-      variant={SelectVariant.typeahead}
-      typeAheadAriaLabel={t('Select a Time Range')}
-      onToggle={onToggle}
-      onSelect={onSelect}
-      selections={duration}
-      isOpen={isOpen}
-      aria-labelledby={titleId}
-      placeholderText={t('Select a Time Range')}
-      width={200}
-    >
-      {timeRangeSelectOptions.map((option: TimeRangeSelectOption) => (
-        <SelectOption key={option.display} value={option.value}>
-          {option.display}
-        </SelectOption>
-      ))}
-    </Select>
+    <Stack>
+      <label htmlFor="duration-dropdown">{t('Time Range')}</label>
+      <Select
+        id="duration-dropdown"
+        variant={SelectVariant.typeahead}
+        typeAheadAriaLabel={t('Select a Time Range')}
+        onToggle={onToggle}
+        onSelect={onSelect}
+        selections={duration}
+        isOpen={isOpen}
+        placeholderText={t('Select a Time Range')}
+        width={200}
+      >
+        {timeRangeSelectOptions.map((option: TimeRangeSelectOption) => (
+          <SelectOption key={option.display} value={option.value}>
+            {option.display}
+          </SelectOption>
+        ))}
+      </Select>
+    </Stack>
   );
 };

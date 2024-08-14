@@ -1,15 +1,18 @@
 import {
+  Popover,
   Select,
   SelectOption,
   SelectOptionObject,
   SelectVariant,
   Spinner,
+  Stack,
 } from '@patternfly/react-core';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TempoResource, useTempoResources } from '../hooks/useTempoResources';
 import { TypeaheadSelect } from './TypeaheadSelect';
 import { TempoInstance } from '../hooks/useTempoInstance';
+import { HelpIcon } from '@patternfly/react-icons';
 
 interface TempoInstanceDropdownProps {
   tempo: TempoInstance | undefined;
@@ -84,37 +87,51 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
 
   return (
     <>
-      <Select
-        id="tempoinstance-dropdown"
-        variant={SelectVariant.typeahead}
-        onFilter={onFilter}
-        onToggle={onToggle}
-        onSelect={onSelect}
-        selections={selected}
-        isOpen={isOpen}
-        placeholderText={t('Select a Tempo instance')}
-        typeAheadAriaLabel={t('Select a Tempo instance')}
-        width={350}
-      >
-        {tempoResourcesLoading
-          ? [
-              <SelectOption isLoading key="custom-loading" value="loading">
-                <Spinner size="lg" />
-              </SelectOption>,
-            ]
-          : // TODO: show resource icon in <SelectOption>
-            options.map((option, index) => <SelectOption key={index} value={option} />)}
-      </Select>
-
+      <Stack>
+        <label htmlFor="tempoinstance-dropdown">
+          {t('Tempo Instance')}{' '}
+          <Popover
+            headerContent={<div>{t('Select a Tempo instance')}</div>}
+            bodyContent={<div>{t('tempoinstance_helptext')}</div>}
+          >
+            <HelpIcon />
+          </Popover>
+        </label>
+        <Select
+          id="tempoinstance-dropdown"
+          variant={SelectVariant.typeahead}
+          onFilter={onFilter}
+          onToggle={onToggle}
+          onSelect={onSelect}
+          selections={selected}
+          isOpen={isOpen}
+          placeholderText={t('Select a Tempo instance')}
+          typeAheadAriaLabel={t('Select a Tempo instance')}
+          width={320}
+        >
+          {tempoResourcesLoading
+            ? [
+                <SelectOption isLoading key="custom-loading" value="loading">
+                  <Spinner size="lg" />
+                </SelectOption>,
+              ]
+            : // TODO: show resource icon in <SelectOption>
+              options.map((option, index) => <SelectOption key={index} value={option} />)}
+        </Select>
+      </Stack>
       {selected?.tempo.tenants && selected.tempo.tenants.length > 0 && tempo && (
-        <TypeaheadSelect
-          width={200}
-          label={t('Select a tenant')}
-          allowClear={false}
-          options={selected.tempo.tenants}
-          selected={tempo.tenant}
-          setSelected={(tenant) => setTempo({ ...tempo, tenant })}
-        />
+        <Stack>
+          <label htmlFor="tenant-dropdown">{t('Tenant')}</label>
+          <TypeaheadSelect
+            id="tenant-dropdown"
+            width={200}
+            label={t('Select a tenant')}
+            allowClear={false}
+            options={selected.tempo.tenants}
+            selected={tempo.tenant}
+            setSelected={(tenant) => setTempo({ ...tempo, tenant })}
+          />
+        </Stack>
       )}
     </>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Select, SelectOption, SelectOptionObject, Spinner } from '@patternfly/react-core';
 
 interface TypeaheadSelectProps {
+  id?: string;
   width: number;
   label: string;
   isLoading?: boolean;
@@ -12,6 +13,7 @@ interface TypeaheadSelectProps {
 }
 
 export function TypeaheadSelect({
+  id,
   width,
   label,
   isLoading = false,
@@ -47,6 +49,7 @@ export function TypeaheadSelect({
 
   return (
     <Select
+      id={id}
       variant="typeahead"
       width={width}
       isOpen={isOpen}
