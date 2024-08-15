@@ -37,29 +37,28 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { loading: tempoResourcesLoading, tempoResources } = useTempoResources();
   const [isOpen, setIsOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<TempoResourceSelectOption | undefined>();
+  const options = tempoResources
+    .map((tempo) => new TempoResourceSelectOption(tempo))
+    .sort((a, b) => a.toString().localeCompare(b.toString()));
 
-  const options = React.useMemo(
-    () =>
-      tempoResources
-        .map((tempo) => new TempoResourceSelectOption(tempo))
-        .sort((a, b) => a.toString().localeCompare(b.toString())),
-    [tempoResources],
-  );
-
-  // This dropdown works with TempoResource[], i.e. a list of Tempo CRs (including all tenants).
-  // We cannot set the initial state of the 'selected' variable based on the query parameters,
-  // because TempoResource needs a list of tenants, which is returned from the API.
-  React.useEffect(() => {
-    if (tempo) {
-      const option = options.find(
+  let selected: TempoResourceSelectOption | undefined = undefined;
+  if (tempo) {
+    if (tempoResourcesLoading) {
+      // Preselect the dropdown option without waiting until the list of TempoResources is loaded to prevent flickering.
+      // To accomplish this, we'll create a slightly inaccurate TempoResourceSelectOption,
+      // because the kind and the list of tenants is not known before the list of TempoResources is loaded.
+      selected = new TempoResourceSelectOption({
+        kind: 'TempoStack',
+        namespace: tempo.namespace,
+        name: tempo.name,
+        tenants: tempo.tenant ? [tempo.tenant] : undefined,
+      });
+    } else {
+      selected = options.find(
         (o) => o.tempo.namespace == tempo.namespace && o.tempo.name == tempo.name,
       );
-      setSelected(option);
-    } else {
-      setSelected(undefined);
     }
-  }, [tempo, options]);
+  }
 
   const onToggle = () => {
     setIsOpen(!isOpen);
