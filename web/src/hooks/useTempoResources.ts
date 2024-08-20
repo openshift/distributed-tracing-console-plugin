@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cancellableFetch } from '../cancellable-fetch';
+import { cancellableFetch, FetchError } from '../cancellable-fetch';
 import { BACKEND_URL } from './api';
 
 /**
@@ -14,6 +14,13 @@ export type TempoResource = {
   tenants?: string[];
 };
 
+interface ListTempoResourcesResponse {
+  status: 'success' | 'error';
+  data: TempoResource[];
+  errorType?: string;
+  error?: string;
+}
+
 const isTempoStackListResponse = (value: unknown): value is TempoResource => {
   const obj = value as TempoResource;
   return (
@@ -25,7 +32,8 @@ const isTempoStackListResponse = (value: unknown): value is TempoResource => {
 };
 
 export const useTempoResources = () => {
-  const [tempoResources, setTempoResources] = React.useState<Array<TempoResource>>([]);
+  const [tempoResources, setTempoResources] = React.useState<Array<TempoResource>>();
+  const [error, setError] = React.useState<{ errorType?: string; error: string } | undefined>();
   const [loading, setLoading] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -33,20 +41,30 @@ export const useTempoResources = () => {
       try {
         setLoading(true);
 
-        const { request } = cancellableFetch<TempoResource[]>(
+        const { request } = cancellableFetch<ListTempoResourcesResponse>(
           `${BACKEND_URL}/api/v1/list-tempo-resources`,
         );
+        const response = await request();
 
-        const response: Array<TempoResource | undefined | null> = await request();
-
-        if (response && Array.isArray(response) && response.every(isTempoStackListResponse)) {
-          setTempoResources(response);
+        if (
+          response &&
+          response.status === 'success' &&
+          Array.isArray(response.data) &&
+          response.data.every(isTempoStackListResponse)
+        ) {
+          setTempoResources(response.data);
+          setError(undefined);
         } else {
-          throw new Error('Invalid TempoResource response');
+          throw new FetchError('', 500, response);
         }
-      } catch (error) {
-        setTempoResources([]);
-        console.error(error);
+      } catch (e) {
+        setTempoResources(undefined);
+        if (e instanceof FetchError && e.json?.error) {
+          setError(e.json);
+        } else {
+          setError({ error: String(e) });
+        }
+        console.error(e);
       } finally {
         setLoading(false);
       }
@@ -57,6 +75,7 @@ export const useTempoResources = () => {
 
   return {
     loading,
+    error,
     tempoResources,
   };
 };

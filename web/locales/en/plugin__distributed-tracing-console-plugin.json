@@ -26,6 +26,16 @@
   "No results found": "No results found",
   "Hide graph": "Hide graph",
   "Show graph": "Show graph",
-  "Clear all filters and try again": "Clear all filters and try again",
+  "Tempo Operator not installed": "Tempo Operator not installed",
+  "Install Tempo Operator": "Install Tempo Operator",
+  "To get started, install the Tempo Operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.": "To get started, install the Tempo Operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.",
+  "Install operator": "Install operator",
+  "Read the documentation": "Read the documentation",
+  "No Tempo instances created yet": "No Tempo instances created yet",
+  "No Tempo instances yet": "No Tempo instances yet",
+  "To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.": "To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.",
+  "Create a TempoStack instance": "Create a TempoStack instance",
+  "Error": "Error",
+  "Clear all filters and try again.": "Clear all filters and try again.",
   "Clear all filters": "Clear all filters"
 }

@@ -29,8 +29,8 @@ import { TempoInstance } from '../hooks/useTempoInstance';
 import { getProxyURLFor } from '../hooks/api';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorAlert } from './ErrorAlert';
-import { Bullseye } from '@patternfly/react-core';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
+import { LoadingState } from './LoadingState';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -156,7 +156,7 @@ export function TraceQueryPanelWrapper({ noResults, children }: TracePanelWrappe
   const { isFetching, isLoading, queryResults } = useDataQueries('TraceQuery');
 
   if (isLoading || isFetching) {
-    return <LoadingOverlay />;
+    return <LoadingState />;
   }
 
   const queryError = queryResults.find((d) => d.error);
@@ -175,17 +175,5 @@ export function TraceQueryPanelWrapper({ noResults, children }: TracePanelWrappe
     <ErrorBoundary FallbackComponent={ErrorAlert} resetKeys={[]}>
       {children}
     </ErrorBoundary>
-  );
-}
-
-function LoadingOverlay() {
-  return (
-    <Bullseye>
-      <div className="co-m-loader co-an-fade-in-out" data-test="loading-indicator">
-        <div className="co-m-loader-dot__one" />
-        <div className="co-m-loader-dot__two" />
-        <div className="co-m-loader-dot__three" />
-      </div>
-    </Bullseye>
   );
 }
