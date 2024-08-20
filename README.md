@@ -7,12 +7,12 @@ This is an OpenShift Console dynamic plugin that adds UI for tracing. This can b
 ### Option 1: Local
 
 **Prerequisite** </br>
-You need to have 
+You need to have
 - a OpenShift Cluster.
-- a [Tempo](https://grafana.com/oss/tempo/) instance. 
+- a [Tempo](https://grafana.com/oss/tempo/) instance.
 
-The current `start-console.sh` script is configured to proxy to a local tempo instance at http://localhost:3200. 
-To change this to a different endpoint modify this line: 
+The current `start-console.sh` script is configured to proxy to a local tempo instance at http://localhost:3200.
+To change this to a different endpoint modify this line:
 
 ```
 # start-console.sh
@@ -83,7 +83,7 @@ push it to an image registry.
 1. Build the image:
 
    ```sh
-   docker build -t quay.io/my-repositroy/my-plugin:latest .
+   docker build -t quay.io/my-repositroy/my-plugin:latest -f Dockerfile.dev .
    ```
 
 2. Run the image:
@@ -119,7 +119,7 @@ Additional parameters can be specified if desired. Consult the chart [values](ch
 Install the chart using the name of the plugin as the Helm release name into a new namespace or an existing namespace as specified by the `my-plugin-namespace` parameter and providing the location of the image within the `plugin.image` parameter by using the following command:
 
 ```shell
-helm upgrade -i  distributed-tracing-console-plugin charts/distributed-tracing-console-plugin -n <my-plugin-namespace> --create-namespace --set plugin.image=<my-plugin-image-location>
+helm upgrade -i distributed-tracing-console-plugin charts/distributed-tracing-console-plugin -n <my-plugin-namespace> --create-namespace --set plugin.image=<my-plugin-image-location>
 ```
 
 For example,
