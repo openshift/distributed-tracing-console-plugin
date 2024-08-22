@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/sirupsen/logrus"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,18 +17,32 @@ import (
 var log = logrus.WithField("module", "api.tempo")
 
 type TempoResource struct {
-	Kind      TempoResourceKind `json:"kind"`
-	Namespace string            `json:"namespace"`
-	Name      string            `json:"name"`
+	Kind      KindType `json:"kind"`
+	Namespace string   `json:"namespace"`
+	Name      string   `json:"name"`
 	// A list of tenant names for multi-tenant instances, or an empty list for single-tenant instances.
 	Tenants []string `json:"tenants,omitempty"`
 }
 
-type TempoResourceKind string
+type KindType string
 
 const (
-	TempoStackKind      TempoResourceKind = "TempoStack"
-	TempoMonolithicKind TempoResourceKind = "TempoMonolithic"
+	KindTempoStack      KindType = "TempoStack"
+	KindTempoMonolithic KindType = "TempoMonolithic"
+)
+
+type ListTempoResourcesResponse struct {
+	Status    StatusType      `json:"status"`
+	Data      []TempoResource `json:"data"`
+	ErrorType string          `json:"errorType,omitempty"`
+	Error     string          `json:"error,omitempty"`
+}
+
+type StatusType string
+
+const (
+	StatusSuccess StatusType = "success"
+	StatusError   StatusType = "error"
 )
 
 var (
@@ -43,26 +58,47 @@ var (
 	}
 )
 
-func handleError(w http.ResponseWriter, code int, err error) {
-	log.Error(err)
-	http.Error(w, err.Error(), code)
+func writeResponse(w http.ResponseWriter, code int, r ListTempoResourcesResponse) {
+	if r.Status == StatusError {
+		log.Error(fmt.Sprintf("type=%s, error=%s", r.ErrorType, r.Error))
+	}
+
+	bytes, err := json.Marshal(r)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(bytes)
 }
 
 func ListTempoResourcesHandler(k8sclient *dynamic.DynamicClient) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resources, err := ListTempoResources(r.Context(), k8sclient)
 		if err != nil {
-			handleError(w, http.StatusInternalServerError, err)
+			if apierrors.IsNotFound(err) {
+				writeResponse(w, http.StatusNotFound, ListTempoResourcesResponse{
+					Status:    StatusError,
+					ErrorType: "TempoCRDNotFound",
+					Error:     err.Error(),
+				})
+				return
+			}
+
+			writeResponse(w, http.StatusInternalServerError, ListTempoResourcesResponse{
+				Status: StatusError,
+				Error:  err.Error(),
+			})
 			return
 		}
 
-		bytes, err := json.Marshal(resources)
-		if err != nil {
-			handleError(w, http.StatusInternalServerError, err)
-			return
-		}
-
-		w.Write(bytes)
+		writeResponse(w, http.StatusOK, ListTempoResourcesResponse{
+			Status: StatusSuccess,
+			Data:   resources,
+		})
 	})
 }
 
@@ -103,7 +139,7 @@ func listTempos(ctx context.Context, k8sclient *dynamic.DynamicClient, gvr schem
 		}
 
 		resources = append(resources, TempoResource{
-			Kind:      TempoResourceKind(resource.GetKind()),
+			Kind:      KindType(resource.GetKind()),
 			Namespace: resource.GetNamespace(),
 			Name:      resource.GetName(),
 			Tenants:   tenants,
@@ -114,8 +150,8 @@ func listTempos(ctx context.Context, k8sclient *dynamic.DynamicClient, gvr schem
 }
 
 func readTenantsFromCR(spec *unstructured.Unstructured) ([]string, error) {
-	switch TempoResourceKind(spec.GetKind()) {
-	case TempoStackKind:
+	switch KindType(spec.GetKind()) {
+	case KindTempoStack:
 		found, err := validateTenancyMode(spec, "spec", "tenants", "mode")
 		if err != nil {
 			return nil, err
@@ -131,7 +167,7 @@ func readTenantsFromCR(spec *unstructured.Unstructured) ([]string, error) {
 		}
 		return tenants, nil
 
-	case TempoMonolithicKind:
+	case KindTempoMonolithic:
 		enabled, found, err := unstructured.NestedBool(spec.Object, "spec", "multitenancy", "enabled")
 		if err != nil {
 			return nil, err

@@ -11,20 +11,29 @@ class TimeoutError extends Error {
   }
 }
 
-class FetchError extends Error {
+export class FetchError extends Error {
   status: number;
   name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  json?: any;
 
-  constructor(message: string, status: number) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  constructor(message: string, status: number, json?: any) {
     super(message);
     this.name = 'Fetch Error';
     this.status = status;
+    this.json = json;
   }
 }
 
 export const isFetchError = (error: unknown): error is FetchError =>
   !!(error as FetchError).name && (error as FetchError).name === 'Fetch Error';
 
+/**
+ * fetches a resource from the network
+ * @returns a JavaScript object representing the returned JSON body of the response
+ * @throws FetchError(message, status, json?)
+ */
 export const cancellableFetch = <T>(
   url: string,
   init?: RequestInitWithTimeout,
@@ -38,6 +47,12 @@ export const cancellableFetch = <T>(
     signal: abortController.signal,
   }).then(async (response) => {
     if (!response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const json = await response.json();
+        throw new FetchError(json.error, response.status, json);
+      }
+
       const text = await response.text();
       throw new FetchError(text, response.status);
     }

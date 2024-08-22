@@ -37,7 +37,7 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { loading: tempoResourcesLoading, tempoResources } = useTempoResources();
   const [isOpen, setIsOpen] = React.useState(false);
-  const options = tempoResources
+  const options = (tempoResources ?? [])
     .map((tempo) => new TempoResourceSelectOption(tempo))
     .sort((a, b) => a.toString().localeCompare(b.toString()));
 

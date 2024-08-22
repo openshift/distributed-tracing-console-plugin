@@ -101,7 +101,7 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 
 	var targetURL string
 	switch tempo.Kind {
-	case api.TempoStackKind:
+	case api.KindTempoStack:
 		if len(tempo.Tenants) > 0 {
 			service := DNSName(fmt.Sprintf("tempo-%s-gateway", tempo.Name))
 			targetURL = fmt.Sprintf("https://%s.%s.svc:8080/api/traces/v1/%s/tempo", service, tempo.Namespace, url.PathEscape(tenant))
@@ -110,7 +110,7 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 			targetURL = fmt.Sprintf("http://%s.%s.svc:3200", service, tempo.Namespace)
 		}
 
-	case api.TempoMonolithicKind:
+	case api.KindTempoMonolithic:
 		if len(tempo.Tenants) > 0 {
 			service := DNSName(fmt.Sprintf("tempo-%s-gateway", tempo.Name))
 			targetURL = fmt.Sprintf("https://%s.%s.svc:8080/api/traces/v1/%s/tempo", service, tempo.Namespace, url.PathEscape(tenant))
