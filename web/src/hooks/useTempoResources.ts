@@ -55,7 +55,11 @@ export const useTempoResources = () => {
           setTempoResources(response.data);
           setError(undefined);
         } else {
-          throw new FetchError('', 500, response);
+          throw new FetchError(
+            'Invalid response returned from Tracing UI plugin backend service',
+            500,
+            response,
+          );
         }
       } catch (e) {
         setTempoResources(undefined);
