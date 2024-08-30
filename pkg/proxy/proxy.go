@@ -132,6 +132,11 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 	reverseProxy.FlushInterval = time.Millisecond * 100
 	reverseProxy.Transport = transport
 	reverseProxy.ModifyResponse = FilterHeaders
+	reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("http: proxy error: %v", err)
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "Error connecting to Tempo instance: %s", err)
+	}
 	return reverseProxy, nil
 }
 
