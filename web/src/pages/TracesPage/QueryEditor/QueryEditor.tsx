@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 interface QueryEditorProps {
   query: string;
-  setQuery: (query: string) => void;
+  runQuery: (query: string) => void;
 }
 
 export function QueryEditor(props: QueryEditorProps) {
@@ -25,7 +25,7 @@ export function QueryEditor(props: QueryEditorProps) {
       <label htmlFor="traceql-input">{t('Query')}</label>
       <Split hasGutter>
         <TraceQLEditor query={pendingQuery} setQuery={setPendingQuery} />
-        <Button variant="primary" onClick={() => props.setQuery(pendingQuery)}>
+        <Button variant="primary" onClick={() => props.runQuery(pendingQuery)}>
           {t('Run query')}
         </Button>
       </Split>
