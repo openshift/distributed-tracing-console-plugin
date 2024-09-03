@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import {
   Divider,
   Level,
@@ -26,10 +26,23 @@ const durationQueryParam = withDefault(createEnumParam(DurationValues), '30m');
 export const QueryBrowser = memo(function QueryBrowser() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const [tempo, setTempo] = useTempoInstance();
+  const [, setLastRefresh] = useState(new Date());
   const [query, setQuery] = useQueryParam('q', withDefault(StringParam, '{}'));
   const [duration, setDuration] = useQueryParam('duration', durationQueryParam, {
     updateType: 'replaceIn',
   });
+
+  const runQuery = useCallback(
+    (val: string) => {
+      setQuery(val);
+
+      // Force invalidating the state, even if the query is unchanged. The duration dropdown
+      // is relative ("last 5 minutes"), therefore re-running an unchanged query should
+      // always refresh the search results with the current time frame (e.g. last 5 minutes until now).
+      setLastRefresh(new Date());
+    },
+    [setQuery, setLastRefresh],
+  );
 
   return (
     <PageSection variant="light">
@@ -42,7 +55,7 @@ export const QueryBrowser = memo(function QueryBrowser() {
         <Split hasGutter>
           <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
           <SplitItem isFilled>
-            <QueryEditor query={query} setQuery={setQuery} />
+            <QueryEditor query={query} runQuery={runQuery} />
           </SplitItem>
         </Split>
         <PersesWrapper
@@ -51,7 +64,7 @@ export const QueryBrowser = memo(function QueryBrowser() {
           duration={duration as DurationString}
         >
           <ScatterPlot />
-          <TraceTable setQuery={setQuery} />
+          <TraceTable runQuery={runQuery} />
         </PersesWrapper>
       </Stack>
     </PageSection>

@@ -13,10 +13,10 @@ import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 
 interface TraceTableProps {
-  setQuery: (query: string) => void;
+  runQuery: (query: string) => void;
 }
 
-export function TraceTable({ setQuery }: TraceTableProps) {
+export function TraceTable({ runQuery }: TraceTableProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   const noResults = (
@@ -27,7 +27,7 @@ export function TraceTable({ setQuery }: TraceTableProps) {
           {t('No results found')}
         </Title>
         <EmptyStateBody>{t('Clear all filters and try again.')}</EmptyStateBody>
-        <Button variant="link" onClick={() => setQuery('{}')}>
+        <Button variant="link" onClick={() => runQuery('{}')}>
           {t('Clear all filters')}
         </Button>
       </EmptyState>
