@@ -1,20 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTempoResources } from '../../hooks/useTempoResources';
 import { QueryBrowser } from './QueryBrowser';
 import {
   Bullseye,
   Button,
   Divider,
+  Dropdown,
+  DropdownItem,
+  DropdownToggle,
   EmptyState,
   EmptyStateBody,
   EmptyStateIcon,
+  EmptyStatePrimary,
   EmptyStateSecondaryActions,
   Page,
   PageSection,
   Stack,
   Title,
 } from '@patternfly/react-core';
-import { PlusCircleIcon, WrenchIcon } from '@patternfly/react-icons';
+import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { ErrorAlert } from '../../components/ErrorAlert';
@@ -24,9 +28,11 @@ import { Link } from 'react-router-dom';
 
 const installOperatorLink =
   '/operatorhub/all-namespaces?keyword=Tempo&details-item=tempo-product-redhat-operators-openshift-marketplace';
-const createTempoInstanceLink =
+const createTempoStackLink =
   '/api-resource/all-namespaces/tempo.grafana.com~v1alpha1~TempoStack/instances';
-const readInstallationDocsLink =
+const createTempoMonolithicLink =
+  '/api-resource/all-namespaces/tempo.grafana.com~v1alpha1~TempoMonolithic/instances';
+const viewInstallationDocsLink =
   'https://docs.openshift.com/container-platform/4.16/observability/distr_tracing/distr_tracing_tempo/distr-tracing-tempo-installing.html';
 
 export function TracesPage() {
@@ -84,21 +90,16 @@ function TempoOperatorNotInstalledState() {
           <EmptyState>
             <EmptyStateIcon icon={WrenchIcon} />
             <Title headingLevel="h2" size="lg">
-              {t('Install Tempo Operator')}
+              {t("Tempo operator isn't installed yet")}
             </Title>
             <EmptyStateBody>
               {t(
-                'To get started, install the Tempo Operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
+                'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
               )}
             </EmptyStateBody>
             <Button component={(props) => <Link {...props} to={installOperatorLink} />}>
-              {t('Install operator')}
+              {t('Install Tempo operator')}
             </Button>
-            <EmptyStateSecondaryActions>
-              <Button variant="link" component="a" href={readInstallationDocsLink}>
-                {t('Read the documentation')}
-              </Button>
-            </EmptyStateSecondaryActions>
           </EmptyState>
         </Bullseye>
       </PageSection>
@@ -108,6 +109,8 @@ function TempoOperatorNotInstalledState() {
 
 function NoTempoInstance() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const [isOpen, setOpen] = useState(false);
+
   return (
     <>
       <PageSection variant="light">
@@ -125,12 +128,41 @@ function NoTempoInstance() {
                 'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
               )}
             </EmptyStateBody>
-            <Button component={(props) => <Link {...props} to={createTempoInstanceLink} />}>
-              {t('Create a TempoStack instance')}
-            </Button>
+            <EmptyStatePrimary>
+              <Dropdown
+                isOpen={isOpen}
+                toggle={
+                  <DropdownToggle toggleVariant="primary" onToggle={setOpen}>
+                    {t('Create a Tempo instance')}
+                  </DropdownToggle>
+                }
+                dropdownItems={[
+                  <DropdownItem
+                    key="createTempoStackLink"
+                    component={
+                      <Link to={createTempoStackLink}>{t('Create a TempoStack instance')}</Link>
+                    }
+                  />,
+                  <DropdownItem
+                    key="createTempoMonolithicLink"
+                    component={
+                      <Link to={createTempoMonolithicLink}>
+                        {t('Create a TempoMonolithic instance')}
+                      </Link>
+                    }
+                  />,
+                ]}
+              />
+            </EmptyStatePrimary>
             <EmptyStateSecondaryActions>
-              <Button variant="link" component="a" href={readInstallationDocsLink}>
-                {t('Read the documentation')}
+              <Button
+                variant="link"
+                component="a"
+                href={viewInstallationDocsLink}
+                icon={<ExternalLinkAltIcon />}
+                iconPosition="right"
+              >
+                {t('View documentation')}
               </Button>
             </EmptyStateSecondaryActions>
           </EmptyState>
