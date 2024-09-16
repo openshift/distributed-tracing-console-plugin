@@ -7,6 +7,7 @@ import {
   EmptyState,
   EmptyStateBody,
   EmptyStateIcon,
+  EmptyStatePrimary,
   Title,
 } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
@@ -26,10 +27,14 @@ export function TraceTable({ runQuery }: TraceTableProps) {
         <Title headingLevel="h2" size="lg">
           {t('No results found')}
         </Title>
-        <EmptyStateBody>{t('Clear all filters and try again.')}</EmptyStateBody>
-        <Button variant="link" onClick={() => runQuery('{}')}>
-          {t('Clear all filters')}
-        </Button>
+        <EmptyStateBody>
+          {t('No results match this query criteria. Clear all filters and try again.')}
+        </EmptyStateBody>
+        <EmptyStatePrimary>
+          <Button variant="link" onClick={() => runQuery('{}')}>
+            {t('Clear all filters')}
+          </Button>
+        </EmptyStatePrimary>
       </EmptyState>
     </Bullseye>
   );

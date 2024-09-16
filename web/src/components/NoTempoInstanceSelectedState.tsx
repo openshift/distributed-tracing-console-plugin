@@ -20,7 +20,9 @@ export const NoTempoInstanceSelectedState: React.FunctionComponent = () => {
         <Title headingLevel="h2" size="lg">
           {t('No Tempo instance selected')}
         </Title>
-        <EmptyStateBody>{t('Select a Tempo instance to explore data')}</EmptyStateBody>
+        <EmptyStateBody>
+          {t('To explore data, select a Tempo instance and run a query.')}
+        </EmptyStateBody>
       </EmptyState>
     </Bullseye>
   );

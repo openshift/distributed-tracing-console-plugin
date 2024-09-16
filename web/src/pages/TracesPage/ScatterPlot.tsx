@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { Bullseye, Button, EmptyState, Flex, FlexItem, Title } from '@patternfly/react-core';
+import {
+  Bullseye,
+  Button,
+  EmptyState,
+  EmptyStateBody,
+  Flex,
+  FlexItem,
+} from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
 import { ScatterChart } from '@perses-dev/panels-plugin';
@@ -14,9 +21,7 @@ export function ScatterPlot() {
   const noResults = (
     <Bullseye>
       <EmptyState>
-        <Title headingLevel="h2" size="lg">
-          {t('No results found')}
-        </Title>
+        <EmptyStateBody>{t('No datapoints found.')}</EmptyStateBody>
       </EmptyState>
     </Bullseye>
   );
