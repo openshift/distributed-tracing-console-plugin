@@ -31,6 +31,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorAlert } from './ErrorAlert';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
+import { getConsoleThemeName } from './console/utils/theme';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -59,7 +60,7 @@ const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
 
-const muiTheme = getTheme('light');
+const muiTheme = getTheme(getConsoleThemeName());
 muiTheme.shape.borderRadius = 0;
 
 const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
