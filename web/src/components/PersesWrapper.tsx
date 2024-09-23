@@ -31,7 +31,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorAlert } from './ErrorAlert';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
-import { getConsoleThemeName } from './console/utils/theme';
+import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -60,16 +60,6 @@ const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
 
-const muiTheme = getTheme(getConsoleThemeName());
-muiTheme.shape.borderRadius = 0;
-
-const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
-  thresholds: {
-    defaultColor: patternflyBlue300,
-    palette: defaultPaletteColors,
-  },
-});
-
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
 // and data handlers for tempo (@perses-dev/tempo-plugin).
@@ -94,18 +84,46 @@ const queryClient = new QueryClient({
 });
 
 interface PersesWrapperProps {
+  children?: React.ReactNode;
+}
+
+export function PersesWrapper({ children }: PersesWrapperProps) {
+  const { theme } = usePatternFlyTheme();
+
+  const muiTheme = getTheme(theme);
+  muiTheme.shape.borderRadius = 0;
+
+  const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
+    thresholds: {
+      defaultColor: patternflyBlue300,
+      palette: defaultPaletteColors,
+    },
+  });
+
+  return (
+    <ThemeProvider theme={muiTheme}>
+      <ChartsProvider chartsTheme={chartsTheme}>
+        <PluginRegistry pluginLoader={pluginLoader}>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </PluginRegistry>
+      </ChartsProvider>
+    </ThemeProvider>
+  );
+}
+
+interface PersesDashboardWrapperProps {
   tempo: TempoInstance | undefined;
   definitions: Definition<UnknownSpec>[];
   duration?: DurationString;
   children?: React.ReactNode;
 }
 
-export function PersesWrapper({
+export function PersesDashboardWrapper({
   tempo,
   definitions,
   duration = '0s',
   children,
-}: PersesWrapperProps) {
+}: PersesDashboardWrapperProps) {
   if (!tempo) {
     return <NoTempoInstanceSelectedState />;
   }
@@ -126,21 +144,13 @@ export function PersesWrapper({
   const datasourceApi = new DatasourceApiImpl(proxyDatasource);
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <ChartsProvider chartsTheme={chartsTheme}>
-        <PluginRegistry pluginLoader={pluginLoader}>
-          <QueryClientProvider client={queryClient}>
-            <TimeRangeProvider timeRange={{ pastDuration: duration }}>
-              <VariableProvider>
-                <DatasourceStoreProvider datasourceApi={datasourceApi}>
-                  <DataQueriesProvider definitions={definitions}>{children}</DataQueriesProvider>
-                </DatasourceStoreProvider>
-              </VariableProvider>
-            </TimeRangeProvider>
-          </QueryClientProvider>
-        </PluginRegistry>
-      </ChartsProvider>
-    </ThemeProvider>
+    <TimeRangeProvider timeRange={{ pastDuration: duration }}>
+      <VariableProvider>
+        <DatasourceStoreProvider datasourceApi={datasourceApi}>
+          <DataQueriesProvider definitions={definitions}>{children}</DataQueriesProvider>
+        </DatasourceStoreProvider>
+      </VariableProvider>
+    </TimeRangeProvider>
   );
 }
 
