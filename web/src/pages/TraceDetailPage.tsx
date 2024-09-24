@@ -13,7 +13,11 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
-import { PersesWrapper, TraceQueryPanelWrapper } from '../components/PersesWrapper';
+import {
+  PersesDashboardWrapper,
+  PersesWrapper,
+  TraceQueryPanelWrapper,
+} from '../components/PersesWrapper';
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { useTempoInstance } from '../hooks/useTempoInstance';
 
@@ -46,19 +50,21 @@ export function TraceDetailPage() {
               <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
             </Breadcrumb>
 
-            <PersesWrapper
-              tempo={tempo}
-              definitions={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
-            >
-              <Title headingLevel="h1">
-                <TraceTitle />
-              </Title>
-              <Divider className="pf-v5-u-my-md" />
-              <StackItem isFilled>
-                <TraceQueryPanelWrapper>
-                  <TracingGanttChart.PanelComponent spec={{}} />
-                </TraceQueryPanelWrapper>
-              </StackItem>
+            <PersesWrapper>
+              <PersesDashboardWrapper
+                tempo={tempo}
+                definitions={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+              >
+                <Title headingLevel="h1">
+                  <TraceTitle />
+                </Title>
+                <Divider className="pf-v5-u-my-md" />
+                <StackItem isFilled>
+                  <TraceQueryPanelWrapper>
+                    <TracingGanttChart.PanelComponent spec={{}} />
+                  </TraceQueryPanelWrapper>
+                </StackItem>
+              </PersesDashboardWrapper>
             </PersesWrapper>
           </Stack>
         </PageSection>
