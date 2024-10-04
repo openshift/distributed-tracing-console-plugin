@@ -25,6 +25,7 @@ import panelsResource from '@perses-dev/panels-plugin/plugin.json';
 import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
+import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts';
 import { TempoInstance } from '../hooks/useTempoInstance';
 import { getProxyURLFor } from '../hooks/api';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -60,6 +61,15 @@ const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
 
+const patternflyChartsMultiUnorderedPalette = getThemeColors(
+  ChartThemeColor.multiUnordered,
+).chart.colorScale.flatMap((cssColor) => {
+  // colors are stored as 'var(--pf-chart-theme--multi-color-unordered--ColorScale--3400, #73c5c5)'
+  // need to extract the hex value, because fillStyle() of <canvas> does not support CSS vars
+  const match = cssColor.match(/#[a-fA-F0-9]+/);
+  return match ? [match[0]] : [];
+});
+
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
 // and data handlers for tempo (@perses-dev/tempo-plugin).
@@ -94,6 +104,9 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
   muiTheme.shape.borderRadius = 0;
 
   const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
+    echartsTheme: {
+      color: patternflyChartsMultiUnorderedPalette,
+    },
     thresholds: {
       defaultColor: patternflyBlue300,
       palette: defaultPaletteColors,

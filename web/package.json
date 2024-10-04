@@ -76,6 +76,7 @@
     "@emotion/styled": "^11.11.0",
     "@hookform/resolvers": "^3.3.4",
     "@mui/material": "^5.15.14",
+    "@patternfly/react-charts": "6.92.0",
     "@patternfly/react-table": "^5.2.4",
     "@perses-dev/components": "0.48.0-rc0",
     "@perses-dev/dashboards": "0.48.0-rc0",
