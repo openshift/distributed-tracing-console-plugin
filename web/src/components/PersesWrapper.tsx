@@ -4,6 +4,7 @@ import {
   generateChartsTheme,
   getTheme,
   PersesChartsTheme,
+  typography,
 } from '@perses-dev/components';
 import { ThemeProvider } from '@mui/material';
 import {
@@ -100,8 +101,15 @@ interface PersesWrapperProps {
 export function PersesWrapper({ children }: PersesWrapperProps) {
   const { theme } = usePatternFlyTheme();
 
-  const muiTheme = getTheme(theme);
-  muiTheme.shape.borderRadius = 0;
+  const muiTheme = getTheme(theme, {
+    typography: {
+      ...typography,
+      fontFamily: 'var(--pf-v5-global--FontFamily--text)',
+    },
+    shape: {
+      borderRadius: 0,
+    },
+  });
 
   const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
     echartsTheme: {
