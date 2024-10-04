@@ -55,7 +55,7 @@ export const QueryBrowser = memo(function QueryBrowser() {
         <Split hasGutter>
           <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
           <SplitItem isFilled>
-            <QueryEditor query={query} runQuery={runQuery} />
+            <QueryEditor tempo={tempo} query={query} runQuery={runQuery} />
           </SplitItem>
         </Split>
         <PersesWrapper>
