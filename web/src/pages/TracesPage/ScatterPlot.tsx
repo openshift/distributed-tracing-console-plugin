@@ -13,7 +13,7 @@ import { ScatterChart } from '@perses-dev/panels-plugin';
 import { ExpandIcon, CompressIcon } from '@patternfly/react-icons';
 import { useRefWidth } from '../../components/console/utils/ref-width-hook';
 import { useHistory } from 'react-router-dom';
-import { LinkToTraceDetailPage } from '../TraceDetailPage';
+import { linkToTraceDetailPage } from '../TraceDetailPage';
 
 export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -23,7 +23,7 @@ export function ScatterPlot() {
 
   const clickHandler = useCallback(
     (data: { traceId: string }) => {
-      history.push(LinkToTraceDetailPage(data.traceId));
+      history.push(linkToTraceDetailPage(data.traceId));
     },
     [history],
   );

@@ -12,7 +12,7 @@ import {
 } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
-import { LinkToTraceDetailPage } from '../TraceDetailPage';
+import { linkToTraceDetailPage } from '../TraceDetailPage';
 
 interface TraceTableProps {
   runQuery: (query: string) => void;
@@ -48,5 +48,5 @@ export function TraceTable({ runQuery }: TraceTableProps) {
 }
 
 export function traceDetailLink({ traceId }: { traceId: string }) {
-  return LinkToTraceDetailPage(traceId);
+  return linkToTraceDetailPage(traceId);
 }
