@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Bullseye,
   Button,
@@ -12,11 +12,21 @@ import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
 import { ScatterChart } from '@perses-dev/panels-plugin';
 import { ExpandIcon, CompressIcon } from '@patternfly/react-icons';
 import { useRefWidth } from '../../components/console/utils/ref-width-hook';
+import { useHistory } from 'react-router-dom';
+import { LinkToTraceDetailPage } from '../TraceDetailPage';
 
 export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const history = useHistory();
   const [isVisible, setVisible] = useState(true);
   const [ref, width] = useRefWidth();
+
+  const clickHandler = useCallback(
+    (data: { traceId: string }) => {
+      history.push(LinkToTraceDetailPage(data.traceId));
+    },
+    [history],
+  );
 
   const noResults = (
     <Bullseye>
@@ -64,6 +74,7 @@ export function ScatterPlot() {
                 height: 200,
               }}
               spec={{}}
+              onClick={clickHandler}
             />
           </TraceQueryPanelWrapper>
         </div>

@@ -25,6 +25,11 @@ interface RouteParams {
   traceId: string;
 }
 
+export function LinkToTraceDetailPage(traceId: string) {
+  // by capturing the entire URL search params, we can provide a breadcrumb to the previous page with the Tempo instance and query filled out
+  return `/observe/traces/${traceId}?${new URLSearchParams(window.location.search).toString()}`;
+}
+
 export function TraceDetailPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { traceId } = useParams<RouteParams>();
