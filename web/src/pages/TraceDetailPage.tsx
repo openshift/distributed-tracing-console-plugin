@@ -62,7 +62,10 @@ export function TraceDetailPage() {
                 <Divider className="pf-v5-u-my-md" />
                 <StackItem isFilled>
                   <TraceQueryPanelWrapper>
-                    <TracingGanttChart.PanelComponent spec={{}} attributeLinks={attributeLinks} />
+                    <TracingGanttChart.PanelComponent
+                      spec={{ visual: { palette: { mode: 'categorical' } } }}
+                      attributeLinks={attributeLinks}
+                    />
                   </TraceQueryPanelWrapper>
                 </StackItem>
               </PersesDashboardWrapper>
