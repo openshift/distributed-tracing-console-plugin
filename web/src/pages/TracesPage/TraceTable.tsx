@@ -13,6 +13,7 @@ import {
 import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { linkToTraceDetailPage } from '../../links';
+import './TraceTable.css';
 
 interface TraceTableProps {
   runQuery: (query: string) => void;
@@ -42,7 +43,12 @@ export function TraceTable({ runQuery }: TraceTableProps) {
 
   return (
     <TraceQueryPanelWrapper noResults={noResults}>
-      <PersesTraceTable.PanelComponent spec={{}} traceLink={traceDetailLink} />
+      <div className="dt-plugin-trace-table">
+        <PersesTraceTable.PanelComponent
+          spec={{ visual: { palette: { mode: 'categorical' } } }}
+          traceLink={traceDetailLink}
+        />
+      </div>
     </TraceQueryPanelWrapper>
   );
 }
