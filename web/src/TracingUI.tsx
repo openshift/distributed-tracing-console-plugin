@@ -5,6 +5,7 @@ import { TracesPage } from './pages/TracesPage/TracesPage';
 import { QueryParamProvider } from 'use-query-params';
 import { ReactRouter5Adapter } from 'use-query-params/adapters/react-router-5';
 
+// note: this file must be kept in sync with the links in links.ts
 function TracingUI() {
   return (
     <QueryParamProvider adapter={ReactRouter5Adapter}>
