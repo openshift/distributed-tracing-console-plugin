@@ -43,7 +43,10 @@ export function TraceTable({ runQuery }: TraceTableProps) {
   return (
     <TraceQueryPanelWrapper noResults={noResults}>
       <div className="dt-plugin-trace-table">
-        <PersesTraceTable.PanelComponent spec={{}} traceLink={traceDetailLink} />
+        <PersesTraceTable.PanelComponent
+          spec={{ visual: { palette: { mode: 'categorical' } } }}
+          traceLink={traceDetailLink}
+        />
       </div>
     </TraceQueryPanelWrapper>
   );
