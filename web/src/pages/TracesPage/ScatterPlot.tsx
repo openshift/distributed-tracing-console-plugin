@@ -13,7 +13,7 @@ import { ScatterChart } from '@perses-dev/panels-plugin';
 import { ExpandIcon, CompressIcon } from '@patternfly/react-icons';
 import { useRefWidth } from '../../components/console/utils/ref-width-hook';
 import { useHistory } from 'react-router-dom';
-import { linkToTraceDetailPage } from '../TraceDetailPage';
+import { linkToTraceDetailPage } from '../../links';
 
 export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
