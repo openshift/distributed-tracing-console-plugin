@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ChartsProvider,
   generateChartsTheme,
@@ -20,6 +20,7 @@ import {
   Definition,
   DurationString,
   GlobalDatasourceResource,
+  TimeRangeValue,
   UnknownSpec,
 } from '@perses-dev/core';
 import panelsResource from '@perses-dev/panels-plugin/plugin.json';
@@ -133,45 +134,60 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
 }
 
 interface PersesDashboardWrapperProps {
-  tempo: TempoInstance | undefined;
-  definitions: Definition<UnknownSpec>[];
-  duration?: DurationString;
+  timeRange?: TimeRangeValue;
+  setTimeRange?: (value: TimeRangeValue) => void;
   children?: React.ReactNode;
 }
 
 export function PersesDashboardWrapper({
-  tempo,
-  definitions,
-  duration = '0s',
+  timeRange = { pastDuration: '0s' },
+  setTimeRange,
   children,
 }: PersesDashboardWrapperProps) {
+  return (
+    <TimeRangeProvider timeRange={timeRange} setTimeRange={setTimeRange}>
+      <VariableProvider>{children}</VariableProvider>
+    </TimeRangeProvider>
+  );
+}
+
+interface PersesTempoDatasourceWrapperProps {
+  tempo: TempoInstance | undefined;
+  queries: Definition<UnknownSpec>[];
+  duration?: DurationString;
+  children?: React.ReactNode;
+}
+
+export function PersesTempoDatasourceWrapper({
+  tempo,
+  queries,
+  children,
+}: PersesTempoDatasourceWrapperProps) {
+  const datasourceApi = useMemo(() => {
+    const proxyDatasource: GlobalDatasourceResource = {
+      kind: 'GlobalDatasource',
+      metadata: { name: 'TempoProxy' },
+      spec: {
+        default: true,
+        plugin: {
+          kind: 'TempoDatasource',
+          spec: {
+            directUrl: tempo ? getProxyURLFor(tempo) : '',
+          },
+        },
+      },
+    };
+    return new DatasourceApiImpl(proxyDatasource);
+  }, [tempo]);
+
   if (!tempo) {
     return <NoTempoInstanceSelectedState />;
   }
 
-  const proxyDatasource: GlobalDatasourceResource = {
-    kind: 'GlobalDatasource',
-    metadata: { name: 'TempoProxy' },
-    spec: {
-      default: true,
-      plugin: {
-        kind: 'TempoDatasource',
-        spec: {
-          directUrl: getProxyURLFor(tempo),
-        },
-      },
-    },
-  };
-  const datasourceApi = new DatasourceApiImpl(proxyDatasource);
-
   return (
-    <TimeRangeProvider timeRange={{ pastDuration: duration }}>
-      <VariableProvider>
-        <DatasourceStoreProvider datasourceApi={datasourceApi}>
-          <DataQueriesProvider definitions={definitions}>{children}</DataQueriesProvider>
-        </DatasourceStoreProvider>
-      </VariableProvider>
-    </TimeRangeProvider>
+    <DatasourceStoreProvider datasourceApi={datasourceApi}>
+      <DataQueriesProvider definitions={queries}>{children}</DataQueriesProvider>
+    </DatasourceStoreProvider>
   );
 }
 

@@ -15,6 +15,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
 import {
   PersesDashboardWrapper,
+  PersesTempoDatasourceWrapper,
   PersesWrapper,
   TraceQueryPanelWrapper,
 } from '../components/PersesWrapper';
@@ -52,22 +53,24 @@ export function TraceDetailPage() {
             </Breadcrumb>
 
             <PersesWrapper>
-              <PersesDashboardWrapper
-                tempo={tempo}
-                definitions={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
-              >
-                <Title headingLevel="h1">
-                  <TraceTitle />
-                </Title>
-                <Divider className="pf-v5-u-my-md" />
-                <StackItem isFilled>
-                  <TraceQueryPanelWrapper>
-                    <TracingGanttChart.PanelComponent
-                      spec={{ visual: { palette: { mode: 'categorical' } } }}
-                      attributeLinks={attributeLinks}
-                    />
-                  </TraceQueryPanelWrapper>
-                </StackItem>
+              <PersesDashboardWrapper>
+                <PersesTempoDatasourceWrapper
+                  tempo={tempo}
+                  queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+                >
+                  <Title headingLevel="h1">
+                    <TraceTitle />
+                  </Title>
+                  <Divider className="pf-v5-u-my-md" />
+                  <StackItem isFilled>
+                    <TraceQueryPanelWrapper>
+                      <TracingGanttChart.PanelComponent
+                        spec={{ visual: { palette: { mode: 'categorical' } } }}
+                        attributeLinks={attributeLinks}
+                      />
+                    </TraceQueryPanelWrapper>
+                  </StackItem>
+                </PersesTempoDatasourceWrapper>
               </PersesDashboardWrapper>
             </PersesWrapper>
           </Stack>
