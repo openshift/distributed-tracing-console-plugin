@@ -21,6 +21,8 @@
   "Traces": "Traces",
   "Trace details": "Trace details",
   "Query": "Query",
+  "Max Traces": "Max Traces",
+  "The number of search results must be between 1 and {{max}}": "The number of search results must be between 1 and {{max}}",
   "Run query": "Run query",
   "TraceQL Query": "TraceQL Query",
   "No datapoints found.": "No datapoints found.",

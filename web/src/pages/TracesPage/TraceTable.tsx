@@ -14,9 +14,10 @@ import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { linkToTraceDetailPage } from '../../links';
 import './TraceTable.css';
+import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin/dist/model/trace-query-model';
 
 interface TraceTableProps {
-  runQuery: (query: string) => void;
+  runQuery: (spec: TempoTraceQuerySpec) => void;
 }
 
 export function TraceTable({ runQuery }: TraceTableProps) {
@@ -33,7 +34,7 @@ export function TraceTable({ runQuery }: TraceTableProps) {
           {t('No results match this query criteria. Clear all filters and try again.')}
         </EmptyStateBody>
         <EmptyStatePrimary>
-          <Button variant="link" onClick={() => runQuery('{}')}>
+          <Button variant="link" onClick={() => runQuery({ query: '{}' })}>
             {t('Clear all filters')}
           </Button>
         </EmptyStatePrimary>
