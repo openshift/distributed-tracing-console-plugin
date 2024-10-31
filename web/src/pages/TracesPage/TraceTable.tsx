@@ -14,7 +14,7 @@ import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { linkToTraceDetailPage } from '../../links';
 import './TraceTable.css';
-import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin/dist/model/trace-query-model';
+import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin';
 
 interface TraceTableProps {
   runQuery: (spec: TempoTraceQuerySpec) => void;
