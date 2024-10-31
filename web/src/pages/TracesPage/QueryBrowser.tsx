@@ -21,7 +21,7 @@ import {
 } from 'use-query-params';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { useTimeRange } from '@perses-dev/plugin-system';
-import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin/dist/model/trace-query-model';
+import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin';
 
 const durationQueryParam = withDefault(createEnumParam(DurationValues), '30m');
 
