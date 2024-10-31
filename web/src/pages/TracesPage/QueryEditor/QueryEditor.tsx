@@ -4,7 +4,7 @@ import { Button } from '@patternfly/react-core';
 import { TraceQLEditor } from './TraceQLEditor';
 import { useTranslation } from 'react-i18next';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
-import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin/dist/model/trace-query-model';
+import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin';
 
 interface QueryEditorProps {
   tempo: TempoInstance | undefined;
