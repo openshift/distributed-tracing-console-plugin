@@ -80,7 +80,7 @@ export function QueryEditor({ tempo, query, limit, runQuery }: QueryEditorProps)
               : ''
           }
           validated={pendingLimitHasError ? 'error' : 'default'}
-          onChange={setPendingLimit}
+          onChange={(_evt, value) => setPendingLimit(value)}
           aria-label="max traces"
           size={5}
         />

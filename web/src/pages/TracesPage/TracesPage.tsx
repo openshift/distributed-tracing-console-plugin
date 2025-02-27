@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { useTempoResources } from '../../hooks/useTempoResources';
 import { QueryBrowser } from './QueryBrowser';
 import {
-  Bullseye,
   Button,
   Divider,
   Dropdown,
   DropdownItem,
-  DropdownToggle,
+  DropdownList,
   EmptyState,
+  EmptyStateActions,
   EmptyStateBody,
+  EmptyStateFooter,
+  EmptyStateHeader,
   EmptyStateIcon,
-  EmptyStatePrimary,
-  EmptyStateSecondaryActions,
+  MenuToggle,
   Page,
   PageSection,
   Stack,
@@ -33,7 +34,7 @@ const createTempoStackLink =
 const createTempoMonolithicLink =
   '/api-resource/all-namespaces/tempo.grafana.com~v1alpha1~TempoMonolithic/instances';
 const viewInstallationDocsLink =
-  'https://docs.openshift.com/container-platform/4.16/observability/distr_tracing/distr_tracing_tempo/distr-tracing-tempo-installing.html';
+  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing/distributed-tracing-platform-tempo';
 
 export function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -86,22 +87,25 @@ function TempoOperatorNotInstalledState() {
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <Bullseye>
-          <EmptyState>
-            <EmptyStateIcon icon={WrenchIcon} />
-            <Title headingLevel="h2" size="lg">
-              {t("Tempo operator isn't installed yet")}
-            </Title>
-            <EmptyStateBody>
-              {t(
-                'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
-              )}
-            </EmptyStateBody>
-            <Button component={(props) => <Link {...props} to={installOperatorLink} />}>
-              {t('Install Tempo operator')}
-            </Button>
-          </EmptyState>
-        </Bullseye>
+        <EmptyState>
+          <EmptyStateHeader
+            titleText={t("Tempo operator isn't installed yet")}
+            headingLevel="h4"
+            icon={<EmptyStateIcon icon={WrenchIcon} />}
+          />
+          <EmptyStateBody>
+            {t(
+              'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
+            )}
+          </EmptyStateBody>
+          <EmptyStateFooter>
+            <EmptyStateActions>
+              <Button component={(props) => <Link {...props} to={installOperatorLink} />}>
+                {t('Install Tempo operator')}
+              </Button>
+            </EmptyStateActions>
+          </EmptyStateFooter>
+        </EmptyState>
       </PageSection>
     </>
   );
@@ -117,44 +121,44 @@ function NoTempoInstance() {
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <Bullseye>
-          <EmptyState>
-            <EmptyStateIcon icon={PlusCircleIcon} />
-            <Title headingLevel="h2" size="lg">
-              {t('No Tempo instances yet')}
-            </Title>
-            <EmptyStateBody>
-              {t(
-                'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
-              )}
-            </EmptyStateBody>
-            <EmptyStatePrimary>
+        <EmptyState>
+          <EmptyStateHeader
+            titleText={t('No Tempo instances yet')}
+            headingLevel="h4"
+            icon={<EmptyStateIcon icon={PlusCircleIcon} />}
+          />
+          <EmptyStateBody>
+            {t(
+              'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
+            )}
+          </EmptyStateBody>
+          <EmptyStateFooter>
+            <EmptyStateActions>
               <Dropdown
                 isOpen={isOpen}
-                toggle={
-                  <DropdownToggle toggleVariant="primary" onToggle={setOpen}>
+                onOpenChange={setOpen}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    variant="primary"
+                    onClick={() => setOpen(!isOpen)}
+                    isExpanded={isOpen}
+                  >
                     {t('Create a Tempo instance')}
-                  </DropdownToggle>
-                }
-                dropdownItems={[
-                  <DropdownItem
-                    key="createTempoStackLink"
-                    component={
-                      <Link to={createTempoStackLink}>{t('Create a TempoStack instance')}</Link>
-                    }
-                  />,
-                  <DropdownItem
-                    key="createTempoMonolithicLink"
-                    component={
-                      <Link to={createTempoMonolithicLink}>
-                        {t('Create a TempoMonolithic instance')}
-                      </Link>
-                    }
-                  />,
-                ]}
-              />
-            </EmptyStatePrimary>
-            <EmptyStateSecondaryActions>
+                  </MenuToggle>
+                )}
+              >
+                <DropdownList>
+                  <DropdownItem key="createTempoStackLink" to={createTempoStackLink}>
+                    {t('Create a TempoStack instance')}
+                  </DropdownItem>
+                  <DropdownItem key="createTempoMonolithicLink" to={createTempoMonolithicLink}>
+                    {t('Create a TempoMonolithic instance')}
+                  </DropdownItem>
+                </DropdownList>
+              </Dropdown>
+            </EmptyStateActions>
+            <EmptyStateActions>
               <Button
                 variant="link"
                 component="a"
@@ -164,9 +168,9 @@ function NoTempoInstance() {
               >
                 {t('View documentation')}
               </Button>
-            </EmptyStateSecondaryActions>
-          </EmptyState>
-        </Bullseye>
+            </EmptyStateActions>
+          </EmptyStateFooter>
+        </EmptyState>
       </PageSection>
     </>
   );
