@@ -16,6 +16,7 @@
   "tempoinstance_helptext": "TempoStack and TempoMonolithic instances with multi-tenancy are supported. Instances without multi-tenancy are not supported.",
   "Tenant": "Tenant",
   "Select a tenant": "Select a tenant",
+  "No results found for {{value}}": "No results found for {{value}}",
   "Trace": "Trace",
   "Tracing": "Tracing",
   "Traces": "Traces",
