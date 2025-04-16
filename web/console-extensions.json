@@ -1,13 +1,5 @@
 [
   {
-    "type": "console.page/route",
-    "properties": {
-      "exact": false,
-      "path": "/observe/traces",
-      "component": { "$codeRef": "TracingUI" }
-    }
-  },
-  {
     "type": "console.navigation/href",
     "properties": {
       "id": "distributed-tracing",
@@ -15,6 +7,22 @@
       "href": "/observe/traces",
       "perspective": "admin",
       "section": "observe"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/observe/traces",
+      "component": { "$codeRef": "TracesPage" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/observe/traces/:traceId",
+      "component": { "$codeRef": "TraceDetailPage" }
     }
   }
 ]
