@@ -25,7 +25,9 @@ import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { LoadingState } from '../../components/LoadingState';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom-v5-compat';
+import { QueryParamProvider } from 'use-query-params';
+import { ReactRouterAdapter } from '../../react_router_adapter';
 
 const installOperatorLink =
   '/operatorhub/all-namespaces?keyword=Tempo&details-item=tempo-product-redhat-operators-openshift-marketplace';
@@ -36,11 +38,11 @@ const createTempoMonolithicLink =
 const viewInstallationDocsLink =
   'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing/distributed-tracing-platform-tempo';
 
-export function TracesPage() {
+export default function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   return (
-    <>
+    <QueryParamProvider adapter={ReactRouterAdapter}>
       <HelmetProvider>
         <Helmet>
           <title>{t('Tracing')}</title>
@@ -49,7 +51,7 @@ export function TracesPage() {
       <Page>
         <TracesPageBody />
       </Page>
-    </>
+    </QueryParamProvider>
   );
 }
 

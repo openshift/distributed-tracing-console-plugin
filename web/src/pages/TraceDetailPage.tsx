@@ -11,7 +11,7 @@ import {
 } from '@patternfly/react-core';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
 import {
   PersesDashboardWrapper,
@@ -22,19 +22,15 @@ import {
 import { TraceAttributeValue } from '@perses-dev/core';
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { useTempoInstance } from '../hooks/useTempoInstance';
+import { QueryParamProvider } from 'use-query-params';
+import { ReactRouterAdapter } from '../react_router_adapter';
 
-interface RouteParams {
-  traceId: string;
-}
-
-export function TraceDetailPage() {
+export default function TraceDetailPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { traceId } = useParams<RouteParams>();
-  const [tempo] = useTempoInstance();
-  const location = useLocation();
+  const { traceId } = useParams();
 
   return (
-    <>
+    <QueryParamProvider adapter={ReactRouterAdapter}>
       <HelmetProvider>
         <Helmet>
           <title>
@@ -43,45 +39,56 @@ export function TraceDetailPage() {
         </Helmet>
       </HelmetProvider>
       <Page>
-        <PageSection variant="light">
-          <Stack>
-            <Breadcrumb>
-              <BreadcrumbItem>
-                <Link to={`/observe/traces${location.search}`}>{t('Traces')}</Link>
-              </BreadcrumbItem>
-              <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
-            </Breadcrumb>
-
-            <PersesWrapper>
-              <PersesDashboardWrapper>
-                <PersesTempoDatasourceWrapper
-                  tempo={tempo}
-                  queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
-                >
-                  <Title headingLevel="h1">
-                    <TraceTitle />
-                  </Title>
-                  <Divider className="pf-v5-u-my-md" />
-                  <StackItem isFilled>
-                    <TraceQueryPanelWrapper>
-                      <TracingGanttChart.PanelComponent
-                        spec={{ visual: { palette: { mode: 'categorical' } } }}
-                        attributeLinks={attributeLinks}
-                      />
-                    </TraceQueryPanelWrapper>
-                  </StackItem>
-                </PersesTempoDatasourceWrapper>
-              </PersesDashboardWrapper>
-            </PersesWrapper>
-          </Stack>
-        </PageSection>
+        <TraceDetailPageBody />
       </Page>
-    </>
+    </QueryParamProvider>
+  );
+}
+
+function TraceDetailPageBody() {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const { traceId } = useParams();
+  const [tempo] = useTempoInstance();
+  const location = useLocation();
+
+  return (
+    <PageSection variant="light">
+      <Stack>
+        <Breadcrumb>
+          <BreadcrumbItem>
+            <Link to={`/observe/traces${location.search}`}>{t('Traces')}</Link>
+          </BreadcrumbItem>
+          <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
+        </Breadcrumb>
+
+        <PersesWrapper>
+          <PersesDashboardWrapper>
+            <PersesTempoDatasourceWrapper
+              tempo={tempo}
+              queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+            >
+              <Title headingLevel="h1">
+                <TraceTitle />
+              </Title>
+              <Divider className="pf-v5-u-my-md" />
+              <StackItem isFilled>
+                <TraceQueryPanelWrapper>
+                  <TracingGanttChart.PanelComponent
+                    spec={{ visual: { palette: { mode: 'categorical' } } }}
+                    attributeLinks={attributeLinks}
+                  />
+                </TraceQueryPanelWrapper>
+              </StackItem>
+            </PersesTempoDatasourceWrapper>
+          </PersesDashboardWrapper>
+        </PersesWrapper>
+      </Stack>
+    </PageSection>
   );
 }
 
 function TraceTitle() {
-  const { traceId } = useParams<RouteParams>();
+  const { traceId } = useParams();
   const { queryResults } = useDataQueries('TraceQuery');
   const trace = queryResults[0]?.data?.trace;
 
