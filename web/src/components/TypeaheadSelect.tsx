@@ -12,7 +12,7 @@ import {
   Button,
   Spinner,
 } from '@patternfly/react-core';
-import TimesIcon from '@patternfly/react-icons/dist/esm/icons/times-icon';
+import { TimesIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 
 interface TypeaheadSelectProps {
