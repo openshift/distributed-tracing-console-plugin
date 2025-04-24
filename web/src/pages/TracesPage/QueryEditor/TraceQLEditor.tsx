@@ -61,7 +61,13 @@ export function TraceQLEditor({ tempo, query, setQuery, runQuery }: TraceQLEdito
   return (
     <CodeMirror
       id="traceql-input"
-      className="pf-c-form-control"
+      className="pf-v6-c-form-control"
+      style={{
+        paddingBlockStart: 'var(--pf-v6-c-form-control--PaddingBlockStart)',
+        paddingBlockEnd: 'var(--pf-v6-c-form-control--PaddingBlockEnd)',
+        paddingInlineStart: 'var(--pf-v6-c-form-control--PaddingInlineStart)',
+        paddingInlineEnd: 'var(--pf-v6-c-form-control--PaddingInlineEnd)',
+      }}
       theme={theme == 'dark' ? 'dark' : 'light'}
       aria-label="trace query input"
       placeholder={t('TraceQL Query')}
