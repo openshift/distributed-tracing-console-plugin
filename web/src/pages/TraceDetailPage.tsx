@@ -1,15 +1,6 @@
 import * as React from 'react';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  Divider,
-  Page,
-  PageSection,
-  Stack,
-  StackItem,
-  Title,
-} from '@patternfly/react-core';
-import { Helmet, HelmetProvider } from 'react-helmet-async';
+import { Breadcrumb, BreadcrumbItem, Divider, PageSection, Title } from '@patternfly/react-core';
+import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
 import { TracingGanttChart } from '@perses-dev/panels-plugin';
@@ -22,28 +13,30 @@ import {
 import { TraceAttributeValue } from '@perses-dev/core';
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { useTempoInstance } from '../hooks/useTempoInstance';
-import { QueryParamProvider } from 'use-query-params';
-import { ReactRouterAdapter } from '../react_router_adapter';
+import { TracingApp } from '../TracingApp';
+import { memo } from 'react';
 
-export default function TraceDetailPage() {
+function TraceDetailPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { traceId } = useParams();
 
   return (
-    <QueryParamProvider adapter={ReactRouterAdapter}>
-      <HelmetProvider>
-        <Helmet>
-          <title>
-            {t('Trace')} {traceId} · {t('Tracing')}
-          </title>
-        </Helmet>
-      </HelmetProvider>
-      <Page>
-        <TraceDetailPageBody />
-      </Page>
-    </QueryParamProvider>
+    <TracingApp>
+      <Helmet>
+        <title>
+          {t('Trace')} {traceId} · {t('Tracing')}
+        </title>
+      </Helmet>
+      <PersesWrapper>
+        <PersesDashboardWrapper>
+          <TraceDetailPageBody />
+        </PersesDashboardWrapper>
+      </PersesWrapper>
+    </TracingApp>
   );
 }
+
+export default memo(TraceDetailPage);
 
 function TraceDetailPageBody() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -52,38 +45,31 @@ function TraceDetailPageBody() {
   const location = useLocation();
 
   return (
-    <PageSection variant="light">
-      <Stack>
+    <PersesTempoDatasourceWrapper
+      tempo={tempo}
+      queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+    >
+      <PageSection>
         <Breadcrumb>
           <BreadcrumbItem>
             <Link to={`/observe/traces${location.search}`}>{t('Traces')}</Link>
           </BreadcrumbItem>
           <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
         </Breadcrumb>
-
-        <PersesWrapper>
-          <PersesDashboardWrapper>
-            <PersesTempoDatasourceWrapper
-              tempo={tempo}
-              queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
-            >
-              <Title headingLevel="h1">
-                <TraceTitle />
-              </Title>
-              <Divider className="pf-v5-u-my-md" />
-              <StackItem isFilled>
-                <TraceQueryPanelWrapper>
-                  <TracingGanttChart.PanelComponent
-                    spec={{ visual: { palette: { mode: 'categorical' } } }}
-                    attributeLinks={attributeLinks}
-                  />
-                </TraceQueryPanelWrapper>
-              </StackItem>
-            </PersesTempoDatasourceWrapper>
-          </PersesDashboardWrapper>
-        </PersesWrapper>
-      </Stack>
-    </PageSection>
+        <Title headingLevel="h1">
+          <TraceTitle />
+        </Title>
+        <Divider className="pf-v6-u-my-md" />
+      </PageSection>
+      <PageSection isFilled hasBodyWrapper={false}>
+        <TraceQueryPanelWrapper>
+          <TracingGanttChart.PanelComponent
+            spec={{ visual: { palette: { mode: 'categorical' } } }}
+            attributeLinks={attributeLinks}
+          />
+        </TraceQueryPanelWrapper>
+      </PageSection>
+    </PersesTempoDatasourceWrapper>
   );
 }
 
