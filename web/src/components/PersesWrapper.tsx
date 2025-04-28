@@ -105,10 +105,10 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
   const muiTheme = getTheme(theme, {
     typography: {
       ...typography,
-      fontFamily: 'var(--pf-v5-global--FontFamily--text)',
+      fontFamily: 'var(--pf-t--global--font--family--body)',
     },
     shape: {
-      borderRadius: 0,
+      borderRadius: 4, // should be var(--pf-t--global--border--radius--tiny), but type must be a number.
     },
   });
 
