@@ -43,13 +43,11 @@ export function QueryBrowser() {
   );
 
   return (
-    <PageSection variant="light">
-      <PersesWrapper>
-        <PersesDashboardWrapper timeRange={timeRange} setTimeRange={setTimeRange}>
-          <QueryBrowserBody />
-        </PersesDashboardWrapper>
-      </PersesWrapper>
-    </PageSection>
+    <PersesWrapper>
+      <PersesDashboardWrapper timeRange={timeRange} setTimeRange={setTimeRange}>
+        <QueryBrowserBody />
+      </PersesDashboardWrapper>
+    </PersesWrapper>
   );
 }
 
@@ -70,8 +68,8 @@ export function QueryBrowserBody() {
   );
 
   return (
-    <PageSection variant="light">
-      <Stack hasGutter>
+    <>
+      <PageSection>
         <Level hasGutter>
           <Title headingLevel="h1">{t('Traces')}</Title>
           <DurationDropdown
@@ -79,19 +77,23 @@ export function QueryBrowserBody() {
             setDuration={(value) => setTimeRange({ pastDuration: value })}
           />
         </Level>
-        <Divider />
-        <Split hasGutter>
-          <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
-          <QueryEditor tempo={tempo} query={query} limit={limit} runQuery={runQuery} />
-        </Split>
-        <PersesTempoDatasourceWrapper
-          tempo={tempo}
-          queries={[{ kind: 'TempoTraceQuery', spec: { query, limit } }]}
-        >
-          <ScatterPlot />
-          <TraceTable runQuery={runQuery} />
-        </PersesTempoDatasourceWrapper>
-      </Stack>
-    </PageSection>
+        <Divider className="pf-v6-u-my-md" />
+      </PageSection>
+      <PageSection>
+        <Stack hasGutter>
+          <Split hasGutter>
+            <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
+            <QueryEditor tempo={tempo} query={query} limit={limit} runQuery={runQuery} />
+          </Split>
+          <PersesTempoDatasourceWrapper
+            tempo={tempo}
+            queries={[{ kind: 'TempoTraceQuery', spec: { query, limit } }]}
+          >
+            <ScatterPlot />
+            <TraceTable runQuery={runQuery} />
+          </PersesTempoDatasourceWrapper>
+        </Stack>
+      </PageSection>
+    </>
   );
 }

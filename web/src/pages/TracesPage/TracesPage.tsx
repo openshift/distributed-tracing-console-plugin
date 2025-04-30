@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import { useTempoResources } from '../../hooks/useTempoResources';
 import { QueryBrowser } from './QueryBrowser';
 import {
   Button,
-  Divider,
   Dropdown,
   DropdownItem,
   DropdownList,
@@ -11,23 +10,18 @@ import {
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateHeader,
-  EmptyStateIcon,
   MenuToggle,
-  Page,
   PageSection,
-  Stack,
   Title,
 } from '@patternfly/react-core';
 import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
-import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { ErrorAlert } from '../../components/ErrorAlert';
-import { LoadingState } from '../../components/LoadingState';
-import { Helmet, HelmetProvider } from 'react-helmet-async';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom-v5-compat';
-import { QueryParamProvider } from 'use-query-params';
-import { ReactRouterAdapter } from '../../react_router_adapter';
+import { useTempoInstance } from '../../hooks/useTempoInstance';
+import { LoadingState } from '../../components/LoadingState';
+import { TracingApp } from '../../TracingApp';
 
 const installOperatorLink =
   '/operatorhub/all-namespaces?keyword=Tempo&details-item=tempo-product-redhat-operators-openshift-marketplace';
@@ -38,24 +32,25 @@ const createTempoMonolithicLink =
 const viewInstallationDocsLink =
   'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing/distributed-tracing-platform-tempo';
 
-export default function TracesPage() {
+function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   return (
-    <QueryParamProvider adapter={ReactRouterAdapter}>
-      <HelmetProvider>
-        <Helmet>
-          <title>{t('Tracing')}</title>
-        </Helmet>
-      </HelmetProvider>
-      <Page>
-        <TracesPageBody />
-      </Page>
-    </QueryParamProvider>
+    <TracingApp>
+      <Helmet>
+        <title>{t('Tracing')}</title>
+      </Helmet>
+      <TracesPageBody />
+    </TracingApp>
   );
 }
 
-// TracesPageBody handles empty states like "Tempo Operator not installed" or "No Tempo instances created yet".
+export default memo(TracesPage);
+
+/**
+ * TracesPageBody catches major error states like "Tempo Operator not installed" or "No Tempo instances created yet"
+ * and shows an empty state instead of the query browser.
+ */
 function TracesPageBody() {
   const { loading, error, tempoResources } = useTempoResources();
   const [tempo] = useTempoInstance();
@@ -85,16 +80,15 @@ function TempoOperatorNotInstalledState() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
     <>
-      <PageSection variant="light">
+      <PageSection>
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <EmptyState>
-          <EmptyStateHeader
-            titleText={t("Tempo operator isn't installed yet")}
-            headingLevel="h4"
-            icon={<EmptyStateIcon icon={WrenchIcon} />}
-          />
+        <EmptyState
+          titleText={t("Tempo operator isn't installed yet")}
+          headingLevel="h4"
+          icon={WrenchIcon}
+        >
           <EmptyStateBody>
             {t(
               'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
@@ -119,16 +113,11 @@ function NoTempoInstance() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection>
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <EmptyState>
-          <EmptyStateHeader
-            titleText={t('No Tempo instances yet')}
-            headingLevel="h4"
-            icon={<EmptyStateIcon icon={PlusCircleIcon} />}
-          />
+        <EmptyState titleText={t('No Tempo instances yet')} headingLevel="h4" icon={PlusCircleIcon}>
           <EmptyStateBody>
             {t(
               'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
@@ -186,12 +175,13 @@ interface ErrorStateProps {
 function ErrorState({ errorType, error }: ErrorStateProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
-    <PageSection variant="light">
-      <Stack hasGutter>
-        <Title headingLevel="h1">{t('Tracing')}</Title>
-        <Divider />
+    <>
+      <PageSection>
+        <Title headingLevel="h1">{t('Traces')}</Title>
+      </PageSection>
+      <PageSection>
         <ErrorAlert error={{ name: errorType ?? t('Error'), message: error }} />
-      </Stack>
-    </PageSection>
+      </PageSection>
+    </>
   );
 }

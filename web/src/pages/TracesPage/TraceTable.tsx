@@ -7,8 +7,6 @@ import {
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateHeader,
-  EmptyStateIcon,
 } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
@@ -24,12 +22,7 @@ export function TraceTable({ runQuery }: TraceTableProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   const noResults = (
-    <EmptyState>
-      <EmptyStateHeader
-        titleText={t('No results found')}
-        headingLevel="h4"
-        icon={<EmptyStateIcon icon={SearchIcon} />}
-      />
+    <EmptyState titleText={t('No results found')} headingLevel="h4" icon={SearchIcon}>
       <EmptyStateBody>
         {t('No results match this query criteria. Clear all filters and try again.')}
       </EmptyStateBody>
