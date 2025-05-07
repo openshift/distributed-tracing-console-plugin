@@ -37,11 +37,7 @@ export function ScatterPlot() {
     <div>
       <Flex>
         <FlexItem align={{ default: 'alignRight' }}>
-          <Button
-            variant="link"
-            className="pf-m-link pf-v5-u-text-align-right"
-            onClick={() => setVisible(!isVisible)}
-          >
+          <Button variant="link" onClick={() => setVisible(!isVisible)}>
             {isVisible ? (
               <>
                 <CompressIcon /> {t('Hide graph')}
@@ -61,8 +57,9 @@ export function ScatterPlot() {
           style={{
             height: '200px',
             flexShrink: 0,
-            border: 'var(--pf-t--global--border--width--box--default) solid var(--pf-t--global--border--color--default)',
-            borderRadius:'var(--pf-t--global--border--radius--small)',
+            border:
+              'var(--pf-t--global--border--width--box--default) solid var(--pf-t--global--border--color--default)',
+            borderRadius: 'var(--pf-t--global--border--radius--small)',
           }}
         >
           <TraceQueryPanelWrapper noResults={noResults}>
