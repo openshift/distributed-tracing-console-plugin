@@ -1,5 +1,5 @@
 import React from 'react';
-import { Popover, Stack } from '@patternfly/react-core';
+import { Form, FormGroup, Popover, ToolbarGroup, ToolbarItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TempoResource, useTempoResources } from '../hooks/useTempoResources';
 import { TempoInstance } from '../hooks/useTempoInstance';
@@ -73,50 +73,59 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   };
 
   return (
-    <>
-      <Stack>
-        <span>
-          <label htmlFor="tempoinstance-select">{t('Tempo Instance')}</label>{' '}
-          <Popover
-            headerContent={<div>{t('Select a Tempo instance')}</div>}
-            bodyContent={
-              <div>
-                {t(
-                  'TempoStack and TempoMonolithic instances with multi-tenancy are supported. Instances without multi-tenancy are not supported.',
-                )}
-              </div>
+    <ToolbarGroup variant="filter-group">
+      <ToolbarItem>
+        <Form>
+          <FormGroup
+            fieldId="tempoinstance-select"
+            label={t('Tempo instance')}
+            labelHelp={
+              <Popover
+                headerContent={<div>{t('Select a Tempo instance')}</div>}
+                bodyContent={
+                  <div>
+                    {t(
+                      'TempoStack and TempoMonolithic instances with multi-tenancy are supported. Instances without multi-tenancy are not supported.',
+                    )}
+                  </div>
+                }
+              >
+                <HelpIcon />
+              </Popover>
             }
           >
-            <HelpIcon />
-          </Popover>
-        </span>
-        <ControlledTypeaheadSelect
-          id="tempoinstance-select"
-          toggleWidth="22em"
-          placeholder={t('Select a Tempo instance')}
-          allowClear={false}
-          loading={tempoResourcesLoading}
-          options={options}
-          value={selected?.value}
-          setValue={onSelect}
-          style={{ maxHeight: '50vh', overflow: 'auto' }}
-        />
-      </Stack>
+            <ControlledTypeaheadSelect
+              id="tempoinstance-select"
+              toggleWidth="22em"
+              placeholder={t('Select a Tempo instance')}
+              allowClear={false}
+              loading={tempoResourcesLoading}
+              options={options}
+              value={selected?.value}
+              setValue={onSelect}
+              style={{ maxHeight: '50vh', overflow: 'auto' }}
+            />
+          </FormGroup>
+        </Form>
+      </ToolbarItem>
       {selected?.tempo.tenants && selected.tempo.tenants.length > 0 && tempo && (
-        <Stack>
-          <label htmlFor="tenant-select">{t('Tenant')}</label>
-          <ControlledTypeaheadSelect
-            id="tenant-select"
-            toggleWidth="15em"
-            placeholder={t('Select a tenant')}
-            allowClear={false}
-            options={selected.tempo.tenants.map((t) => ({ value: t, content: t }))}
-            value={tempo.tenant}
-            setValue={(tenant) => setTempo({ ...tempo, tenant })}
-            style={{ maxHeight: '50vh', overflow: 'auto' }}
-          />
-        </Stack>
+        <ToolbarItem>
+          <Form>
+            <FormGroup fieldId="tenant-select" label={t('Tenant')}>
+              <ControlledTypeaheadSelect
+                id="tenant-select"
+                toggleWidth="15em"
+                placeholder={t('Select a tenant')}
+                allowClear={false}
+                options={selected.tempo.tenants.map((t) => ({ value: t, content: t }))}
+                value={tempo.tenant}
+                setValue={(tenant) => setTempo({ ...tempo, tenant })}
+                style={{ maxHeight: '50vh', overflow: 'auto' }}
+              />
+            </FormGroup>
+          </Form>
+        </ToolbarItem>
       )}
-    </>
+    </ToolbarGroup>
   );
 };

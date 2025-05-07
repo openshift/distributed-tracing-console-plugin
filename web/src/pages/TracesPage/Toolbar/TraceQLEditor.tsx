@@ -9,6 +9,7 @@ import { Prec } from '@codemirror/state';
 import { insertNewlineAndIndent } from '@codemirror/commands';
 
 interface TraceQLEditorProps {
+  id?: string;
   tempo: TempoInstance | undefined;
   query: string;
   setQuery: (query: string) => void;
@@ -30,7 +31,7 @@ export const codemirrorTheme = EditorView.theme({
   },
 });
 
-export function TraceQLEditor({ tempo, query, setQuery, runQuery }: TraceQLEditorProps) {
+export function TraceQLEditor({ id, tempo, query, setQuery, runQuery }: TraceQLEditorProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { theme } = usePatternFlyTheme();
 
@@ -60,7 +61,7 @@ export function TraceQLEditor({ tempo, query, setQuery, runQuery }: TraceQLEdito
 
   return (
     <CodeMirror
-      id="traceql-input"
+      id={id}
       style={{
         border:
           'var(--pf-t--global--border--width--control--default) solid var(--pf-t--global--border--color--default)',
