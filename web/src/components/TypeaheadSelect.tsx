@@ -1,29 +1,25 @@
 import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@patternfly/react-core/dist/esm/components/Button';
-import {
-  MenuToggle,
-  MenuToggleElement,
-  MenuToggleProps,
-} from '@patternfly/react-core/dist/esm/components/MenuToggle';
 import {
   Select,
+  Button,
   SelectList,
   SelectOption,
   SelectOptionProps,
   SelectProps,
-} from '@patternfly/react-core/dist/esm/components/Select';
-import {
+  MenuToggle,
+  MenuToggleElement,
+  MenuToggleProps,
   TextInputGroup,
   TextInputGroupMain,
   TextInputGroupUtilities,
-} from '@patternfly/react-core/dist/esm/components/TextInputGroup';
-import TimesIcon from '@patternfly/react-icons/dist/esm/icons/times-icon';
-import { Spinner } from '@patternfly/react-core';
+  Spinner,
+} from '@patternfly/react-core';
+import { TimesIcon } from '@patternfly/react-icons';
 
 /**
  * based on https://github.com/patternfly/patternfly-react/blob/b9815886da3adc7a96bc2d48adacf86e8a752e61/packages/react-templates/src/components/Select/TypeaheadSelect.tsx
  * MIT License, Copyright (c) Red Hat, Inc.
- * 
+ *
  * Custom modifications:
  * - in useEffect(..., [initialOptions]): always run setInputValue()
  * - add allowClear prop
