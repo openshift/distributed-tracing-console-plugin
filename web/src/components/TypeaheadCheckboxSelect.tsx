@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import React, { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Select,
   SelectOption,
@@ -11,8 +11,7 @@ import {
   TextInputGroupUtilities,
   Button,
 } from '@patternfly/react-core';
-import TimesIcon from '@patternfly/react-icons/dist/esm/icons/times-icon';
-import React from 'react';
+import { TimesIcon } from '@patternfly/react-icons';
 import { TypeaheadSelectOption } from '@patternfly/react-templates';
 
 export interface TypeaheadCheckboxSelectProps {
