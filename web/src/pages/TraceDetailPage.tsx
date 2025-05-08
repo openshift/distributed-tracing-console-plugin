@@ -59,7 +59,7 @@ function TraceDetailPageBody() {
         <Title headingLevel="h1">
           <TraceTitle />
         </Title>
-        <Divider className="pf-v6-u-my-md" />
+        <Divider className="pf-v6-u-mt-md" />
       </PageSection>
       <PageSection isFilled hasBodyWrapper={false}>
         <TraceQueryPanelWrapper>

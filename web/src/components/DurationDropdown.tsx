@@ -2,17 +2,14 @@ import * as React from 'react';
 import { Stack } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { DurationString } from '@perses-dev/prometheus-plugin';
-import { BasicSelect } from './BasicSelect';
-
-type TimeRangeSelectOption = {
-  children: string;
-  value: DurationString;
-};
+import { ControlledSimpleSelect } from './ControlledSelects';
 
 type DurationDropDownProps = {
   duration: DurationString;
   setDuration: (timeRange: DurationString) => void;
 };
+
+export const DEFAULT_DURATION = '30m';
 
 // Keep this list in sync with timeRangeSelectOptions below
 // (due to the translation we can't move TimeRangeSelectOption[] outside of the component)
@@ -23,37 +20,37 @@ export const DurationDropdown = ({ duration, setDuration }: DurationDropDownProp
 
   // The time range selection mirrors the options on the Metrics Page
   // Keep this list in sync with DurationValues above
-  const timeRangeSelectOptions: TimeRangeSelectOption[] = [
+  const timeRangeSelectOptions = [
     {
-      children: t('Last 5 minutes'),
+      content: t('Last 5 minutes'),
       value: '5m',
     },
     {
-      children: t('Last 15 minutes'),
+      content: t('Last 15 minutes'),
       value: '15m',
     },
     {
-      children: t('Last 30 minutes'),
+      content: t('Last 30 minutes'),
       value: '30m',
     },
     {
-      children: t('Last 1 hour'),
+      content: t('Last 1 hour'),
       value: '1h',
     },
     {
-      children: t('Last 6 hours'),
+      content: t('Last 6 hours'),
       value: '6h',
     },
     {
-      children: t('Last 12 hours'),
+      content: t('Last 12 hours'),
       value: '12h',
     },
     {
-      children: t('Last 1 day'),
+      content: t('Last 1 day'),
       value: '1d',
     },
     {
-      children: t('Last 7 days'),
+      content: t('Last 7 days'),
       value: '7d',
     },
   ];
@@ -61,13 +58,13 @@ export const DurationDropdown = ({ duration, setDuration }: DurationDropDownProp
   return (
     <Stack>
       <label htmlFor="duration-dropdown">{t('Time Range')}</label>
-      <BasicSelect
+      <ControlledSimpleSelect
         id="duration-dropdown"
-        width={200}
+        toggleWidth="12em"
         placeholder={t('Select a Time Range')}
         options={timeRangeSelectOptions}
-        selected={duration}
-        setSelected={(value) => setDuration(value as DurationString)}
+        value={duration}
+        setValue={(value) => setDuration(value as DurationString)}
       />
     </Stack>
   );

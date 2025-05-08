@@ -1,20 +1,21 @@
-import { Popover, Stack } from '@patternfly/react-core';
 import React from 'react';
+import { Popover, Stack } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TempoResource, useTempoResources } from '../hooks/useTempoResources';
 import { TempoInstance } from '../hooks/useTempoInstance';
+import { ResourceIcon } from '@openshift-console/dynamic-plugin-sdk';
+import { ControlledTypeaheadSelect } from './ControlledSelects';
+import { TypeaheadSelectOption } from '@patternfly/react-templates';
 import { HelpIcon } from '@patternfly/react-icons';
-import { TypeaheadSelect } from './TypeaheadSelect';
 
 interface TempoInstanceDropdownProps {
   tempo: TempoInstance | undefined;
-  setTempo: (tempo: TempoInstance) => void;
+  setTempo: (tempo?: TempoInstance) => void;
 }
 
-interface TempoResourceOption {
-  value: string;
-  children: string;
+interface TempoResourceOption extends TypeaheadSelectOption {
   tempo: TempoResource;
+  value: string;
 }
 
 export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdownProps) => {
@@ -24,10 +25,11 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   const options: TempoResourceOption[] = (tempoResources ?? [])
     .map((tempo) => ({
       value: `${tempo.namespace}__${tempo.name}`,
-      children: `${tempo.namespace} / ${tempo.name}`,
+      content: `${tempo.namespace} / ${tempo.name}`,
+      icon: <ResourceIcon groupVersionKind={{ kind: tempo.kind, version: '' }} />,
       tempo,
     }))
-    .sort((a, b) => a.children.toString().localeCompare(b.children.toString()));
+    .sort((a, b) => a.value.localeCompare(b.value));
 
   let selected: TempoResourceOption | undefined = undefined;
   if (tempo) {
@@ -37,7 +39,8 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
       // because the kind and the list of tenants is not known before the list of TempoResources is loaded.
       selected = {
         value: `${tempo.namespace}__${tempo.name}`,
-        children: `${tempo.namespace} / ${tempo.name}`,
+        content: `${tempo.namespace} / ${tempo.name}`,
+        icon: <ResourceIcon groupVersionKind={{ kind: 'TempoStack', version: '' }} />,
         tempo: {
           kind: 'TempoStack',
           namespace: tempo.namespace,
@@ -54,7 +57,10 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   }
 
   const onSelect = (value?: string) => {
-    if (!value) return;
+    if (!value) {
+      setTempo(undefined);
+      return;
+    }
 
     const option = options.find((o) => o.value === value);
     if (option && option.value !== selected?.value) {
@@ -69,35 +75,45 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   return (
     <>
       <Stack>
-        <label htmlFor="tempoinstance-dropdown">
-          {t('Tempo Instance')}{' '}
+        <span>
+          <label htmlFor="tempoinstance-select">{t('Tempo Instance')}</label>{' '}
           <Popover
             headerContent={<div>{t('Select a Tempo instance')}</div>}
-            bodyContent={<div>{t('tempoinstance_helptext')}</div>}
+            bodyContent={
+              <div>
+                {t(
+                  'TempoStack and TempoMonolithic instances with multi-tenancy are supported. Instances without multi-tenancy are not supported.',
+                )}
+              </div>
+            }
           >
             <HelpIcon />
           </Popover>
-        </label>
-        <TypeaheadSelect
-          id="tempoinstance-dropdown"
-          width={320}
-          loading={tempoResourcesLoading}
+        </span>
+        <ControlledTypeaheadSelect
+          id="tempoinstance-select"
+          toggleWidth="22em"
           placeholder={t('Select a Tempo instance')}
+          allowClear={false}
+          loading={tempoResourcesLoading}
           options={options}
-          selected={selected?.value}
-          setSelected={onSelect}
+          value={selected?.value}
+          setValue={onSelect}
+          style={{ maxHeight: '50vh', overflow: 'auto' }}
         />
       </Stack>
       {selected?.tempo.tenants && selected.tempo.tenants.length > 0 && tempo && (
         <Stack>
-          <label htmlFor="tenant-dropdown">{t('Tenant')}</label>
-          <TypeaheadSelect
-            id="tenant-dropdown"
-            width={200}
+          <label htmlFor="tenant-select">{t('Tenant')}</label>
+          <ControlledTypeaheadSelect
+            id="tenant-select"
+            toggleWidth="15em"
             placeholder={t('Select a tenant')}
-            options={selected.tempo.tenants.map((t) => ({ value: t, children: t }))}
-            selected={tempo.tenant}
-            setSelected={(tenant) => setTempo({ ...tempo, tenant })}
+            allowClear={false}
+            options={selected.tempo.tenants.map((t) => ({ value: t, content: t }))}
+            value={tempo.tenant}
+            setValue={(tenant) => setTempo({ ...tempo, tenant })}
+            style={{ maxHeight: '50vh', overflow: 'auto' }}
           />
         </Stack>
       )}
