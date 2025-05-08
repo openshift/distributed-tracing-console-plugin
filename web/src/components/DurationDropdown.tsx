@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Form, FormGroup } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { DurationString } from '@perses-dev/prometheus-plugin';
+import { DurationString } from '@perses-dev/core';
 import { ControlledSimpleSelect } from './ControlledSelects';
 
 type DurationDropDownProps = {

@@ -88,7 +88,6 @@
     "@perses-dev/dashboards": "0.49.0-rc.1",
     "@perses-dev/panels-plugin": "0.49.0-rc.1",
     "@perses-dev/plugin-system": "0.49.0-rc.1",
-    "@perses-dev/prometheus-plugin": "0.49.0-rc.1",
     "@perses-dev/tempo-plugin": "0.49.0-rc.1",
     "@tanstack/react-query": "^4.7.1",
     "copy-webpack-plugin": "^12.0.2",
