@@ -1,9 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
-import { Divider, Level, PageSection, Split, Stack, Title } from '@patternfly/react-core';
+import { Divider, PageSection, Split, SplitItem, Stack, Title } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { DurationDropdown, DurationValues } from '../../components/DurationDropdown';
-import { DEFAULT_LIMIT, QueryEditor } from './QueryEditor/QueryEditor';
-import { TempoInstanceDropdown } from '../../components/TempoInstanceDropdown';
+import {
+  DEFAULT_DURATION,
+  DurationDropdown,
+  DurationValues,
+} from '../../components/DurationDropdown';
 import { ScatterPlot } from './ScatterPlot';
 import { TraceTable } from './TraceTable';
 import {
@@ -21,9 +23,10 @@ import {
 } from 'use-query-params';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { useTimeRange } from '@perses-dev/plugin-system';
-import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin';
+import { FilterToolbar } from './Toolbar/FilterToolbar';
+import { DEFAULT_LIMIT, LimitSelect } from './LimitSelect';
 
-const durationQueryParam = withDefault(createEnumParam(DurationValues), '30m');
+const durationQueryParam = withDefault(createEnumParam(DurationValues), DEFAULT_DURATION);
 
 export function QueryBrowser() {
   const [duration, setDuration] = useQueryParam('duration', durationQueryParam, {
@@ -59,38 +62,43 @@ export function QueryBrowserBody() {
   const { timeRange, setTimeRange, refresh } = useTimeRange();
 
   const runQuery = useCallback(
-    (spec: TempoTraceQuerySpec) => {
-      setQuery(spec.query);
-      setLimit(spec.limit);
+    (query: string) => {
+      setQuery(query);
       refresh();
     },
-    [setQuery, setLimit, refresh],
+    [setQuery, refresh],
   );
 
   return (
     <>
       <PageSection>
-        <Level hasGutter>
-          <Title headingLevel="h1">{t('Traces')}</Title>
+        <Split hasGutter>
+          <SplitItem isFilled>
+            <Title headingLevel="h1">{t('Traces')}</Title>
+          </SplitItem>
           <DurationDropdown
             duration={(timeRange as RelativeTimeRange).pastDuration}
             setDuration={(value) => setTimeRange({ pastDuration: value })}
           />
-        </Level>
-        <Divider className="pf-v6-u-my-md" />
+          <LimitSelect limit={limit} setLimit={setLimit} />
+        </Split>
+        <Divider className="pf-v6-u-mt-md" />
       </PageSection>
       <PageSection>
         <Stack hasGutter>
-          <Split hasGutter>
-            <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
-            <QueryEditor tempo={tempo} query={query} limit={limit} runQuery={runQuery} />
-          </Split>
+          <FilterToolbar
+            tempo={tempo}
+            setTempo={setTempo}
+            query={query}
+            setQuery={setQuery}
+            runQuery={runQuery}
+          />
           <PersesTempoDatasourceWrapper
             tempo={tempo}
             queries={[{ kind: 'TempoTraceQuery', spec: { query, limit } }]}
           >
             <ScatterPlot />
-            <TraceTable runQuery={runQuery} />
+            <TraceTable setQuery={setQuery} />
           </PersesTempoDatasourceWrapper>
         </Stack>
       </PageSection>

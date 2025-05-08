@@ -12,13 +12,12 @@ import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { linkToTraceDetailPage } from '../../links';
 import './TraceTable.css';
-import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin';
 
 interface TraceTableProps {
-  runQuery: (spec: TempoTraceQuerySpec) => void;
+  setQuery: (query: string) => void;
 }
 
-export function TraceTable({ runQuery }: TraceTableProps) {
+export function TraceTable({ setQuery }: TraceTableProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   const noResults = (
@@ -28,7 +27,7 @@ export function TraceTable({ runQuery }: TraceTableProps) {
       </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions>
-          <Button variant="link" onClick={() => runQuery({ query: '{}' })}>
+          <Button variant="link" onClick={() => setQuery('{}')}>
             {t('Clear all filters')}
           </Button>
         </EmptyStateActions>
