@@ -16,6 +16,18 @@ describe('TraceQL query', () => {
       },
     },
     {
+      query: '{ status = ok }',
+      expected: {
+        serviceName: [],
+        spanName: [],
+        namespace: [],
+        status: ['ok'],
+        spanDuration: {},
+        traceDuration: {},
+        customMatchers: [],
+      },
+    },
+    {
       query:
         '{ resource.service.name =~ "service1|service2" && name = "span\\"name" && (status = ok || status = unset) && span.http.status_code>=200 && span.http.method="GE T" }',
       expected: {

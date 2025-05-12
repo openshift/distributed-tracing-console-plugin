@@ -33,7 +33,13 @@ function stringMatcher(attribute: string, values: string[]) {
 
 function intrinsicMatcher(attribute: string, values: string[]) {
   const orConds = values.map((x) => `${attribute} = ${x}`);
-  return orConds.length > 0 ? ['(' + orConds.join(' || ') + ')'] : [];
+  if (orConds.length > 1) {
+    return ['(' + orConds.join(' || ') + ')'];
+  } else if (orConds.length === 1) {
+    return orConds;
+  } else {
+    return [];
+  }
 }
 
 function durationMatcher(attribute: string, value: DurationField) {
