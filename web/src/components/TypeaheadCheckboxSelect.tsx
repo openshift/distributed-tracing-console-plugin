@@ -97,6 +97,18 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       }
     }
 
+    // When no options are available, display 'No results found'
+    if (!newSelectOptions.length) {
+      newSelectOptions = [
+        {
+          isAriaDisabled: true,
+          children: `No results found`,
+          value: NO_RESULTS,
+          hasCheckbox: false,
+        },
+      ];
+    }
+
     setSelectOptions(newSelectOptions);
   }, [inputValue, initialSelectOptions, isOpen, props.isCreatable]);
 
