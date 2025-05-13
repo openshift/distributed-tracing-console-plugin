@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Stack } from '@patternfly/react-core';
+import { Form, FormGroup } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { DurationString } from '@perses-dev/prometheus-plugin';
+import { DurationString } from '@perses-dev/core';
 import { ControlledSimpleSelect } from './ControlledSelects';
 
 type DurationDropDownProps = {
@@ -56,16 +56,17 @@ export const DurationDropdown = ({ duration, setDuration }: DurationDropDownProp
   ];
 
   return (
-    <Stack>
-      <label htmlFor="duration-dropdown">{t('Time Range')}</label>
-      <ControlledSimpleSelect
-        id="duration-dropdown"
-        toggleWidth="12em"
-        placeholder={t('Select a Time Range')}
-        options={timeRangeSelectOptions}
-        value={duration}
-        setValue={(value) => setDuration(value as DurationString)}
-      />
-    </Stack>
+    <Form>
+      <FormGroup fieldId="duration-dropdown" label={t('Time range')}>
+        <ControlledSimpleSelect
+          id="duration-dropdown"
+          toggleWidth="12em"
+          placeholder={t('Select a time range')}
+          options={timeRangeSelectOptions}
+          value={duration}
+          setValue={(value) => setDuration(value as DurationString)}
+        />
+      </FormGroup>
+    </Form>
   );
 };
