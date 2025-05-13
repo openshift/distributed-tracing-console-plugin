@@ -8,12 +8,12 @@ import {
   FlexItem,
 } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
-import { ScatterChart } from '@perses-dev/panels-plugin';
+import { PersesPanelPluginWrapper } from '../../components/PersesWrapper';
 import { ExpandIcon, CompressIcon } from '@patternfly/react-icons';
 import { useRefWidth } from '../../components/console/utils/ref-width-hook';
 import { useNavigate } from 'react-router-dom-v5-compat';
 import { linkToTraceDetailPage } from '../../links';
+import { ScatterChart } from '@perses-dev/scatter-chart-plugin';
 
 export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -62,16 +62,16 @@ export function ScatterPlot() {
             borderRadius: 'var(--pf-t--global--border--radius--small)',
           }}
         >
-          <TraceQueryPanelWrapper noResults={noResults}>
-            <ScatterChart.PanelComponent
-              contentDimensions={{
-                width,
-                height: 200,
-              }}
-              spec={{}}
-              onClick={clickHandler}
-            />
-          </TraceQueryPanelWrapper>
+          <PersesPanelPluginWrapper
+            plugin={ScatterChart}
+            noResults={noResults}
+            contentDimensions={{
+              width,
+              height: 200,
+            }}
+            spec={{}}
+            onClick={clickHandler}
+          />
         </div>
       )}
     </div>
