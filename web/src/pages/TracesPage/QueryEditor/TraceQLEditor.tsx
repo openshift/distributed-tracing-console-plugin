@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import CodeMirror, { EditorView, keymap } from '@uiw/react-codemirror';
-import { TraceQLExtension } from '@perses-dev/tempo-plugin';
+import { TraceQLExtension } from '@perses-dev/tempo-plugin/lib/components/TraceQLExtension';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
 import { getProxyURLFor } from '../../../hooks/api';
 import { usePatternFlyTheme } from '../../../components/console/utils/usePatternFlyTheme';

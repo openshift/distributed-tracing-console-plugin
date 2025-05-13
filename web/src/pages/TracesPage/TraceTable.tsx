@@ -1,6 +1,6 @@
 import React from 'react';
-import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
-import { TraceTable as PersesTraceTable } from '@perses-dev/panels-plugin';
+import { PersesPanelPluginWrapper } from '../../components/PersesWrapper';
+import { TraceTable as PersesTraceTable } from '@perses-dev/trace-table-plugin';
 import {
   Bullseye,
   Button,
@@ -43,14 +43,14 @@ export function TraceTable({ runQuery }: TraceTableProps) {
   );
 
   return (
-    <TraceQueryPanelWrapper noResults={noResults}>
-      <div className="dt-plugin-trace-table">
-        <PersesTraceTable.PanelComponent
-          spec={{ visual: { palette: { mode: 'categorical' } } }}
-          traceLink={traceDetailLink}
-        />
-      </div>
-    </TraceQueryPanelWrapper>
+    <div className="dt-plugin-trace-table">
+      <PersesPanelPluginWrapper
+        plugin={PersesTraceTable}
+        noResults={noResults}
+        spec={{ visual: { palette: { mode: 'categorical' } } }}
+        traceLink={traceDetailLink}
+      />
+    </div>
   );
 }
 
