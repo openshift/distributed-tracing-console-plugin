@@ -25,7 +25,6 @@ import {
 } from '@perses-dev/core';
 import panelsResource from '@perses-dev/panels-plugin/plugin.json';
 import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
 import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts';
 import { TempoInstance } from '../hooks/useTempoInstance';
@@ -86,15 +85,6 @@ const pluginLoader = dynamicImportPluginLoader([
   },
 ]);
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 0,
-    },
-  },
-});
-
 interface PersesWrapperProps {
   children?: React.ReactNode;
 }
@@ -125,9 +115,7 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
   return (
     <ThemeProvider theme={muiTheme}>
       <ChartsProvider chartsTheme={chartsTheme}>
-        <PluginRegistry pluginLoader={pluginLoader}>
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        </PluginRegistry>
+        <PluginRegistry pluginLoader={pluginLoader}>{children}</PluginRegistry>
       </ChartsProvider>
     </ThemeProvider>
   );
