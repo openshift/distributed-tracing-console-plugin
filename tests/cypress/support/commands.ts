@@ -3,6 +3,7 @@ import Loggable = Cypress.Loggable;
 import Timeoutable = Cypress.Timeoutable;
 import Withinable = Cypress.Withinable;
 import Shadow = Cypress.Shadow;
+import { guidedTour } from '../../views/tour';
 
 export {};
 declare global {
@@ -160,7 +161,8 @@ Cypress.Commands.add(
       {
         cacheAcrossSpecs: true,
         validate() {
-          cy.byTestID('user-dropdown').should('exist');
+          cy.byTestID("username", {timeout: 120000}).should('be.visible');
+          guidedTour.close();
         },
       },
     );
