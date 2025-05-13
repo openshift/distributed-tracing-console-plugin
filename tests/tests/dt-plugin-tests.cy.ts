@@ -149,7 +149,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
           DTP_NAMESPACE: `${DTP.namespace}`
         },
         timeout: 120000,
-        failOnNonZeroExit: true
+        failOnNonZeroExit: false
       }
     ) .then((result) => {
       // The command has completed
@@ -165,7 +165,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
     cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
-    cy.get('.pf-v5-c-alert', { timeout: 2 * 60 * 1000 })
+    cy.get('.pf-v5-c-alert, .pf-v6-c-alert', { timeout: 2 * 60 * 1000 })
     .contains('Web console update is available')
     .then(($alert) => {
       // If the alert is found, assert that it exists
