@@ -17,16 +17,8 @@ import { TracingApp } from '../TracingApp';
 import { memo } from 'react';
 
 function TraceDetailPage() {
-  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { traceId } = useParams();
-
   return (
     <TracingApp>
-      <Helmet>
-        <title>
-          {t('Trace')} {traceId} · {t('Tracing')}
-        </title>
-      </Helmet>
       <PersesWrapper>
         <PersesDashboardWrapper>
           <TraceDetailPageBody />
@@ -56,9 +48,7 @@ function TraceDetailPageBody() {
           </BreadcrumbItem>
           <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
         </Breadcrumb>
-        <Title headingLevel="h1">
-          <TraceTitle />
-        </Title>
+        <PageTitle />
         <Divider className="pf-v6-u-mt-md" />
       </PageSection>
       <PageSection isFilled hasBodyWrapper={false}>
@@ -73,19 +63,31 @@ function TraceDetailPageBody() {
   );
 }
 
-function TraceTitle() {
+function PageTitle() {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const traceName = useTraceName();
+
+  return (
+    <>
+      <Helmet>
+        <title>
+          {t('Trace')} {traceName} · {t('Tracing')}
+        </title>
+      </Helmet>
+      <Title headingLevel="h1">{traceName}</Title>
+    </>
+  );
+}
+
+function useTraceName() {
   const { traceId } = useParams();
   const { queryResults } = useDataQueries('TraceQuery');
   const trace = queryResults[0]?.data?.trace;
 
   if (!trace) {
-    return <>{traceId}</>;
+    return traceId;
   }
-  return (
-    <>
-      {trace.rootSpan.resource.serviceName}: {trace.rootSpan.name}
-    </>
-  );
+  return `${trace.rootSpan.resource.serviceName}: ${trace.rootSpan.name}`;
 }
 
 const sval = (val?: TraceAttributeValue) =>
