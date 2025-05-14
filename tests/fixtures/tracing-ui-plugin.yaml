@@ -2,6 +2,5 @@ apiVersion: observability.openshift.io/v1alpha1
 kind: UIPlugin
 metadata:
   name: distributed-tracing
-  namespace: openshift-operators
 spec:
   type: DistributedTracing
