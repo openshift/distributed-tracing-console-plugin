@@ -139,29 +139,33 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       throw new Error('No CYPRESS env set for operator installation, check the README for more details.');
     }
 
-    cy.log('DT_CONSOLE_IMAGE is set. the image will be patched in COO operator CSV');
-    cy.exec(
-      './fixtures/update-plugin-image.sh',
-      {
-        env: {
-          DT_CONSOLE_IMAGE: Cypress.env('DT_CONSOLE_IMAGE'),
-          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-          DTP_NAMESPACE: `${DTP.namespace}`
-        },
-        timeout: 120000,
-        failOnNonZeroExit: true
-      }
-    ) .then((result) => {
-      // The command has completed
-      // 'result' is an object containing:
-      // - stdout: The standard output of the command
-      // - stderr: The standard error of the command
-      // - code:   The exit code of the command (0 for success)
-      // - signal: The signal that terminated the command, if any
-      
-      expect(result.code).to.eq(0);  // Assert that the command was successful
-      cy.log(`COO CSV updated successfully with Distributed Tracing Console Plugin image: ${result.stdout}`);
-    });
+    if (Cypress.env('DT_CONSOLE_IMAGE')) {
+      cy.log('DT_CONSOLE_IMAGE is set. the image will be patched in COO operator CSV');
+      cy.exec(
+        './fixtures/update-plugin-image.sh',
+        {
+          env: {
+            DT_CONSOLE_IMAGE: Cypress.env('DT_CONSOLE_IMAGE'),
+            KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+            DTP_NAMESPACE: `${DTP.namespace}`
+          },
+          timeout: 120000,
+          failOnNonZeroExit: false
+        }
+      ) .then((result) => {
+        // The command has completed
+        // 'result' is an object containing:
+        // - stdout: The standard output of the command
+        // - stderr: The standard error of the command
+        // - code:   The exit code of the command (0 for success)
+        // - signal: The signal that terminated the command, if any
+
+        expect(result.code).to.eq(0);  // Assert that the command was successful
+        cy.log(`COO CSV updated successfully with Distributed Tracing Console Plugin image: ${result.stdout}`);
+      });
+    } else {
+      cy.log('DT_CONSOLE_IMAGE is NOT set. Skipping patching the image in COO operator CSV.');
+    }
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
     cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
