@@ -160,9 +160,9 @@ function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterPro
 
   return (
     <ToolbarFilter
-      labels={value}
-      deleteLabel={(_category, label) => setValue(value.filter((x) => x !== label))}
-      deleteLabelGroup={() => setValue([])}
+      chips={value}
+      deleteChip={(_category, label) => setValue(value.filter((x) => x !== label))}
+      deleteChipGroup={() => setValue([])}
       categoryName={label}
       showToolbarItem={show}
     >
@@ -206,9 +206,9 @@ function DurationAttributeFilter(props: DurationAttributeFilterProps) {
 
   return (
     <ToolbarFilter
-      labels={labels}
-      deleteLabel={() => setValue({ min: undefined, max: undefined })}
-      deleteLabelGroup={() => setValue({ min: undefined, max: undefined })}
+      chips={labels}
+      deleteChip={() => setValue({ min: undefined, max: undefined })}
+      deleteChipGroup={() => setValue({ min: undefined, max: undefined })}
       categoryName={label}
       showToolbarItem={show}
     >
@@ -273,9 +273,9 @@ function CustomAttributesFilter(props: CustomAttributesFilterProps) {
 
   return (
     <ToolbarFilter
-      labels={value}
-      deleteLabel={(_category, label) => setValue(value.filter((x) => x !== label))}
-      deleteLabelGroup={() => setValue([])}
+      chips={value}
+      deleteChip={(_category, label) => setValue(value.filter((x) => x !== label))}
+      deleteChipGroup={() => setValue([])}
       categoryName={label}
       showToolbarItem={show}
     >
@@ -283,7 +283,7 @@ function CustomAttributesFilter(props: CustomAttributesFilterProps) {
         <FormGroup
           fieldId="custom-attributes-input"
           label={t('Custom attributes')}
-          labelHelp={
+          labelIcon={
             <Popover
               headerContent={<div>{t('Filter by attributes')}</div>}
               bodyContent={

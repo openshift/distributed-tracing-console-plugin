@@ -7,13 +7,15 @@
   .MuiDataGrid-root {
     /* in MUI dark mode, the table header has a different color, but in PatternFly the header is always transparent */
     --DataGrid-containerBackground: inherit;
+
+    .MuiDataGrid-columnHeaderTitle {
+      font-size: var(--pf-global--FontSize--sm);
+    }
   }
 
-  /* style tracing service names Material UI <Chip> component like a filled PatternFly <Label> */
+  /* style tracing service names Material UI <Chip> component like a PatternFly <Label> */
   .MuiChip-colorDefault {
-    background-color: color-mix(in srgb, var(--service-color) 40%, transparent);
-    border: none;
-    font-size: var(--pf-t--global--font--size--xs);
+    background-color: color-mix(in srgb, var(--service-color) 20%, transparent);
 
     .MuiAvatar-root {
       background-color: transparent;
@@ -25,5 +27,10 @@
     .MuiAvatar-root + .MuiChip-label {
       padding-left: 2px;
     }
+  }
+
+  /* X span errors <Chip> */
+  .MuiChip-colorError {
+    background-color: color-mix(in srgb, var(--pf-global--palette--red-100) 10%, transparent);
   }
 }

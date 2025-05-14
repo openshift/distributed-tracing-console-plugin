@@ -71,7 +71,7 @@ export function QueryBrowserBody() {
 
   return (
     <>
-      <PageSection>
+      <PageSection variant="light">
         <Split hasGutter>
           <SplitItem isFilled>
             <Title headingLevel="h1">{t('Traces')}</Title>
@@ -82,9 +82,9 @@ export function QueryBrowserBody() {
           />
           <LimitSelect limit={limit} setLimit={setLimit} />
         </Split>
-        <Divider className="pf-v6-u-mt-md" />
+        <Divider className="pf-v5-u-mt-md" />
       </PageSection>
-      <PageSection>
+      <PageSection variant="light" style={{ paddingTop: 0 }}>
         <Stack hasGutter>
           <FilterToolbar
             tempo={tempo}

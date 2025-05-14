@@ -73,13 +73,13 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   };
 
   return (
-    <ToolbarGroup variant="filter-group">
+    <ToolbarGroup variant="filter-group" spaceItems={{ default: 'spaceItemsSm' }}>
       <ToolbarItem>
         <Form>
           <FormGroup
             fieldId="tempoinstance-select"
             label={t('Tempo instance')}
-            labelHelp={
+            labelIcon={
               <Popover
                 headerContent={<div>{t('Select a Tempo instance')}</div>}
                 bodyContent={

@@ -41,7 +41,7 @@ function TraceDetailPageBody() {
       tempo={tempo}
       queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
     >
-      <PageSection>
+      <PageSection variant="light">
         <Breadcrumb>
           <BreadcrumbItem>
             <Link to={`/observe/traces${location.search}`}>{t('Traces')}</Link>
@@ -49,9 +49,9 @@ function TraceDetailPageBody() {
           <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
         </Breadcrumb>
         <PageTitle />
-        <Divider className="pf-v6-u-mt-md" />
+        <Divider className="pf-v5-u-mt-md" />
       </PageSection>
-      <PageSection isFilled hasBodyWrapper={false}>
+      <PageSection variant="light" isFilled>
         <PersesPanelPluginWrapper
           plugin={TracingGanttChart}
           spec={{ visual: { palette: { mode: 'categorical' } } }}

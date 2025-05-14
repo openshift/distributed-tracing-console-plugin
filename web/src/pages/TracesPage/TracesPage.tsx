@@ -10,6 +10,8 @@ import {
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
+  EmptyStateHeader,
+  EmptyStateIcon,
   MenuToggle,
   PageSection,
   Title,
@@ -80,15 +82,16 @@ function TempoOperatorNotInstalledState() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
     <>
-      <PageSection>
+      <PageSection variant="light">
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <EmptyState
-          titleText={t("Tempo operator isn't installed yet")}
-          headingLevel="h4"
-          icon={WrenchIcon}
-        >
+        <EmptyState>
+          <EmptyStateHeader
+            titleText={t("Tempo operator isn't installed yet")}
+            headingLevel="h4"
+            icon={<EmptyStateIcon icon={WrenchIcon} />}
+          />
           <EmptyStateBody>
             {t(
               'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
@@ -113,11 +116,16 @@ function NoTempoInstance() {
 
   return (
     <>
-      <PageSection>
+      <PageSection variant="light">
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <EmptyState titleText={t('No Tempo instances yet')} headingLevel="h4" icon={PlusCircleIcon}>
+        <EmptyState>
+          <EmptyStateHeader
+            titleText={t('No Tempo instances yet')}
+            headingLevel="h4"
+            icon={<EmptyStateIcon icon={PlusCircleIcon} />}
+          />
           <EmptyStateBody>
             {t(
               'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
@@ -176,10 +184,10 @@ function ErrorState({ errorType, error }: ErrorStateProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
     <>
-      <PageSection>
+      <PageSection variant="light">
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
-      <PageSection>
+      <PageSection variant="light">
         <ErrorAlert error={{ name: errorType ?? t('Error'), message: error }} />
       </PageSection>
     </>
