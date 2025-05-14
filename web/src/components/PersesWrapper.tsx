@@ -10,10 +10,11 @@ import { ThemeProvider } from '@mui/material';
 import {
   DataQueriesProvider,
   dynamicImportPluginLoader,
-  PluginModuleResource,
+  PanelPlugin,
+  PanelProps,
   PluginRegistry,
   TimeRangeProvider,
-  useDataQueries,
+  useDataQueriesContext,
 } from '@perses-dev/plugin-system';
 import {
   DatasourceResource,
@@ -23,9 +24,11 @@ import {
   TimeRangeValue,
   UnknownSpec,
 } from '@perses-dev/core';
-import panelsResource from '@perses-dev/panels-plugin/plugin.json';
-import tempoResource from '@perses-dev/tempo-plugin/plugin.json';
 import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
+import * as tempoPlugin from '@perses-dev/tempo-plugin';
+import * as scatterChartPlugin from '@perses-dev/scatter-chart-plugin';
+import * as traceTablePlugin from '@perses-dev/trace-table-plugin';
+import * as tracingGanttChartPlugin from '@perses-dev/tracing-gantt-chart-plugin';
 import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts';
 import { TempoInstance } from '../hooks/useTempoInstance';
 import { getProxyURLFor } from '../hooks/api';
@@ -74,21 +77,20 @@ const patternflyChartsMultiUnorderedPalette = getThemeColors(
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
 // and data handlers for tempo (@perses-dev/tempo-plugin).
-const pluginLoader = dynamicImportPluginLoader([
-  {
-    resource: panelsResource as PluginModuleResource,
-    importPlugin: () => import('@perses-dev/panels-plugin'),
-  },
-  {
-    resource: tempoResource as PluginModuleResource,
-    importPlugin: () => import('@perses-dev/tempo-plugin'),
-  },
-]);
+const pluginLoader = dynamicImportPluginLoader(
+  [tempoPlugin, scatterChartPlugin, traceTablePlugin, tracingGanttChartPlugin].map((x) => ({
+    resource: x.getPluginModule(),
+    importPlugin: () => Promise.resolve(x),
+  })),
+);
 
 interface PersesWrapperProps {
   children?: React.ReactNode;
 }
 
+/**
+ * PersesWrapper initializes the MaterialUI theme, Perses plugin registry, and query client.
+ */
 export function PersesWrapper({ children }: PersesWrapperProps) {
   const { theme } = usePatternFlyTheme();
 
@@ -127,6 +129,9 @@ interface PersesDashboardWrapperProps {
   children?: React.ReactNode;
 }
 
+/**
+ * PersesDashboardWrapper initializes the dashboard time range and variable providers.
+ */
 export function PersesDashboardWrapper({
   timeRange = { pastDuration: '0s' },
   setTimeRange,
@@ -146,6 +151,9 @@ interface PersesTempoDatasourceWrapperProps {
   children?: React.ReactNode;
 }
 
+/**
+ * PersesTempoDatasourceWrapper initializes the Tempo data source.
+ */
 export function PersesTempoDatasourceWrapper({
   tempo,
   queries,
@@ -179,17 +187,21 @@ export function PersesTempoDatasourceWrapper({
   );
 }
 
-interface TracePanelWrapperProps {
+interface PersesPanelPluginWrapperProps<T> {
+  plugin: T;
   noResults?: React.ReactNode;
-  children?: React.ReactNode;
 }
 
 /**
- * TraceQueryPanelWrapper intercepts the trace query status and displays PatternFly native empty and loading states
- * instead of the Material UI empty and loading states used by Perses.
+ * PersesPanelWrapper renders a Perses panel plugin and shows PatternFly empty, loading states and error states.
  */
-export function TraceQueryPanelWrapper({ noResults, children }: TracePanelWrapperProps) {
-  const { isFetching, isLoading, queryResults } = useDataQueries('TraceQuery');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function PersesPanelPluginWrapper<T extends PanelPlugin<Spec, PanelProps<Spec>>, Spec = any>(
+  props: PersesPanelPluginWrapperProps<T> &
+    Omit<React.ComponentProps<T['PanelComponent']>, 'queryResults'>,
+) {
+  const { plugin, noResults, ...otherProps } = props;
+  const { isFetching, isLoading, queryResults } = useDataQueriesContext();
 
   if (isLoading || isFetching) {
     return <LoadingState />;
@@ -200,16 +212,17 @@ export function TraceQueryPanelWrapper({ noResults, children }: TracePanelWrappe
     return <ErrorAlert error={queryError.error as Error} />;
   }
 
-  const dataFound = queryResults.some(
-    (traceData) => (traceData.data?.searchResult ?? []).length > 0 || traceData.data?.trace,
+  const queryResultsWithData = queryResults.flatMap((q) =>
+    q.data ? [{ data: q.data, definition: q.definition }] : [],
   );
-  if (!dataFound && noResults) {
+
+  if (queryResultsWithData.length === 0 && noResults) {
     return <>{noResults}</>;
   }
 
   return (
     <ErrorBoundary FallbackComponent={ErrorAlert} resetKeys={[]}>
-      {children}
+      <plugin.PanelComponent queryResults={queryResultsWithData} {...otherProps} />
     </ErrorBoundary>
   );
 }

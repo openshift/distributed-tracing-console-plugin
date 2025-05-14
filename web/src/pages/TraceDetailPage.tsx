@@ -3,18 +3,18 @@ import { Breadcrumb, BreadcrumbItem, Divider, PageSection, Title } from '@patter
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
-import { TracingGanttChart } from '@perses-dev/panels-plugin';
 import {
   PersesDashboardWrapper,
   PersesTempoDatasourceWrapper,
   PersesWrapper,
-  TraceQueryPanelWrapper,
+  PersesPanelPluginWrapper,
 } from '../components/PersesWrapper';
-import { TraceAttributeValue } from '@perses-dev/core';
+import { otlpcommonv1 } from '@perses-dev/core';
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { useTempoInstance } from '../hooks/useTempoInstance';
 import { TracingApp } from '../TracingApp';
 import { memo } from 'react';
+import { TracingGanttChart } from '@perses-dev/tracing-gantt-chart-plugin';
 
 function TraceDetailPage() {
   return (
@@ -52,12 +52,11 @@ function TraceDetailPageBody() {
         <Divider className="pf-v6-u-mt-md" />
       </PageSection>
       <PageSection isFilled hasBodyWrapper={false}>
-        <TraceQueryPanelWrapper>
-          <TracingGanttChart.PanelComponent
-            spec={{ visual: { palette: { mode: 'categorical' } } }}
-            attributeLinks={attributeLinks}
-          />
-        </TraceQueryPanelWrapper>
+        <PersesPanelPluginWrapper
+          plugin={TracingGanttChart}
+          spec={{ visual: { palette: { mode: 'categorical' } } }}
+          attributeLinks={attributeLinks}
+        />
       </PageSection>
     </PersesTempoDatasourceWrapper>
   );
@@ -79,21 +78,34 @@ function PageTitle() {
   );
 }
 
-function useTraceName() {
+function useTraceName(): string {
   const { traceId } = useParams();
   const { queryResults } = useDataQueries('TraceQuery');
   const trace = queryResults[0]?.data?.trace;
 
-  if (!trace) {
-    return traceId;
+  for (const resourceSpan of trace?.resourceSpans ?? []) {
+    for (const scopeSpan of resourceSpan.scopeSpans) {
+      for (const span of scopeSpan.spans) {
+        if (!span.parentSpanId) {
+          // found a root span, look for service name attribute
+          for (const attr of resourceSpan.resource?.attributes ?? []) {
+            if (attr.key === 'service.name' && 'stringValue' in attr.value) {
+              return `${attr.value.stringValue}: ${span.name}`;
+            }
+          }
+        }
+      }
+    }
   }
-  return `${trace.rootSpan.resource.serviceName}: ${trace.rootSpan.name}`;
+
+  // return traceId if span is not loaded or root span is not found
+  return traceId ?? '';
 }
 
-const sval = (val?: TraceAttributeValue) =>
+const sval = (val?: otlpcommonv1.AnyValue) =>
   val && 'stringValue' in val ? encodeURIComponent(val.stringValue) : '';
 
-const attributeLinks: Record<string, (attrs: Record<string, TraceAttributeValue>) => string> = {
+const attributeLinks: Record<string, (attrs: Record<string, otlpcommonv1.AnyValue>) => string> = {
   'k8s.namespace.name': (attrs) => `/k8s/cluster/namespaces/${sval(attrs['k8s.namespace.name'])}`,
   'k8s.node.name': (attrs) => `/k8s/cluster/nodes/${sval(attrs['k8s.node.name'])}`,
   'k8s.deployment.name': (attrs) =>
