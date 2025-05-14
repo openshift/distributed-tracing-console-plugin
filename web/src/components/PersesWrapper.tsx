@@ -227,8 +227,12 @@ export function PersesPanelPluginWrapper<T extends PanelPlugin<Spec, PanelProps<
   const queryResultsWithData = queryResults.flatMap((q) =>
     q.data ? [{ data: q.data, definition: q.definition }] : [],
   );
-
-  if (queryResultsWithData.length === 0 && noResults) {
+  const traceDataFound = queryResultsWithData.some(
+    ({ data }) =>
+      ('searchResult' in data && data.searchResult && data.searchResult.length > 0) ||
+      ('trace' in data && data.trace),
+  );
+  if (!traceDataFound && noResults) {
     return <>{noResults}</>;
   }
 
