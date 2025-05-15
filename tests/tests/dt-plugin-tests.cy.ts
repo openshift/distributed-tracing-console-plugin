@@ -139,6 +139,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       throw new Error('No CYPRESS env set for operator installation, check the README for more details.');
     }
 
+    cy.log('Set Distributed Tracing Console Plugin image in operator CSV');
     if (Cypress.env('DT_CONSOLE_IMAGE')) {
       cy.log('DT_CONSOLE_IMAGE is set. the image will be patched in COO operator CSV');
       cy.exec(
@@ -150,17 +151,10 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
             DTP_NAMESPACE: `${DTP.namespace}`
           },
           timeout: 120000,
-          failOnNonZeroExit: false
+          failOnNonZeroExit: true
         }
       ) .then((result) => {
-        // The command has completed
-        // 'result' is an object containing:
-        // - stdout: The standard output of the command
-        // - stderr: The standard error of the command
-        // - code:   The exit code of the command (0 for success)
-        // - signal: The signal that terminated the command, if any
-
-        expect(result.code).to.eq(0);  // Assert that the command was successful
+        expect(result.code).to.eq(0);
         cy.log(`COO CSV updated successfully with Distributed Tracing Console Plugin image: ${result.stdout}`);
       });
     } else {
@@ -169,7 +163,17 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
     cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
-    cy.get('.pf-v5-c-alert, .pf-v6-c-alert', { timeout: 2 * 60 * 1000 })
+    cy.exec(
+      `sleep 15 && oc wait --for=condition=Ready pods --selector=app.kubernetes.io/instance=distributed-tracing -n ${DTP.namespace} --timeout=60s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      {
+        timeout: 80000,
+        failOnNonZeroExit: true
+      }
+    ).then((result) => {
+      expect(result.code).to.eq(0);
+      cy.log(`Pods are now running in namespace: ${Cypress.env('DTP_NAMESPACE')}`);
+    });    
+    cy.get('.pf-v5-c-alert, .pf-v6-c-alert', { timeout: 120000 })
     .contains('Web console update is available')
     .then(($alert) => {
       // If the alert is found, assert that it exists
@@ -226,22 +230,38 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
   });
 
   // Tests start from here.
-  it('(Test Distributed Tracing UI plugin page without any Tempo instances)', function () {
+  it('Test Distributed Tracing UI plugin page without any Tempo instances', () => {
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
 
-    cy.log('Assert that the page contains the text No Tempo instances yet');
-    cy.contains('No Tempo instances yet').should('be.visible');
+    cy.log('Assert that the Traces page shows the empty state.');
+    cy.get('.pf-v6-c-empty-state__title-text')
+      .should('be.visible')
+      .and('have.text', 'No Tempo instances yet');
 
-    cy.log('Click on the Create a Tempo instance button');
-    cy.get('button.pf-v5-c-menu-toggle.pf-m-primary').click();
-  
-    cy.log('Check the dropdown for Create a Tempo instance');
-    cy.get('.pf-v5-c-menu__item-text').contains('Create a TempoStack instance').should('have.class', 'pf-v5-c-menu__item-text');
-    cy.get('.pf-v5-c-menu__item-text').contains('Create a TempoMonolithic instance').should('have.class', 'pf-v5-c-menu__item-text');
+    cy.log('Assert that the View documentation button is visible.');
+    cy.contains('.pf-v6-c-button', 'View documentation')
+      .should('be.visible')
+      .and('have.text', 'View documentation');
+
+    cy.log('Assert create a tempo instance toggle visibility and text.');
+    const createTempoToggle = cy.contains('.pf-v6-c-menu-toggle', 'Create a Tempo instance');
+    createTempoToggle.should('be.visible');
+
+    cy.log('Click the toggle to show creation options.');
+    createTempoToggle.click();
+
+    cy.log('Assert dropdown items for Tempo instance creation are visible.');
+    cy.contains('.pf-v6-c-menu__item-text', 'Create a TempoStack instance')
+      .should('be.visible')
+      .and('have.text', 'Create a TempoStack instance');
+
+    cy.contains('.pf-v6-c-menu__item-text', 'Create a TempoMonolithic instance')
+      .should('be.visible')
+      .and('have.text', 'Create a TempoMonolithic instance');
   });
 
-  it('(Test Distributed Tracing UI plugin)', function () {
+  it('(Test Distributed Tracing UI plugin with Tempo instances and verify traces)', function () {
     cy.log('Create TempoStack and TempoMonolithic instances');
     cy.exec(
       'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/chainsaw-tests/multitenancy ./fixtures/chainsaw-tests/monolithic-multitenancy-openshift',
@@ -253,38 +273,40 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
         failOnNonZeroExit: true
       }
     ) .then((result) => {
-      // The command has completed
-      // 'result' is an object containing:
-      // - stdout: The standard output of the command
-      // - stderr: The standard error of the command
-      // - code:   The exit code of the command (0 for success)
-      // - signal: The signal that terminated the command, if any
-      
-      expect(result.code).to.eq(0);  // Assert that the command was successful
+      expect(result.code).to.eq(0);
       cy.log(`Chainsaw test ran successfully: ${result.stdout}`);
     });
-    // Navigate to the /observe/traces page
+    cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
 
-    cy.log('Check traces from TempoStack instance from Tracing UI');
-    cy.get('.pf-v5-c-menu-toggle__button > .pf-v5-c-menu-toggle__controls > .pf-v5-c-menu-toggle__toggle-icon').click();
-    cy.get('#tempoinstance-dropdown-item-chainsaw-multitenancy__simplest > .pf-v5-c-menu__item-main > .pf-v5-c-menu__item-text').click();
-    cy.get('#tenant-dropdown-input > .pf-v5-c-text-input-group__text > .pf-v5-c-text-input-group__text-input').click();
-    cy.get('#tenant-dropdown-item-prod > .pf-v5-c-menu__item-main > .pf-v5-c-menu__item-text').click();
-    cy.get('[style="height: auto; flex-direction: column-reverse;"] > .pf-v5-c-button').click();
-    cy.get('#tenant-dropdown-input > .pf-v5-c-text-input-group__text > .pf-v5-c-text-input-group__text-input').click();
-    cy.get('#tenant-dropdown-item-dev > .pf-v5-c-menu__item-main > .pf-v5-c-menu__item-text').click();
-    cy.get('.pf-v5-l-stack > .pf-v5-c-menu-toggle > .pf-v5-c-menu-toggle__text').click();
-    cy.get(':nth-child(1) > .pf-v5-c-menu__item > .pf-v5-c-menu__item-main > .pf-v5-c-menu__item-text').click();
-    cy.get('[style="height: auto; flex-direction: column-reverse;"] > .pf-v5-c-button').click();
+    cy.log('Assert traces in TempoStack instance.');
+    cy.get(':nth-child(1) > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(2) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(1) > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
+    cy.get(':nth-child(2) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(2) > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(1) > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get('.pf-v6-c-toolbar__group > :nth-child(1) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get('.pf-m-toggle-group > .pf-v6-c-toolbar__group > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
+    cy.contains('.pf-v6-c-menu__item-text', 'http')
+      .closest('.pf-v6-c-menu__item')
+      .find('input[type="checkbox"]')
+      .check();
+    cy.contains('.pf-v6-c-menu__item-text', 'grpc')
+      .closest('.pf-v6-c-menu__item')
+      .find('input[type="checkbox"]')
+      .check();
     cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root > .MuiTypography-root').click();
-    cy.get('[data-index="1"] > .css-1cqmfcw > .MuiStack-root > .MuiBox-root').click({ force: true });
-    cy.get('.css-tgncor').then(($el) => {
-      cy.log(`Actual text in .css-tgncor (TempoStack): ${$el.text()}`);
+    cy.contains('div', 'okey-dokey').click({ force: true });
+    cy.get('.css-1bmckj4').then(($el) => {
+      cy.log(`Actual text in .css-1bmckj4 (TempoMonolithic): ${$el.text()}`);
       expect($el.text()).to.satisfy((text) => text === 'http' || text === 'grpc');
     });
     cy.get('.MuiTypography-h2').should('have.text', 'okey-dokey');
-    cy.get('.MuiTabs-flexContainer > .MuiButtonBase-root').should('be.visible');
+    cy.get('.MuiTabs-list > .MuiButtonBase-root').should('be.visible');
     cy.get(':nth-child(5) > :nth-child(1) > .MuiListItemText-root > .MuiTypography-h5').should('have.text', 'net.peer.ip');
     cy.get(':nth-child(5) > :nth-child(1) > .MuiListItemText-root > .MuiTypography-body1').should('have.text', '1.2.3.4');
     cy.get(':nth-child(2) > .MuiListItemText-root > .MuiTypography-h5').should('have.text', 'peer.service');
@@ -294,25 +316,23 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       cy.log(`Actual text in service.name (TempoStack): ${$el.text()}`);
       expect($el.text()).to.satisfy((text) => text === 'http' || text === 'grpc');
     });
+    cy.get('.pf-v6-c-breadcrumb__list > :nth-child(1) > a').click();
 
-    cy.log('Check traces from TempoMonolithc instance from Tracing UI');
-    cy.get('.pf-v5-c-breadcrumb__list > :nth-child(1) > a').click();
-    cy.get('#tempoinstance-dropdown-input > .pf-v5-c-text-input-group__text > .pf-v5-c-text-input-group__text-input').click();
-    cy.get('#tempoinstance-dropdown-item-chainsaw-monolithic-multitenancy__monolithic-multitenancy-openshift > .pf-v5-c-menu__item-main > .pf-v5-c-menu__item-text').click();
-    cy.get('#tenant-dropdown-input > .pf-v5-c-text-input-group__text > .pf-v5-c-text-input-group__text-input').click();
-    cy.get('#tenant-dropdown-item-prod').click();
-    cy.get('[style="height: auto; flex-direction: column-reverse;"] > .pf-v5-c-button').click();
-    cy.get('#tenant-dropdown-input > .pf-v5-c-text-input-group__text > .pf-v5-c-text-input-group__text-input').click();
-    cy.get('#tenant-dropdown-item-dev').click();
-    cy.get('[style="height: auto; flex-direction: column-reverse;"] > .pf-v5-c-button').click();
+    cy.log('Assert traces in TempoMonolithic instance.');
+    cy.get(':nth-child(1) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(2) > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle').click();
+    cy.get(':nth-child(3) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get('.pf-v6-c-form__group-control > .pf-v6-c-button > .pf-v6-c-button__text').click();
+    cy.get('.pf-m-toggle-group > .pf-m-action-group > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-button > .pf-v6-c-button__text').click();
     cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root > .MuiTypography-root').click();
-    cy.get('[data-index="1"] > .css-1cqmfcw > .MuiStack-root > .MuiBox-root').click({ force: true });
-    cy.get('.css-tgncor').then(($el) => {
-      cy.log(`Actual text in .css-tgncor (TempoMonolithic): ${$el.text()}`);
+    cy.contains('div', 'okey-dokey').click({ force: true });
+    cy.get('.css-1bmckj4').then(($el) => {
+      cy.log(`Actual text in .css-1bmckj4 (TempoMonolithic): ${$el.text()}`);
       expect($el.text()).to.satisfy((text) => text === 'http' || text === 'grpc');
     });
     cy.get('.MuiTypography-h2').should('have.text', 'okey-dokey');
-    cy.get('.MuiTabs-flexContainer > .MuiButtonBase-root').should('be.visible');
+    cy.get('.MuiTabs-list > .MuiButtonBase-root').should('be.visible');
     cy.get(':nth-child(5) > :nth-child(1) > .MuiListItemText-root > .MuiTypography-h5').should('have.text', 'net.peer.ip');
     cy.get(':nth-child(5) > :nth-child(1) > .MuiListItemText-root > .MuiTypography-body1').should('have.text', '1.2.3.4');
     cy.get(':nth-child(2) > .MuiListItemText-root > .MuiTypography-h5').should('have.text', 'peer.service');
@@ -322,7 +342,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       cy.log(`Actual text in service.name (TempoMonolithic): ${$el.text()}`);
       expect($el.text()).to.satisfy((text) => text === 'http' || text === 'grpc');
     });
-    cy.get('.pf-v5-c-breadcrumb__list > :nth-child(1) > a').click();
+    cy.get('.pf-v6-c-breadcrumb__list > :nth-child(1) > a').click();
   });
 
 });
