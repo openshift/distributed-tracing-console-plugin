@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Bullseye,
   Button,
@@ -21,12 +21,9 @@ export function ScatterPlot() {
   const [isVisible, setVisible] = useState(true);
   const [ref, width] = useRefWidth();
 
-  const clickHandler = useCallback(
-    (data: { traceId: string }) => {
-      history.push(linkToTraceDetailPage(data.traceId));
-    },
-    [history],
-  );
+  const clickHandler = (data: { traceId: string }) => {
+    history.push(linkToTraceDetailPage(data.traceId));
+  };
 
   const noResults = (
     <Bullseye>
