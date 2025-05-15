@@ -1,6 +1,6 @@
 {
   "name": "distributed-tracing-console-plugin",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "repository": "git@github.com:openshift/distributed-tracing-console-plugin.git",
   "license": "Apache-2.0",
