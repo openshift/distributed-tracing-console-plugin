@@ -8,7 +8,7 @@ import {
   FormGroup,
 } from '@patternfly/react-core';
 import { FilterIcon, HelpIcon } from '@patternfly/react-icons';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
 import { ControlledSimpleSelect } from '../../../components/ControlledSelects';
 import { TypeaheadSelectOption } from '@patternfly/react-templates';
@@ -21,6 +21,10 @@ import { traceQLToFilter } from './Filter/traceql_to_filter';
 import { TypeaheadCheckboxSelect } from '../../../components/TypeaheadCheckboxSelect';
 import { DurationField, Filter, splitByUnquotedWhitespace } from './Filter/filter';
 import { useTagValues } from '../../../hooks/useTagValues';
+import { Link } from 'react-router-dom-v5-compat';
+
+const k8sAttributesProcessorLink =
+  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/red_hat_build_of_opentelemetry/configuring-the-collector#kubernetes-attributes-processor_otel-collector-processors';
 
 const serviceNameFilter = { content: 'Service Name', value: 'serviceName' };
 const spanNameFilter = { content: 'Span Name', value: 'spanName' };
@@ -98,47 +102,65 @@ export function AttributeFilters(props: AttributeFiltersProps) {
         </Form>
       </ToolbarItem>
       <TypeaheadStringAttributeFilter
-        label={serviceNameFilter.content}
+        filterName={serviceNameFilter.content}
         show={activeFilter === serviceNameFilter.value}
         options={serviceNameOptions ?? []}
         value={filter.serviceName}
         setValue={(x) => setFilter({ ...filter, serviceName: x })}
       />
       <TypeaheadStringAttributeFilter
-        label={spanNameFilter.content}
+        filterName={spanNameFilter.content}
         show={activeFilter === spanNameFilter.value}
         options={spanNameOptions ?? []}
         value={filter.spanName}
         setValue={(x) => setFilter({ ...filter, spanName: x })}
       />
       <TypeaheadStringAttributeFilter
+        filterName={namespaceFilter.content}
         label={namespaceFilter.content}
+        labelHelp={
+          <Popover
+            headerContent={<div>{t('Filter by namespace')}</div>}
+            bodyContent={
+              <div>
+                <Trans t={t}>
+                  This filter is based on the <code>k8s.namespace.name</code> resource attribute. To
+                  set this attribute, it is recommended to enable the{' '}
+                  <Link to={k8sAttributesProcessorLink}>Kubernetes Attributes Processor</Link> in
+                  your OpenTelemetry Collector pipeline.
+                </Trans>
+              </div>
+            }
+          >
+            <HelpIcon />
+          </Popover>
+        }
         show={activeFilter === namespaceFilter.value}
         options={namespaceOptions ?? []}
         value={filter.namespace}
         setValue={(x) => setFilter({ ...filter, namespace: x })}
       />
       <TypeaheadStringAttributeFilter
-        label={statusFilter.content}
+        filterName={statusFilter.content}
         show={activeFilter === statusFilter.value}
         options={statusOptions ?? []}
         value={filter.status}
         setValue={(x) => setFilter({ ...filter, status: x })}
       />
       <DurationAttributeFilter
-        label={spanDurationFilter.content}
+        filterName={spanDurationFilter.content}
         show={activeFilter === spanDurationFilter.value}
         value={filter.spanDuration}
         setValue={(value) => setFilter({ ...filter, spanDuration: value })}
       />
       <DurationAttributeFilter
-        label={traceDurationFilter.content}
+        filterName={traceDurationFilter.content}
         show={activeFilter === traceDurationFilter.value}
         value={filter.traceDuration}
         setValue={(value) => setFilter({ ...filter, traceDuration: value })}
       />
       <CustomAttributesFilter
-        label={customAttributeFilter.content}
+        filterName={customAttributeFilter.content}
         show={activeFilter === customAttributeFilter.value}
         value={filter.customMatchers}
         setValue={(value) => setFilter({ ...filter, customMatchers: value })}
@@ -148,7 +170,9 @@ export function AttributeFilters(props: AttributeFiltersProps) {
 }
 
 interface TypeaheadStringAttributeFilterProps {
-  label: string;
+  filterName: string;
+  label?: React.ReactNode;
+  labelHelp?: React.ReactElement;
   show?: boolean;
   options: TypeaheadSelectOption[];
   value: string[];
@@ -156,22 +180,24 @@ interface TypeaheadStringAttributeFilterProps {
 }
 
 function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterProps) {
-  const { label, show, options, value, setValue } = props;
+  const { filterName, label, labelHelp, show, options, value, setValue } = props;
 
   return (
     <ToolbarFilter
       labels={value}
       deleteLabel={(_category, label) => setValue(value.filter((x) => x !== label))}
       deleteLabelGroup={() => setValue([])}
-      categoryName={label}
+      categoryName={filterName}
       showToolbarItem={show}
     >
       <Form>
-        <FormGroup label={<>&nbsp;</>}>
+        <FormGroup label={label ?? <>&nbsp;</>} labelHelp={labelHelp}>
           <TypeaheadCheckboxSelect
             isCreatable={true}
             toggleWidth="20em"
-            placeholder={`Filter by ${label}${value.length > 0 ? ' (' + value.length + ')' : ''}`}
+            placeholder={`Filter by ${filterName}${
+              value.length > 0 ? ' (' + value.length + ')' : ''
+            }`}
             options={options}
             value={value}
             setValue={setValue}
@@ -184,7 +210,7 @@ function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterPro
 }
 
 interface DurationAttributeFilterProps {
-  label: string;
+  filterName: string;
   show?: boolean;
   value: DurationField;
   setValue: (value: DurationField) => void;
@@ -192,7 +218,7 @@ interface DurationAttributeFilterProps {
 
 function DurationAttributeFilter(props: DurationAttributeFilterProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { label, show, value, setValue } = props;
+  const { filterName, show, value, setValue } = props;
   const { min, max } = value;
 
   let labels: string[] = [];
@@ -209,7 +235,7 @@ function DurationAttributeFilter(props: DurationAttributeFilterProps) {
       labels={labels}
       deleteLabel={() => setValue({ min: undefined, max: undefined })}
       deleteLabelGroup={() => setValue({ min: undefined, max: undefined })}
-      categoryName={label}
+      categoryName={filterName}
       showToolbarItem={show}
     >
       <Form>
@@ -261,14 +287,14 @@ export function DurationTextInput(props: DurationTextInputProps) {
 }
 
 interface CustomAttributesFilterProps {
-  label: string;
+  filterName: string;
   show?: boolean;
   value: string[];
   setValue: (value: string[]) => void;
 }
 
 function CustomAttributesFilter(props: CustomAttributesFilterProps) {
-  const { label, show, value, setValue } = props;
+  const { filterName, show, value, setValue } = props;
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   return (
@@ -276,7 +302,7 @@ function CustomAttributesFilter(props: CustomAttributesFilterProps) {
       labels={value}
       deleteLabel={(_category, label) => setValue(value.filter((x) => x !== label))}
       deleteLabelGroup={() => setValue([])}
-      categoryName={label}
+      categoryName={filterName}
       showToolbarItem={show}
     >
       <Form>
@@ -290,10 +316,8 @@ function CustomAttributesFilter(props: CustomAttributesFilterProps) {
                 <div>
                   {t(
                     'Attributes are written in the form key=value and are combined via AND. Multiple attributes can be separated via space. String values must be quoted. Example:',
-                  )}
-                  <pre style={{ whiteSpace: 'wrap' }}>
-                    {'span.http.status_code=200 span.http.method="GET" duration>5s'}
-                  </pre>
+                  )}{' '}
+                  <code>{'span.http.status_code=200 span.http.method="GET" duration>5s'}</code>
                 </div>
               }
             >
