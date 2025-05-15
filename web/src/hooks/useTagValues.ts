@@ -8,14 +8,16 @@ export function useTagValues(
   tag: string,
   query: string,
   enabled: boolean,
+  start?: number,
+  end?: number,
 ) {
   return useQuery({
-    queryKey: ['useTagValues', tempo, tag, query],
+    queryKey: ['useTagValues', tempo, tag, query, start, end],
     enabled,
     queryFn: async function () {
       if (!tempo) return [];
       const client = TempoDatasource.createClient({ directUrl: getProxyURLFor(tempo) }, {});
-      const values = await client.searchTagValues({ tag, q: query });
+      const values = await client.searchTagValues({ tag, q: query, start, end });
       return values.tagValues
         .map((tagValue) => ({
           content: tagValue.value,
