@@ -7,7 +7,7 @@ import {
   Stack,
 } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { DurationString } from '@perses-dev/prometheus-plugin';
+import { DurationString } from '@perses-dev/core';
 
 type TimeRangeSelectOption = {
   display: string;
