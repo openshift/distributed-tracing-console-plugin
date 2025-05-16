@@ -21,6 +21,8 @@ import { traceQLToFilter } from './Filter/traceql_to_filter';
 import { TypeaheadCheckboxSelect } from '../../../components/TypeaheadCheckboxSelect';
 import { DurationField, Filter, splitByUnquotedWhitespace } from './Filter/filter';
 import { useTagValues } from '../../../hooks/useTagValues';
+import { useTimeRange } from '@perses-dev/plugin-system';
+import { isAbsoluteTimeRange, toAbsoluteTimeRange } from '@perses-dev/core';
 
 const serviceNameFilter = { content: 'Service Name', value: 'serviceName' };
 const spanNameFilter = { content: 'Span Name', value: 'spanName' };
@@ -63,23 +65,34 @@ export function AttributeFilters(props: AttributeFiltersProps) {
     setQuery(filterToTraceQL(filter));
   };
 
+  const { timeRange } = useTimeRange();
+  const absTimeRange = !isAbsoluteTimeRange(timeRange) ? toAbsoluteTimeRange(timeRange) : timeRange;
+  const startTime = Math.round(absTimeRange.start.getTime() / 1000);
+  const endTime = Math.round(absTimeRange.end.getTime() / 1000);
+
   const { data: serviceNameOptions } = useTagValues(
     tempo,
     'resource.service.name',
     filterToTraceQL({ ...filter, serviceName: [] }),
     activeFilter === serviceNameFilter.value,
+    startTime,
+    endTime,
   );
   const { data: spanNameOptions } = useTagValues(
     tempo,
     'name',
     filterToTraceQL({ ...filter, spanName: [] }),
     activeFilter === spanNameFilter.value,
+    startTime,
+    endTime,
   );
   const { data: namespaceOptions } = useTagValues(
     tempo,
     'resource.k8s.namespace.name',
     filterToTraceQL({ ...filter, namespace: [] }),
     activeFilter === namespaceFilter.value,
+    startTime,
+    endTime,
   );
 
   return (
