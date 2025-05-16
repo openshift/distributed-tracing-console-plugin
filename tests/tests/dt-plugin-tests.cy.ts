@@ -171,7 +171,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       }
     ).then((result) => {
       expect(result.code).to.eq(0);
-      cy.log(`Pods are now running in namespace: ${Cypress.env('DTP_NAMESPACE')}`);
+      cy.log(`Distributed Tracing Console plugin pod is now running in namespace: ${DTP.namespace}`);
     });    
     cy.get('.pf-v5-c-alert, .pf-v6-c-alert', { timeout: 120000 })
     .contains('Web console update is available')
