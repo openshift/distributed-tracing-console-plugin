@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import { useTempoResources } from '../../hooks/useTempoResources';
 import { QueryBrowser } from './QueryBrowser';
 import {
   Button,
-  Divider,
   Dropdown,
   DropdownItem,
   DropdownList,
@@ -14,18 +13,17 @@ import {
   EmptyStateHeader,
   EmptyStateIcon,
   MenuToggle,
-  Page,
   PageSection,
-  Stack,
   Title,
 } from '@patternfly/react-core';
 import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
-import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { ErrorAlert } from '../../components/ErrorAlert';
+import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom-v5-compat';
+import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { LoadingState } from '../../components/LoadingState';
-import { Helmet, HelmetProvider } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { TracingApp } from '../../TracingApp';
 
 const installOperatorLink =
   '/operatorhub/all-namespaces?keyword=Tempo&details-item=tempo-product-redhat-operators-openshift-marketplace';
@@ -36,24 +34,25 @@ const createTempoMonolithicLink =
 const viewInstallationDocsLink =
   'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing/distributed-tracing-platform-tempo';
 
-export function TracesPage() {
+function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   return (
-    <>
-      <HelmetProvider>
-        <Helmet>
-          <title>{t('Tracing')}</title>
-        </Helmet>
-      </HelmetProvider>
-      <Page>
-        <TracesPageBody />
-      </Page>
-    </>
+    <TracingApp>
+      <Helmet>
+        <title>{t('Tracing')}</title>
+      </Helmet>
+      <TracesPageBody />
+    </TracingApp>
   );
 }
 
-// TracesPageBody handles empty states like "Tempo Operator not installed" or "No Tempo instances created yet".
+export default memo(TracesPage);
+
+/**
+ * TracesPageBody catches major error states like "Tempo Operator not installed" or "No Tempo instances created yet"
+ * and shows an empty state instead of the query browser.
+ */
 function TracesPageBody() {
   const { loading, error, tempoResources } = useTempoResources();
   const [tempo] = useTempoInstance();
@@ -184,12 +183,13 @@ interface ErrorStateProps {
 function ErrorState({ errorType, error }: ErrorStateProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
-    <PageSection variant="light">
-      <Stack hasGutter>
-        <Title headingLevel="h1">{t('Tracing')}</Title>
-        <Divider />
+    <>
+      <PageSection variant="light">
+        <Title headingLevel="h1">{t('Traces')}</Title>
+      </PageSection>
+      <PageSection variant="light">
         <ErrorAlert error={{ name: errorType ?? t('Error'), message: error }} />
-      </Stack>
-    </PageSection>
+      </PageSection>
+    </>
   );
 }

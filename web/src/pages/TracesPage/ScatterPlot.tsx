@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Bullseye,
   Button,
@@ -8,25 +8,22 @@ import {
   FlexItem,
 } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
-import { ScatterChart } from '@perses-dev/panels-plugin';
+import { PersesPanelPluginWrapper } from '../../components/PersesWrapper';
 import { ExpandIcon, CompressIcon } from '@patternfly/react-icons';
 import { useRefWidth } from '../../components/console/utils/ref-width-hook';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom-v5-compat';
 import { linkToTraceDetailPage } from '../../links';
+import { ScatterChart } from '@perses-dev/scatter-chart-plugin';
 
 export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const history = useHistory();
+  const navigate = useNavigate();
   const [isVisible, setVisible] = useState(true);
   const [ref, width] = useRefWidth();
 
-  const clickHandler = useCallback(
-    (data: { traceId: string }) => {
-      history.push(linkToTraceDetailPage(data.traceId));
-    },
-    [history],
-  );
+  const clickHandler = (data: { traceId: string }) => {
+    navigate(linkToTraceDetailPage(data.traceId));
+  };
 
   const noResults = (
     <Bullseye>
@@ -40,11 +37,7 @@ export function ScatterPlot() {
     <div>
       <Flex>
         <FlexItem align={{ default: 'alignRight' }}>
-          <Button
-            variant="link"
-            className="pf-m-link pf-v5-u-text-align-right"
-            onClick={() => setVisible(!isVisible)}
-          >
+          <Button variant="link" onClick={() => setVisible(!isVisible)}>
             {isVisible ? (
               <>
                 <CompressIcon /> {t('Hide graph')}
@@ -67,16 +60,16 @@ export function ScatterPlot() {
             border: 'var(--pf-global--BorderWidth--sm) solid var(--pf-global--BorderColor--100)',
           }}
         >
-          <TraceQueryPanelWrapper noResults={noResults}>
-            <ScatterChart.PanelComponent
-              contentDimensions={{
-                width,
-                height: 200,
-              }}
-              spec={{}}
-              onClick={clickHandler}
-            />
-          </TraceQueryPanelWrapper>
+          <PersesPanelPluginWrapper
+            plugin={ScatterChart}
+            noResults={noResults}
+            contentDimensions={{
+              width,
+              height: 200,
+            }}
+            spec={{}}
+            onClick={clickHandler}
+          />
         </div>
       )}
     </div>

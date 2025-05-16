@@ -1,6 +1,6 @@
 import React from 'react';
-import { TraceQueryPanelWrapper } from '../../components/PersesWrapper';
-import { TraceTable as PersesTraceTable } from '@perses-dev/panels-plugin';
+import { PersesPanelPluginWrapper } from '../../components/PersesWrapper';
+import { TraceTable as PersesTraceTable } from '@perses-dev/trace-table-plugin';
 import {
   Button,
   EmptyState,
@@ -14,13 +14,12 @@ import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
 import { linkToTraceDetailPage } from '../../links';
 import './TraceTable.css';
-import { TempoTraceQuerySpec } from '@perses-dev/tempo-plugin';
 
 interface TraceTableProps {
-  runQuery: (spec: TempoTraceQuerySpec) => void;
+  setQuery: (query: string) => void;
 }
 
-export function TraceTable({ runQuery }: TraceTableProps) {
+export function TraceTable({ setQuery }: TraceTableProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   const noResults = (
@@ -35,7 +34,7 @@ export function TraceTable({ runQuery }: TraceTableProps) {
       </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions>
-          <Button variant="link" onClick={() => runQuery({ query: '{}' })}>
+          <Button variant="link" onClick={() => setQuery('{}')}>
             {t('Clear all filters')}
           </Button>
         </EmptyStateActions>
@@ -44,14 +43,14 @@ export function TraceTable({ runQuery }: TraceTableProps) {
   );
 
   return (
-    <TraceQueryPanelWrapper noResults={noResults}>
-      <div className="dt-plugin-trace-table">
-        <PersesTraceTable.PanelComponent
-          spec={{ visual: { palette: { mode: 'categorical' } } }}
-          traceLink={traceDetailLink}
-        />
-      </div>
-    </TraceQueryPanelWrapper>
+    <div className="dt-plugin-trace-table">
+      <PersesPanelPluginWrapper
+        plugin={PersesTraceTable}
+        noResults={noResults}
+        spec={{ visual: { palette: { mode: 'categorical' } } }}
+        traceLink={traceDetailLink}
+      />
+    </div>
   );
 }
 

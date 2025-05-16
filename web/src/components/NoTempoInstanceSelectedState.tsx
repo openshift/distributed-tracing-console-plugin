@@ -2,8 +2,8 @@ import React from 'react';
 import {
   EmptyState,
   EmptyStateBody,
-  EmptyStateIcon,
   EmptyStateHeader,
+  EmptyStateIcon,
 } from '@patternfly/react-core';
 import { CubesIcon } from '@patternfly/react-icons';
 
