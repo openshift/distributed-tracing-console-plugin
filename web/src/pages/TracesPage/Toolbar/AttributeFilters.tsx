@@ -22,6 +22,8 @@ import { TypeaheadCheckboxSelect } from '../../../components/TypeaheadCheckboxSe
 import { DurationField, Filter, splitByUnquotedWhitespace } from './Filter/filter';
 import { useTagValues } from '../../../hooks/useTagValues';
 import { Link } from 'react-router-dom-v5-compat';
+import { useTimeRange } from '@perses-dev/plugin-system';
+import { isAbsoluteTimeRange, toAbsoluteTimeRange } from '@perses-dev/core';
 
 const k8sAttributesProcessorLink =
   'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/red_hat_build_of_opentelemetry/configuring-the-collector#kubernetes-attributes-processor_otel-collector-processors';
@@ -67,23 +69,34 @@ export function AttributeFilters(props: AttributeFiltersProps) {
     setQuery(filterToTraceQL(filter));
   };
 
+  const { timeRange } = useTimeRange();
+  const absTimeRange = !isAbsoluteTimeRange(timeRange) ? toAbsoluteTimeRange(timeRange) : timeRange;
+  const startTime = Math.round(absTimeRange.start.getTime() / 1000);
+  const endTime = Math.round(absTimeRange.end.getTime() / 1000);
+
   const { data: serviceNameOptions } = useTagValues(
     tempo,
     'resource.service.name',
     filterToTraceQL({ ...filter, serviceName: [] }),
     activeFilter === serviceNameFilter.value,
+    startTime,
+    endTime,
   );
   const { data: spanNameOptions } = useTagValues(
     tempo,
     'name',
     filterToTraceQL({ ...filter, spanName: [] }),
     activeFilter === spanNameFilter.value,
+    startTime,
+    endTime,
   );
   const { data: namespaceOptions } = useTagValues(
     tempo,
     'resource.k8s.namespace.name',
     filterToTraceQL({ ...filter, namespace: [] }),
     activeFilter === namespaceFilter.value,
+    startTime,
+    endTime,
   );
 
   return (
