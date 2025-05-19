@@ -7,9 +7,16 @@ COO_CSV_NAME=$(oc get csv --kubeconfig "${KUBECONFIG}" --namespace="${DTP_NAMESP
 
 oc get csv "${COO_CSV_NAME}" -n "${DTP_NAMESPACE}" -o yaml > "${RANDOM_FILE}" --kubeconfig "${KUBECONFIG}"
 
+# Patch the CSV file env vars
 sed -i "s#value: .*distributed-tracing-console-plugin.*#value: ${DT_CONSOLE_IMAGE}#g" "${RANDOM_FILE}"
 
-oc apply -f "${RANDOM_FILE}" --kubeconfig "${KUBECONFIG}"
+# Patch the CSV file related images
+sed -i "s#^\([[:space:]]*- image:\).*distributed-tracing-console-plugin.*#\1 ${DT_CONSOLE_IMAGE}#g" "${RANDOM_FILE}"
 
-oc wait --for=condition=ready pod -l app.kubernetes.io/instance=distributed-tracing -n "${DTP_NAMESPACE}" --timeout=60s --kubeconfig "${KUBECONFIG}"
-oc wait --for=condition=ready pod -l app.kubernetes.io/name=observability-operator -n "${DTP_NAMESPACE}" --timeout=60s --kubeconfig "${KUBECONFIG}"
+# Apply the patched CSV resource file
+oc replace -f "${RANDOM_FILE}" --kubeconfig "${KUBECONFIG}"
+
+# Wait for the operator to reconcile the change and make sure all the pods are running.
+sleep 5
+oc wait --for=condition=Ready pods --selector=app.kubernetes.io/part-of=observability-operator -n "${DTP_NAMESPACE}" --timeout=60s
+oc wait --for=condition=ready pods -l app.kubernetes.io/name=observability-operator -n "${DTP_NAMESPACE}" --timeout=60s --kubeconfig "${KUBECONFIG}"
