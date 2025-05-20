@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Divider, PageSection, Split, SplitItem, Stack, Title } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import {
@@ -60,6 +60,13 @@ export function QueryBrowserBody() {
   const [query, setQuery] = useQueryParam('q', withDefault(StringParam, '{}'));
   const [limit, setLimit] = useQueryParam('limit', withDefault(NumberParam, DEFAULT_LIMIT));
   const { timeRange, setTimeRange, refresh } = useTimeRange();
+
+  // Refresh query if Tempo instance or tenant changes.
+  // The Perses data source is selected via a mock DatasourceApiImpl implementation in <PersesWrapper>,
+  // therefore Perses doesn't refresh automatically if the Tempo instance changes.
+  useEffect(() => {
+    refresh();
+  }, [tempo, refresh]);
 
   const runQuery = useCallback(
     (query: string) => {
