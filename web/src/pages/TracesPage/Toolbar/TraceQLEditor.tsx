@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import CodeMirror, { EditorView, keymap } from '@uiw/react-codemirror';
-import { TraceQLExtension } from '@perses-dev/tempo-plugin/lib/components/TraceQLExtension';
+import { TraceQLExtension, TempoDatasource } from '@perses-dev/tempo-plugin';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
 import { getProxyURLFor } from '../../../hooks/api';
 import { usePatternFlyTheme } from '../../../components/console/utils/usePatternFlyTheme';
@@ -36,7 +36,10 @@ export function TraceQLEditor({ id, tempo, query, setQuery, runQuery }: TraceQLE
   const { theme } = usePatternFlyTheme();
 
   const traceQLExtension = useMemo(() => {
-    return TraceQLExtension({ endpoint: tempo ? getProxyURLFor(tempo) : undefined });
+    const client = tempo
+      ? TempoDatasource.createClient({ directUrl: getProxyURLFor(tempo) }, {})
+      : undefined;
+    return TraceQLExtension({ client });
   }, [tempo]);
 
   const keyBindings = useMemo(
