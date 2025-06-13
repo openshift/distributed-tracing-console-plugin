@@ -1,6 +1,6 @@
-import * as React from 'react';
 import { cancellableFetch, FetchError } from '../cancellable-fetch';
-import { BACKEND_URL } from './api';
+import { APIResponse, BACKEND_URL } from './api';
+import { useQuery } from '@tanstack/react-query';
 
 /**
  * Definition of a TempoStack or TempoMonolithic Custom Resource in the cluster.
@@ -14,12 +14,7 @@ export type TempoResource = {
   tenants?: string[];
 };
 
-interface ListTempoResourcesResponse {
-  status: 'success' | 'error';
-  data: TempoResource[];
-  errorType?: string;
-  error?: string;
-}
+type ListTempoResourcesResponse = APIResponse<TempoResource[]>;
 
 const isTempoStackListResponse = (value: unknown): value is TempoResource => {
   const obj = value as TempoResource;
@@ -31,51 +26,26 @@ const isTempoStackListResponse = (value: unknown): value is TempoResource => {
   );
 };
 
-export const useTempoResources = () => {
-  const [tempoResources, setTempoResources] = React.useState<Array<TempoResource>>();
-  const [error, setError] = React.useState<{ errorType?: string; error: string } | undefined>();
-  const [loading, setLoading] = React.useState<boolean>(false);
+export function useTempoResources() {
+  return useQuery<TempoResource[], FetchError>({
+    queryKey: ['useTempoResources'],
+    queryFn: async function () {
+      const { request } = cancellableFetch<ListTempoResourcesResponse>(
+        `${BACKEND_URL}/api/v1/list-tempo-resources`,
+      );
+      const response = await request();
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        const { request } = cancellableFetch<ListTempoResourcesResponse>(
-          `${BACKEND_URL}/api/v1/list-tempo-resources`,
-        );
-        const response = await request();
-
-        if (
-          response &&
-          response.status === 'success' &&
-          Array.isArray(response.data) &&
-          response.data.every(isTempoStackListResponse)
-        ) {
-          setTempoResources(response.data);
-          setError(undefined);
-        } else {
-          throw new FetchError('Error retrieving Tempo resources', 500, response);
-        }
-      } catch (e) {
-        setTempoResources(undefined);
-        if (e instanceof FetchError && e.json?.error) {
-          setError(e.json);
-        } else {
-          setError({ error: String(e) });
-        }
-        console.error(e);
-      } finally {
-        setLoading(false);
+      if (
+        response &&
+        response.status === 'success' &&
+        Array.isArray(response.data) &&
+        response.data.every(isTempoStackListResponse)
+      ) {
+        return response.data;
+      } else {
+        throw new FetchError('Error retrieving Tempo resources', 500, response);
       }
-    };
-
-    fetchData();
-  }, []);
-
-  return {
-    loading,
-    error,
-    tempoResources,
-  };
-};
+    },
+    staleTime: 60 * 1000, // cache response for 1m
+  });
+}

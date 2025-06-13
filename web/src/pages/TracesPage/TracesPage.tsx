@@ -52,24 +52,30 @@ export default memo(TracesPage);
  * and shows an empty state instead of the query browser.
  */
 function TracesPageBody() {
-  const { loading, error, tempoResources } = useTempoResources();
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const { isLoading, error, data: tempoResources } = useTempoResources();
   const [tempo] = useTempoInstance();
 
   // show loading state (loading the list of Tempo CRs in the cluster)
   // only if no Tempo instance is selected (from the query params)
-  if (!tempo && loading) {
+  if (!tempo && isLoading) {
     return <LoadingState />;
   }
 
   if (error) {
-    if (error.errorType === 'TempoCRDNotFound') {
+    if (error.json?.errorType === 'TempoCRDNotFound') {
       return <TempoOperatorNotInstalledState />;
     } else {
-      return <ErrorState errorType={error.errorType} error={error.error} />;
+      return (
+        <ErrorState
+          errorType={error.json?.errorType}
+          error={error.json?.error ?? t('Error connecting to the Tracing UI plugin backend')}
+        />
+      );
     }
   }
 
-  if (!loading && tempoResources && tempoResources.length === 0) {
+  if (!isLoading && tempoResources && tempoResources.length === 0) {
     return <NoTempoInstance />;
   }
 
@@ -169,7 +175,7 @@ function NoTempoInstance() {
 
 interface ErrorStateProps {
   errorType?: string;
-  error: string;
+  error?: string;
 }
 
 function ErrorState({ errorType, error }: ErrorStateProps) {
@@ -180,7 +186,9 @@ function ErrorState({ errorType, error }: ErrorStateProps) {
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <ErrorAlert error={{ name: errorType ?? t('Error'), message: error }} />
+        <ErrorAlert
+          error={{ name: errorType ?? t('Error'), message: error ?? t('Unknown error') }}
+        />
       </PageSection>
     </>
   );
