@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -14,7 +13,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-var log = logrus.WithField("module", "api.tempo")
+var log = logrus.WithField("module", "api")
 
 type TempoResource struct {
 	Kind      KindType `json:"kind"`
@@ -31,20 +30,6 @@ const (
 	KindTempoMonolithic KindType = "TempoMonolithic"
 )
 
-type ListTempoResourcesResponse struct {
-	Status    StatusType      `json:"status"`
-	Data      []TempoResource `json:"data"`
-	ErrorType string          `json:"errorType,omitempty"`
-	Error     string          `json:"error,omitempty"`
-}
-
-type StatusType string
-
-const (
-	StatusSuccess StatusType = "success"
-	StatusError   StatusType = "error"
-)
-
 var (
 	tempostackGVR = schema.GroupVersionResource{
 		Group:    "tempo.grafana.com",
@@ -58,29 +43,12 @@ var (
 	}
 )
 
-func writeResponse(w http.ResponseWriter, code int, r ListTempoResourcesResponse) {
-	if r.Status == StatusError {
-		log.Error(fmt.Sprintf("type=%s, error=%s", r.ErrorType, r.Error))
-	}
-
-	bytes, err := json.Marshal(r)
-	if err != nil {
-		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(bytes)
-}
-
 func ListTempoResourcesHandler(k8sclient *dynamic.DynamicClient) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resources, err := ListTempoResources(r.Context(), k8sclient)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				writeResponse(w, http.StatusNotFound, ListTempoResourcesResponse{
+				writeResponse(w, http.StatusNotFound, Response{
 					Status:    StatusError,
 					ErrorType: "TempoCRDNotFound",
 					Error:     err.Error(),
@@ -88,14 +56,14 @@ func ListTempoResourcesHandler(k8sclient *dynamic.DynamicClient) http.HandlerFun
 				return
 			}
 
-			writeResponse(w, http.StatusInternalServerError, ListTempoResourcesResponse{
+			writeResponse(w, http.StatusInternalServerError, Response{
 				Status: StatusError,
 				Error:  err.Error(),
 			})
 			return
 		}
 
-		writeResponse(w, http.StatusOK, ListTempoResourcesResponse{
+		writeResponse(w, http.StatusOK, Response{
 			Status: StatusSuccess,
 			Data:   resources,
 		})

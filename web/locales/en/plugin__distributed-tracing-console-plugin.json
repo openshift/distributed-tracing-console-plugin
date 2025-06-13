@@ -43,6 +43,7 @@
   "TraceQL Query": "TraceQL Query",
   "Query": "Query",
   "Run query": "Run query",
+  "Error connecting to the Tracing UI plugin backend": "Error connecting to the Tracing UI plugin backend",
   "Tempo operator isn't installed yet": "Tempo operator isn't installed yet",
   "To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.": "To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.",
   "Install Tempo operator": "Install Tempo operator",
@@ -53,6 +54,7 @@
   "Create a TempoMonolithic instance": "Create a TempoMonolithic instance",
   "View documentation": "View documentation",
   "Error": "Error",
+  "Unknown error": "Unknown error",
   "No results found": "No results found",
   "No results match this query criteria. Clear all filters and try again.": "No results match this query criteria. Clear all filters and try again.",
   "Clear all filters": "Clear all filters"
