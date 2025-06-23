@@ -20,8 +20,8 @@ export function useTagValues(
       const values = await client.searchTagValues({ tag, q: query, start, end });
       return values.tagValues
         .map((tagValue) => ({
-          content: tagValue.value,
-          value: tagValue.value,
+          content: tagValue.value ?? '',
+          value: tagValue.value ?? '',
         }))
         .sort((a, b) => a.value.localeCompare(b.value));
     },

@@ -83,14 +83,13 @@
     "@patternfly/react-core": "^6.2.0",
     "@patternfly/react-icons": "^5.4.2",
     "@patternfly/react-templates": "^6.2.2",
-    "@perses-dev/core": "0.51.0-rc.0",
-    "@perses-dev/dashboards": "0.51.0-rc.0",
-    "@perses-dev/plugin-system": "0.51.0-rc.0",
-    "@perses-dev/scatter-chart-plugin": "^0.6.0",
-    "@perses-dev/tempo-plugin": "^0.51.0-beta.2",
-    "@perses-dev/trace-table-plugin": "^0.6.0",
-    "@perses-dev/tracing-gantt-chart-plugin": "^0.6.0",
-    "@tanstack/react-query": "4.36.1",
+    "@perses-dev/core": "^0.51.0",
+    "@perses-dev/dashboards": "^0.51.0",
+    "@perses-dev/plugin-system": "^0.51.0",
+    "@perses-dev/scatter-chart-plugin": "^0.7.0",
+    "@perses-dev/tempo-plugin": "^0.51.0-rc.3",
+    "@perses-dev/trace-table-plugin": "^0.7.0",
+    "@perses-dev/tracing-gantt-chart-plugin": "^0.7.0",
     "copy-webpack-plugin": "^12.0.2",
     "i18next": "^23.10.0",
     "i18next-http-backend": "^2.5.0",
@@ -99,14 +98,11 @@
     "pluralize": "^8.0.0",
     "use-query-params": "^2.2.1"
   },
+  "peerDependencies": {
+    "react-router-dom": "<7"
+  },
   "overrides": {
     "@mui/x-data-grid": "7.20.0",
-    "@perses-dev/components": "0.51.0-rc.0",
-    "@perses-dev/core": "0.51.0-rc.0",
-    "@perses-dev/dashboards": "0.51.0-rc.0",
-    "@perses-dev/plugin-system": "0.51.0-rc.0",
-    "@tanstack/react-query": "4.36.1",
-    "cheerio":"1.0.0-rc.12",
-    "react-router-dom": "5.3.4"
+    "cheerio": "1.0.0-rc.12"
   }
 }
