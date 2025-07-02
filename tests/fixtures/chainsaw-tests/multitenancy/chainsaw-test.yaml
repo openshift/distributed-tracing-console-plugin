@@ -5,7 +5,6 @@ metadata:
   creationTimestamp: null
   name: multitenancy
 spec:
-  concurrent: false
   namespace: chainsaw-multitenancy
   steps:
   - name: step-00
@@ -20,18 +19,6 @@ spec:
         file: 01-install-tempo.yaml
     - assert:
         file: 01-assert.yaml
-  - name: Wait for Tempo to be ready
-    try:
-    - wait:
-        apiVersion: tempo.grafana.com/v1alpha1
-        kind: TempoStack
-        name: simplest
-        namespace: chainsaw-multitenancy
-        timeout: 2m
-        for:
-          condition:
-            name: Ready
-            value: 'True'
   - name: step-02
     try:
     - apply:
