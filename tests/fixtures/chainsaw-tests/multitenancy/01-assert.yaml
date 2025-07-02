@@ -86,7 +86,8 @@ metadata:
     app.kubernetes.io/instance: simplest
     app.kubernetes.io/managed-by: tempo-operator
     app.kubernetes.io/name: tempo
-  name: tempo-simplest-gateway
+    app.kubernetes.io/namespace: chainsaw-multitenancy
+  name: tempo-simplest-gateway-chainsaw-multitenancy
 rules:
   - apiGroups:
       - authentication.k8s.io
@@ -109,11 +110,12 @@ metadata:
     app.kubernetes.io/instance: simplest
     app.kubernetes.io/managed-by: tempo-operator
     app.kubernetes.io/name: tempo
-  name: tempo-simplest-gateway
+    app.kubernetes.io/namespace: chainsaw-multitenancy
+  name: tempo-simplest-gateway-chainsaw-multitenancy
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: tempo-simplest-gateway
+  name: tempo-simplest-gateway-chainsaw-multitenancy
 subjects:
   - kind: ServiceAccount
     name: tempo-simplest-gateway
@@ -235,8 +237,6 @@ spec:
           readOnly: true
       - args:
         - --log.level=warn
-        - --opa.admin-groups=system:cluster-admins,cluster-admin,dedicated-admin
-        - --opa.matcher=kubernetes_namespace_name
         - --web.listen=:8082
         - --web.internal.listen=:8083
         - --web.healthchecks.url=http://localhost:8082
