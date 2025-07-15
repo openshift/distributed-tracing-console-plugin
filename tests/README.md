@@ -17,17 +17,25 @@ node_modules/     -> dependencies will be installed at runtime here
 ## Directory structure
 After dependencies are installed successfully and before we run actual tests, please confirm if we have correct structure as below.
 ```bash
-% ls -ltr tests
-drwxr-xr-x  views
--rw-r--r--  reporter-config.json
--rw-r--r--  package.json
-drwxr-xr-x  node_modules
-drwxr-xr-x  cypress
--rw-r--r--  cypress.config.ts
--rw-r--r--  README.md
-drwxr-xr-x  tests
--rw-r--r--  tsconfig.json
-drwxr-xr-x  fixtures
+tree -L 1
+.
+├── cypress
+├── cypress.config.ts
+├── Dockerfile
+├── Dockerfile-cypress
+├── e2e
+├── fixtures
+├── node_modules
+├── package-lock.json
+├── package.json
+├── PATTERNFLY_COMMANDS_EXAMPLES.md
+├── README.md
+├── reporter-config.json
+├── SELECTOR_BEST_PRACTICES.md
+├── tsconfig.json
+└── views
+
+6 directories, 10 files
 ````
 
 ### Export necessary variables
