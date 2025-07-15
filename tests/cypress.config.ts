@@ -28,7 +28,6 @@ export default defineConfig({
     openMode: 0,
   },
   e2e: {
-    browser: "chrome",
     viewportWidth: 1920,
     viewportHeight: 1080,
     setupNodeEvents(on, config) {
@@ -97,7 +96,7 @@ export default defineConfig({
       return config;
     },
     supportFile: './cypress/support/e2e.js',
-    specPattern: 'tests/**/*.cy.{js,jsx,ts,tsx}',
+    specPattern: 'e2e/**/*.cy.{js,jsx,ts,tsx}',
     numTestsKeptInMemory: 1,
     testIsolation: false,
     experimentalModifyObstructiveThirdPartyCode: true,
