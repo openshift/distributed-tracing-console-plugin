@@ -1,0 +1,497 @@
+import { operatorHubPage } from '../views/operator-hub-page';
+
+// Set constants for the operators that need to be installed for tests.
+const DTP = {
+  namespace: 'openshift-cluster-observability-operator',
+  packageName: 'cluster-observability-operator',
+  operatorName: 'Cluster Observability Operator',
+  config: {
+    kind: 'UIPlugin',
+    name: 'distributed-tracing',
+  },
+};
+
+const OTEL = {
+  namespace: 'openshift-opentelemetry-operator',
+  packageName: 'opentelemetry-product',
+  operatorName: 'Red Hat build of OpenTelemetry',
+};
+
+const TEMPO = {
+  namespace: 'openshift-tempo-operator',
+  packageName: 'tempo-product',
+  operatorName: 'Tempo Operator',
+};
+
+describe('OpenShift Distributed Tracing UI Plugin tests', () => {
+  before(() => {
+    // Cleanup any existing resources from interrupted tests
+    cy.log('Cleanup any existing resources from previous interrupted tests');
+    if (Cypress.env('SKIP_COO_INSTALL')) {
+      cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
+      cy.executeAndDelete(
+        `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Chainsaw namespaces if they exist.');
+      cy.exec(
+        `for ns in $(oc get projects -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} | grep "chainsaw-" | sed 's|project.project.openshift.io/||'); do oc get opentelemetrycollectors.opentelemetry.io,tempostacks.tempo.grafana.com,tempomonolithics.tempo.grafana.com,pvc -n $ns -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null | xargs --no-run-if-empty -I {} oc patch {} -n $ns --type merge -p '{"metadata":{"finalizers":[]}}' --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; oc delete project $ns --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} || true; done`,
+        {
+          timeout: 180000,
+          failOnNonZeroExit: false
+        }
+      );
+
+      // Only remove cluster-admin role if provider is not kube:admin
+      if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+        cy.log('Remove cluster-admin role from user if exists.');
+        cy.executeAndDelete(
+          `oc adm policy remove-cluster-role-from-user cluster-admin ${Cypress.env('LOGIN_USERNAME')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        );
+      }
+    } else {
+      cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
+      cy.executeAndDelete(
+        `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Chainsaw namespaces if they exist.');
+      cy.exec(
+        `for ns in $(oc get projects -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} | grep "chainsaw-" | sed 's|project.project.openshift.io/||'); do oc get opentelemetrycollectors.opentelemetry.io,tempostacks.tempo.grafana.com,tempomonolithics.tempo.grafana.com,pvc -n $ns -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null | xargs --no-run-if-empty -I {} oc patch {} -n $ns --type merge -p '{"metadata":{"finalizers":[]}}' --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; oc delete project $ns --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} || true; done`,
+        {
+          timeout: 180000,
+          failOnNonZeroExit: false
+        }
+      );
+
+      cy.log('Remove Cluster Observability Operator if exists');
+      cy.executeAndDelete(`oc delete namespace ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      cy.log('Remove OpenTelemetry Operator if exists');
+      cy.executeAndDelete(`oc delete namespace ${OTEL.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      cy.log('Remove Tempo Operator if exists');
+      cy.executeAndDelete(`oc delete namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      // Only remove cluster-admin role if provider is not kube:admin
+      if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+        cy.log('Remove cluster-admin role from user if exists.');
+        cy.executeAndDelete(
+          `oc adm policy remove-cluster-role-from-user cluster-admin ${Cypress.env('LOGIN_USERNAME')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        );
+      }
+    }
+    // Only add cluster-admin role if provider is not kube:admin
+    if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+      cy.adminCLI(
+        `oc adm policy add-cluster-role-to-user cluster-admin ${Cypress.env('LOGIN_USERNAME')}`,
+      );
+    }
+    // Simplified login without OAuth URL complexity
+    cy.login(
+      Cypress.env('LOGIN_IDP'),
+      Cypress.env('LOGIN_USERNAME'),
+      Cypress.env('LOGIN_PASSWORD'),
+    );
+
+    if (Cypress.env('SKIP_COO_INSTALL')) {
+      cy.log('SKIP_COO_INSTALL is set. Skipping Cluster Observability Operator installation.');
+    } else if (Cypress.env('COO_UI_INSTALL')) {
+      cy.log('COO_UI_INSTALL is set. COO, Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
+      cy.log('Install Cluster Observability Operator');
+      operatorHubPage.installOperator(DTP.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install OpenTelemetry Operator');
+      operatorHubPage.installOperator(OTEL.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install Tempo Operator');
+      operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+    } else if (Cypress.env('KONFLUX_COO_BUNDLE_IMAGE')) {
+      cy.log('KONFLUX_COO_BUNDLE_IMAGE is set. COO operator will be installed from Konflux bundle. Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
+      cy.log('Install Cluster Observability Operator');
+      cy.exec(
+        `oc --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} apply -f ./fixtures/coo-imagecontentsourcepolicy.yaml` ,
+      );
+      cy.exec(
+        `oc create namespace ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+      cy.exec(
+        `oc label namespaces ${DTP.namespace} openshift.io/cluster-monitoring=true --overwrite=true --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+      cy.exec(
+        `operator-sdk run bundle --timeout=10m --namespace ${DTP.namespace} ${Cypress.env('KONFLUX_COO_BUNDLE_IMAGE')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} --verbose `,
+        { timeout: 6 * 60 * 1000 },
+      );
+      cy.log('Install OpenTelemetry Operator');
+      operatorHubPage.installOperator(OTEL.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install Tempo Operator');
+      operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+    } else if (Cypress.env('CUSTOM_COO_BUNDLE_IMAGE')) {
+      cy.log('CUSTOM_COO_BUNDLE_IMAGE is set. COO operator will be installed from custom built bundle. Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
+      cy.log('Install Cluster Observability Operator');
+      cy.exec(
+        `oc --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} apply -f ./fixtures/coo-imagecontentsourcepolicy.yaml` ,
+      );
+      cy.exec(
+        `oc create namespace ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+      cy.exec(
+        `oc label namespaces ${DTP.namespace} openshift.io/cluster-monitoring=true --overwrite=true --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+      cy.exec(
+        `operator-sdk run bundle --timeout=10m --namespace ${DTP.namespace} ${Cypress.env('CUSTOM_COO_BUNDLE_IMAGE')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} --verbose `,
+        { timeout: 6 * 60 * 1000 },
+      );
+      cy.log('Install OpenTelemetry Operator');
+      operatorHubPage.installOperator(OTEL.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install Tempo Operator');
+      operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) => 
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+    } else {
+      throw new Error('No CYPRESS env set for operator installation, check the README for more details.');
+    }
+
+    cy.log('Set Distributed Tracing Console Plugin image in operator CSV');
+    if (Cypress.env('DT_CONSOLE_IMAGE')) {
+      cy.log('DT_CONSOLE_IMAGE is set. the image will be patched in COO operator CSV');
+      cy.exec(
+        './fixtures/update-plugin-image.sh',
+        {
+          env: {
+            DT_CONSOLE_IMAGE: Cypress.env('DT_CONSOLE_IMAGE'),
+            KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+            DTP_NAMESPACE: `${DTP.namespace}`
+          },
+          timeout: 120000,
+          failOnNonZeroExit: true
+        }
+      ) .then((result) => {
+        expect(result.code).to.eq(0);
+        cy.log(`COO CSV updated successfully with Distributed Tracing Console Plugin image: ${result.stdout}`);
+      });
+    } else {
+      cy.log('DT_CONSOLE_IMAGE is NOT set. Skipping patching the image in COO operator CSV.');
+    }
+
+    cy.log('Create Distributed Tracing UI Plugin instance.');
+    cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+    cy.exec(
+      `sleep 15 && oc wait --for=condition=Ready pods --selector=app.kubernetes.io/instance=distributed-tracing -n ${DTP.namespace} --timeout=60s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      {
+        timeout: 80000,
+        failOnNonZeroExit: true
+      }
+    ).then((result) => {
+      expect(result.code).to.eq(0);
+      cy.log(`Distributed Tracing Console plugin pod is now running in namespace: ${DTP.namespace}`);
+    });    
+    // Check for web console update alert, if not found, go to traces page
+    cy.get('body').then(($body) => {
+      if ($body.find('.pf-v5-c-alert, .pf-v6-c-alert').length > 0 && 
+          $body.text().includes('Web console update is available')) {
+        cy.get('.pf-v5-c-alert, .pf-v6-c-alert')
+          .contains('Web console update is available')
+          .should('exist');
+      } else {
+        cy.visit('/observe/traces');
+        cy.url().should('include', '/observe/traces');
+      }
+    });
+
+  });
+
+  after(() => {
+    if (Cypress.env('SKIP_COO_INSTALL')) {
+      cy.log('Delete Distributed Tracing UI Plugin instance.');
+      cy.executeAndDelete(
+        `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Chainsaw namespaces.');
+      cy.exec(
+        `for ns in $(oc get projects -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} | grep "chainsaw-" | sed 's|project.project.openshift.io/||'); do oc get opentelemetrycollectors.opentelemetry.io,tempostacks.tempo.grafana.com,tempomonolithics.tempo.grafana.com,pvc -n $ns -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null | xargs --no-run-if-empty -I {} oc patch {} -n $ns --type merge -p '{"metadata":{"finalizers":[]}}' --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; oc delete project $ns --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} || true; done`,
+        {
+          timeout: 300000,
+          failOnNonZeroExit: false
+        }
+      );
+
+      // Only remove cluster-admin role if provider is not kube:admin
+      if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+        cy.log('Remove cluster-admin role from user.');
+        cy.executeAndDelete(
+          `oc adm policy remove-cluster-role-from-user cluster-admin ${Cypress.env('LOGIN_USERNAME')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        );
+      }
+    } else {
+      cy.log('Delete Distributed Tracing UI Plugin instance.');
+      cy.executeAndDelete(
+        `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Chainsaw namespaces.');
+      cy.exec(
+        `for ns in $(oc get projects -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} | grep "chainsaw-" | sed 's|project.project.openshift.io/||'); do oc get opentelemetrycollectors.opentelemetry.io,tempostacks.tempo.grafana.com,tempomonolithics.tempo.grafana.com,pvc -n $ns -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null | xargs --no-run-if-empty -I {} oc patch {} -n $ns --type merge -p '{"metadata":{"finalizers":[]}}' --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; oc delete project $ns --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} || true; done`,
+        {
+          timeout: 300000,
+          failOnNonZeroExit: false
+        }
+      );
+
+      cy.log('Remove Cluster Observability Operator');
+      cy.executeAndDelete(`oc delete namespace ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      cy.log('Remove OpenTelemetry Operator');
+      cy.executeAndDelete(`oc delete namespace ${OTEL.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      cy.log('Remove Tempo Operator');
+      cy.executeAndDelete(`oc delete namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      // Only remove cluster-admin role if provider is not kube:admin
+      if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+        cy.log('Remove cluster-admin role from user.');
+        cy.executeAndDelete(
+          `oc adm policy remove-cluster-role-from-user cluster-admin ${Cypress.env('LOGIN_USERNAME')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        );
+      }
+    }
+  });
+
+  // Tests start from here.
+  
+  it('Test Distributed Tracing UI plugin page without any Tempo instances', () => {
+    cy.log('Navigate to the observe/traces page');
+    cy.visit('/observe/traces');
+
+    cy.log('Assert that the Traces page shows the empty state.');
+    // Using PatternFly empty state helper with heading selector
+    cy.pfEmptyState().within(() => {
+      cy.get('h1, h2, h3, h4, h5, h6').should('contain.text', 'No Tempo instances yet');
+    });
+
+    cy.log('Assert that the View documentation button is visible.');
+    // Using PatternFly button helper
+    cy.pfButton('View documentation')
+      .should('be.visible')
+      .and('have.text', 'View documentation');
+
+    cy.log('Assert create a tempo instance toggle visibility and text.');
+    // Using PatternFly menu toggle helper
+    cy.pfMenuToggle('Create a Tempo instance').should('be.visible');
+
+    cy.log('Click the toggle to show creation options.');
+    cy.pfMenuToggle('Create a Tempo instance').click();
+
+    cy.log('Assert dropdown items for Tempo instance creation are visible.');
+    // Using PatternFly menu item helpers
+    cy.pfMenuItem('Create a TempoStack instance')
+      .should('be.visible')
+      .and('have.text', 'Create a TempoStack instance');
+
+    cy.pfMenuItem('Create a TempoMonolithic instance')
+      .should('be.visible')
+      .and('have.text', 'Create a TempoMonolithic instance');
+  });
+
+  it('Test Distributed Tracing UI plugin with Tempo instances and verify traces using user having cluster-admin role', function () {
+    cy.log('Create TempoStack and TempoMonolithic instances');
+    cy.exec(
+      'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/chainsaw-tests',
+      {
+        env: {
+          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+        },
+        timeout: 1800000,
+        failOnNonZeroExit: true
+      }
+    ) .then((result) => {
+      expect(result.code).to.eq(0);
+      cy.log(`Chainsaw test ran successfully: ${result.stdout}`);
+    });
+    cy.log('Navigate to the observe/traces page');
+    cy.visit('/observe/traces');
+
+    cy.log('Assert traces in TempoStack instance.');
+    cy.get(':nth-child(1) > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(2) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(1) > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
+    cy.get(':nth-child(2) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(2) > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(1) > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get('.pf-v6-c-toolbar__group > :nth-child(1) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get('.pf-m-toggle-group > .pf-v6-c-toolbar__group > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
+    cy.contains('.pf-v6-c-menu__item-text', 'http-rbac-1')
+      .closest('.pf-v6-c-menu__item')
+      .find('input[type="checkbox"]')
+      .check();
+    cy.contains('.pf-v6-c-menu__item-text', 'http-rbac-2')
+      .closest('.pf-v6-c-menu__item')
+      .find('input[type="checkbox"]')
+      .check();
+    cy.contains('.pf-v6-c-menu__item-text', 'grpc-rbac-1')
+      .closest('.pf-v6-c-menu__item')
+      .find('input[type="checkbox"]')
+      .check();
+    cy.contains('.pf-v6-c-menu__item-text', 'grpc-rbac-2')
+      .closest('.pf-v6-c-menu__item')
+      .find('input[type="checkbox"]')
+      .check();
+    cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root > .MuiTypography-root').click();
+    cy.contains('div', 'okey-dokey').click({ force: true });
+    cy.get('.css-1bmckj4').then(($el) => {
+      cy.log(`Actual text in .css-1bmckj4 (TempoStack): ${$el.text()}`);
+      expect($el.text()).to.satisfy((text) => 
+        text === 'http-rbac-1' || 
+        text === 'http-rbac-2' || 
+        text === 'grpc-rbac-1' || 
+        text === 'grpc-rbac-2'
+      );
+    });
+    cy.get('.MuiTypography-h2').should('have.text', 'okey-dokey');
+    cy.get('.MuiTabs-list > .MuiButtonBase-root').should('be.visible');
+  
+    // Check for net.peer.ip
+    cy.contains('.MuiTypography-h5', 'net.peer.ip').next('.MuiTypography-body1').should('have.text', '1.2.3.4');
+    
+    // Check for peer.service
+    cy.contains('.MuiTypography-h5', 'peer.service').next('.MuiTypography-body1').should('have.text', 'telemetrygen-client');
+    
+    // Check for k8s.container.name if present
+    cy.get('body').then(($body) => {
+      if ($body.find('.MuiTypography-h5:contains("k8s.container.name")').length > 0) {
+        cy.contains('.MuiTypography-h5', 'k8s.container.name').next('.MuiTypography-body1').should('have.text', 'telemetrygen');
+      }
+    });
+    
+    // Check for k8s.namespace.name if present
+    cy.get('body').then(($body) => {
+      if ($body.find('.MuiTypography-h5:contains("k8s.namespace.name")').length > 0) {
+        cy.contains('.MuiTypography-h5', 'k8s.namespace.name').next('.MuiTypography-body1').then(($el) => {
+          cy.log(`Actual text in k8s.namespace.name (TempoStack): ${$el.text()}`);
+          expect($el.text()).to.satisfy((text) => 
+            text === 'chainsaw-test-rbac-1' || 
+            text === 'chainsaw-test-rbac-2' || 
+            text === 'chainsaw-mono-rbac-1' || 
+            text === 'chainsaw-mono-rbac-2'
+          );
+        });
+      }
+    });
+    
+    // Check for service.name
+    cy.contains('.MuiTypography-h5', 'service.name').next('.MuiTypography-body1').then(($el) => {
+      cy.log(`Actual text in service.name (TempoStack): ${$el.text()}`);
+      expect($el.text()).to.satisfy((text) => 
+        text === 'http-rbac-1' || 
+        text === 'http-rbac-2' || 
+        text === 'grpc-rbac-1' || 
+        text === 'grpc-rbac-2'
+      );
+    });
+    cy.get('.pf-v6-c-breadcrumb__list > :nth-child(1) > a').click();
+
+    cy.log('Assert traces in TempoMonolithic instance.');
+    cy.get(':nth-child(1) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
+    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get(':nth-child(2) > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle').click();
+    cy.get(':nth-child(3) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
+    cy.get('.pf-v6-c-form__group-control > .pf-v6-c-button > .pf-v6-c-button__text').click();
+    cy.get('.pf-m-toggle-group > .pf-m-action-group > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-button > .pf-v6-c-button__text').click();
+    cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root > .MuiTypography-root').click();
+    cy.contains('div', 'okey-dokey').click({ force: true });
+    cy.get('.css-1bmckj4').then(($el) => {
+      cy.log(`Actual text in .css-1bmckj4 (TempoMonolithic): ${$el.text()}`);
+      expect($el.text()).to.satisfy((text) => 
+        text === 'http-rbac-1' || 
+        text === 'http-rbac-2' || 
+        text === 'grpc-rbac-1' || 
+        text === 'grpc-rbac-2'
+      );
+    });
+    cy.get('.MuiTypography-h2').should('have.text', 'okey-dokey');
+    cy.get('.MuiTabs-list > .MuiButtonBase-root').should('be.visible');
+    // Check for span details with more flexible approach
+    // Check for net.peer.ip
+    cy.contains('.MuiTypography-h5', 'net.peer.ip').next('.MuiTypography-body1').should('have.text', '1.2.3.4');
+    
+    // Check for peer.service
+    cy.contains('.MuiTypography-h5', 'peer.service').next('.MuiTypography-body1').should('have.text', 'telemetrygen-client');
+    
+    // Check for k8s.container.name if present
+    cy.get('body').then(($body) => {
+      if ($body.find('.MuiTypography-h5:contains("k8s.container.name")').length > 0) {
+        cy.contains('.MuiTypography-h5', 'k8s.container.name').next('.MuiTypography-body1').should('have.text', 'telemetrygen');
+      }
+    });
+    
+    // Check for k8s.namespace.name if present
+    cy.get('body').then(($body) => {
+      if ($body.find('.MuiTypography-h5:contains("k8s.namespace.name")').length > 0) {
+        cy.contains('.MuiTypography-h5', 'k8s.namespace.name').next('.MuiTypography-body1').then(($el) => {
+          cy.log(`Actual text in k8s.namespace.name (TempoMonolithic): ${$el.text()}`);
+          expect($el.text()).to.satisfy((text) => 
+            text === 'chainsaw-test-rbac-1' || 
+            text === 'chainsaw-test-rbac-2' || 
+            text === 'chainsaw-mono-rbac-1' || 
+            text === 'chainsaw-mono-rbac-2'
+          );
+        });
+      }
+    });
+    
+    // Check for service.name
+    cy.contains('.MuiTypography-h5', 'service.name').next('.MuiTypography-body1').then(($el) => {
+      cy.log(`Actual text in service.name (TempoMonolithic): ${$el.text()}`);
+      expect($el.text()).to.satisfy((text) => 
+        text === 'http-rbac-1' || 
+        text === 'http-rbac-2' || 
+        text === 'grpc-rbac-1' || 
+        text === 'grpc-rbac-2'
+      );
+    });
+    cy.get('.pf-v6-c-breadcrumb__list > :nth-child(1) > a').click();
+  });
+
+});
