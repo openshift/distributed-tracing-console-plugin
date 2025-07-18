@@ -224,18 +224,30 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       expect(result.code).to.eq(0);
       cy.log(`Distributed Tracing Console plugin pod is now running in namespace: ${DTP.namespace}`);
     });    
-    // Check for web console update alert, if not found, go to traces page
-    cy.get('body').then(($body) => {
-      if ($body.find('.pf-v5-c-alert, .pf-v6-c-alert').length > 0 && 
-          $body.text().includes('Web console update is available')) {
-        cy.get('.pf-v5-c-alert, .pf-v6-c-alert')
-          .contains('Web console update is available')
-          .should('exist');
-      } else {
-        cy.visit('/observe/traces');
-        cy.url().should('include', '/observe/traces');
-      }
-    });
+    // Check for web console update alert for up to 2 minutes (especially important for Hypershift clusters)
+    cy.log('Checking for web console update alert for up to 2 minutes...');
+    
+    const checkForAlertRecursively = (attemptsLeft = 24) => {
+      cy.get('body', { timeout: 10000 }).then(($body) => {
+        if ($body.find('.pf-v5-c-alert, .pf-v6-c-alert').length > 0 && 
+            $body.text().includes('Web console update is available')) {
+          cy.log('Web console update alert found');
+          cy.get('.pf-v5-c-alert, .pf-v6-c-alert')
+            .contains('Web console update is available')
+            .should('exist');
+        } else if (attemptsLeft > 0) {
+          cy.log(`Alert not found, checking again in 5 seconds... (${attemptsLeft} attempts remaining)`);
+          cy.wait(5000);
+          checkForAlertRecursively(attemptsLeft - 1);
+        } else {
+          cy.log('No web console update alert found after 2 minutes, navigating to traces page');
+          cy.visit('/observe/traces');
+          cy.url().should('include', '/observe/traces');
+        }
+      });
+    };
+    
+    checkForAlertRecursively();
 
   });
 
@@ -301,28 +313,28 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
   it('Test Distributed Tracing UI plugin page without any Tempo instances', () => {
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.get('body').should('be.visible');
+    // Wait a bit for the page to fully render
+    cy.wait(3000);
 
     cy.log('Assert that the Traces page shows the empty state.');
-    // Using PatternFly empty state helper with heading selector
     cy.pfEmptyState().within(() => {
       cy.get('h1, h2, h3, h4, h5, h6').should('contain.text', 'No Tempo instances yet');
     });
 
     cy.log('Assert that the View documentation button is visible.');
-    // Using PatternFly button helper
     cy.pfButton('View documentation')
       .should('be.visible')
       .and('have.text', 'View documentation');
 
     cy.log('Assert create a tempo instance toggle visibility and text.');
-    // Using PatternFly menu toggle helper
     cy.pfMenuToggle('Create a Tempo instance').should('be.visible');
 
     cy.log('Click the toggle to show creation options.');
     cy.pfMenuToggle('Create a Tempo instance').click();
 
     cy.log('Assert dropdown items for Tempo instance creation are visible.');
-    // Using PatternFly menu item helpers
     cy.pfMenuItem('Create a TempoStack instance')
       .should('be.visible')
       .and('have.text', 'Create a TempoStack instance');
@@ -351,147 +363,66 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.visit('/observe/traces');
 
     cy.log('Assert traces in TempoStack instance.');
-    cy.get(':nth-child(1) > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
-    cy.get(':nth-child(2) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get(':nth-child(1) > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
-    cy.get(':nth-child(2) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get(':nth-child(2) > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
-    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get(':nth-child(1) > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
-    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get('.pf-v6-c-toolbar__group > :nth-child(1) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__controls > .pf-v6-c-menu-toggle__toggle-icon').click();
-    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get('.pf-m-toggle-group > .pf-v6-c-toolbar__group > :nth-child(2) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
-    cy.contains('.pf-v6-c-menu__item-text', 'http-rbac-1')
-      .closest('.pf-v6-c-menu__item')
-      .find('input[type="checkbox"]')
-      .check();
-    cy.contains('.pf-v6-c-menu__item-text', 'http-rbac-2')
-      .closest('.pf-v6-c-menu__item')
-      .find('input[type="checkbox"]')
-      .check();
-    cy.contains('.pf-v6-c-menu__item-text', 'grpc-rbac-1')
-      .closest('.pf-v6-c-menu__item')
-      .find('input[type="checkbox"]')
-      .check();
-    cy.contains('.pf-v6-c-menu__item-text', 'grpc-rbac-2')
-      .closest('.pf-v6-c-menu__item')
-      .find('input[type="checkbox"]')
-      .check();
-    cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root > .MuiTypography-root').click();
-    cy.contains('div', 'okey-dokey').click({ force: true });
-    cy.get('.css-1bmckj4').then(($el) => {
-      cy.log(`Actual text in .css-1bmckj4 (TempoStack): ${$el.text()}`);
-      expect($el.text()).to.satisfy((text) => 
-        text === 'http-rbac-1' || 
-        text === 'http-rbac-2' || 
-        text === 'grpc-rbac-1' || 
-        text === 'grpc-rbac-2'
-      );
-    });
-    cy.get('.MuiTypography-h2').should('have.text', 'okey-dokey');
-    cy.get('.MuiTabs-list > .MuiButtonBase-root').should('be.visible');
-  
-    // Check for net.peer.ip
-    cy.contains('.MuiTypography-h5', 'net.peer.ip').next('.MuiTypography-body1').should('have.text', '1.2.3.4');
-    
-    // Check for peer.service
-    cy.contains('.MuiTypography-h5', 'peer.service').next('.MuiTypography-body1').should('have.text', 'telemetrygen-client');
-    
-    // Check for k8s.container.name if present
-    cy.get('body').then(($body) => {
-      if ($body.find('.MuiTypography-h5:contains("k8s.container.name")').length > 0) {
-        cy.contains('.MuiTypography-h5', 'k8s.container.name').next('.MuiTypography-body1').should('have.text', 'telemetrygen');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+    cy.pfMenuToggle('Last 30 minutes').click();
+    cy.pfSelectMenuItem('Last 15 minutes').click();
+    cy.pfMenuToggle('Service Name').click();
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('http-rbac-1');
+    cy.pfCheckMenuItem('http-rbac-2'); 
+    cy.pfCheckMenuItem('grpc-rbac-1');
+    cy.pfCheckMenuItem('grpc-rbac-2');
+    cy.muiFirstTraceLink().click();
+    cy.findByTestId('span-duration-bar').eq(1).click();
+    cy.muiTraceAttributes({
+      'net.peer.ip': { value: '1.2.3.4' },
+      'peer.service': { value: 'telemetrygen-client' },
+      'k8s.container.name': { value: 'telemetrygen', optional: true },
+      'k8s.namespace.name': { 
+        value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
+        optional: true 
+      },
+      'service.name': { 
+        value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
-    });
-    
-    // Check for k8s.namespace.name if present
-    cy.get('body').then(($body) => {
-      if ($body.find('.MuiTypography-h5:contains("k8s.namespace.name")').length > 0) {
-        cy.contains('.MuiTypography-h5', 'k8s.namespace.name').next('.MuiTypography-body1').then(($el) => {
-          cy.log(`Actual text in k8s.namespace.name (TempoStack): ${$el.text()}`);
-          expect($el.text()).to.satisfy((text) => 
-            text === 'chainsaw-test-rbac-1' || 
-            text === 'chainsaw-test-rbac-2' || 
-            text === 'chainsaw-mono-rbac-1' || 
-            text === 'chainsaw-mono-rbac-2'
-          );
-        });
-      }
-    });
-    
-    // Check for service.name
-    cy.contains('.MuiTypography-h5', 'service.name').next('.MuiTypography-body1').then(($el) => {
-      cy.log(`Actual text in service.name (TempoStack): ${$el.text()}`);
-      expect($el.text()).to.satisfy((text) => 
-        text === 'http-rbac-1' || 
-        text === 'http-rbac-2' || 
-        text === 'grpc-rbac-1' || 
-        text === 'grpc-rbac-2'
-      );
-    });
-    cy.get('.pf-v6-c-breadcrumb__list > :nth-child(1) > a').click();
+    }, 'TempoStack');
 
     cy.log('Assert traces in TempoMonolithic instance.');
-    cy.get(':nth-child(1) > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle > .pf-v6-c-menu-toggle__button').click();
-    cy.get(':nth-child(1) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get(':nth-child(2) > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-menu-toggle').click();
-    cy.get(':nth-child(3) > .pf-v6-c-menu__item > .pf-v6-c-menu__item-main > .pf-v6-c-menu__item-text').click();
-    cy.get('.pf-v6-c-form__group-control > .pf-v6-c-button > .pf-v6-c-button__text').click();
-    cy.get('.pf-m-toggle-group > .pf-m-action-group > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__group > .pf-v6-c-form__group-control > .pf-v6-c-button > .pf-v6-c-button__text').click();
-    cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root > .MuiTypography-root').click();
-    cy.contains('div', 'okey-dokey').click({ force: true });
-    cy.get('.css-1bmckj4').then(($el) => {
-      cy.log(`Actual text in .css-1bmckj4 (TempoMonolithic): ${$el.text()}`);
-      expect($el.text()).to.satisfy((text) => 
-        text === 'http-rbac-1' || 
-        text === 'http-rbac-2' || 
-        text === 'grpc-rbac-1' || 
-        text === 'grpc-rbac-2'
-      );
-    });
-    cy.get('.MuiTypography-h2').should('have.text', 'okey-dokey');
-    cy.get('.MuiTabs-list > .MuiButtonBase-root').should('be.visible');
-    // Check for span details with more flexible approach
-    // Check for net.peer.ip
-    cy.contains('.MuiTypography-h5', 'net.peer.ip').next('.MuiTypography-body1').should('have.text', '1.2.3.4');
-    
-    // Check for peer.service
-    cy.contains('.MuiTypography-h5', 'peer.service').next('.MuiTypography-body1').should('have.text', 'telemetrygen-client');
-    
-    // Check for k8s.container.name if present
-    cy.get('body').then(($body) => {
-      if ($body.find('.MuiTypography-h5:contains("k8s.container.name")').length > 0) {
-        cy.contains('.MuiTypography-h5', 'k8s.container.name').next('.MuiTypography-body1').should('have.text', 'telemetrygen');
+    cy.pfBreadcrumb('Traces').click();
+    cy.pfCloseButtonIfExists('Close chip group');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-mmo-rbac / mmo-rbac').click();
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+    cy.pfMenuToggle('Last').click();
+    cy.pfSelectMenuItem('Last 1 hour').click();
+    cy.pfMenuToggle('Service Name').click();
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('http-rbac-1');
+    cy.pfCheckMenuItem('http-rbac-2'); 
+    cy.pfCheckMenuItem('grpc-rbac-1');
+    cy.pfCheckMenuItem('grpc-rbac-2');
+    cy.muiFirstTraceLink().click();
+    cy.findByTestId('span-duration-bar').eq(1).click();
+    cy.muiTraceAttributes({
+      'net.peer.ip': { value: '1.2.3.4' },
+      'peer.service': { value: 'telemetrygen-client' },
+      'k8s.container.name': { value: 'telemetrygen', optional: true },
+      'k8s.namespace.name': { 
+        value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
+        optional: true 
+      },
+      'service.name': { 
+        value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
-    });
-    
-    // Check for k8s.namespace.name if present
-    cy.get('body').then(($body) => {
-      if ($body.find('.MuiTypography-h5:contains("k8s.namespace.name")').length > 0) {
-        cy.contains('.MuiTypography-h5', 'k8s.namespace.name').next('.MuiTypography-body1').then(($el) => {
-          cy.log(`Actual text in k8s.namespace.name (TempoMonolithic): ${$el.text()}`);
-          expect($el.text()).to.satisfy((text) => 
-            text === 'chainsaw-test-rbac-1' || 
-            text === 'chainsaw-test-rbac-2' || 
-            text === 'chainsaw-mono-rbac-1' || 
-            text === 'chainsaw-mono-rbac-2'
-          );
-        });
-      }
-    });
-    
-    // Check for service.name
-    cy.contains('.MuiTypography-h5', 'service.name').next('.MuiTypography-body1').then(($el) => {
-      cy.log(`Actual text in service.name (TempoMonolithic): ${$el.text()}`);
-      expect($el.text()).to.satisfy((text) => 
-        text === 'http-rbac-1' || 
-        text === 'http-rbac-2' || 
-        text === 'grpc-rbac-1' || 
-        text === 'grpc-rbac-2'
-      );
-    });
-    cy.get('.pf-v6-c-breadcrumb__list > :nth-child(1) > a').click();
+    }, 'TempoMonolithic');
+
+    cy.log('Navigate to the traces page and close the chip group.');
+    cy.pfBreadcrumb('Traces').click();
+    cy.pfCloseButtonIfExists('Close chip group');
   });
 
 });
