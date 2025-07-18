@@ -1,6 +1,6 @@
 # PatternFly Cypress Commands - Usage Examples
 
-This file demonstrates how to properly use the PatternFly-aware Cypress commands to avoid React state management issues.
+This file provides comprehensive examples of PatternFly-aware Cypress commands for distributed tracing UI testing, focusing on semantic selectors and efficient testing patterns.
 
 ## ✅ Recommended Usage Patterns
 
@@ -61,49 +61,168 @@ cy.byLabelText('Namespace').select('default');
 cy.pfButton('Submit').click();
 ```
 
-## ⚠️ Patterns to Avoid
+## 🆕 New Distributed Tracing UI Commands
 
-### 1. Complex Chained Operations
+### Menu & Dropdown Interactions
 
 ```typescript
-// ❌ AVOID: Too many chained operations without waits
-cy.pfToolbarItem(0).within(() => {
-  cy.pfMenuToggle().click();
-}).then(() => {
-  cy.pfMenuItem('Item').click();
-}).then(() => {
-  cy.pfToolbarItem(1).within(() => {
-    cy.pfMenuToggle().click();
+// Tempo instance selection
+cy.pfTypeahead('Select a Tempo instance').click();
+cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+// Service filtering with checkboxes
+cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+cy.pfCheckMenuItem('http-rbac-1');
+cy.pfCheckMenuItem('http-rbac-2', true);    // Explicitly check
+cy.pfCheckMenuItem('grpc-rbac-1', false);   // Uncheck
+
+// Time range selection
+cy.pfMenuToggle('Last 30 minutes').click();
+cy.pfSelectMenuItem('Last 1 hour').click();
+```
+
+### Navigation Commands
+
+```typescript
+// Breadcrumb navigation
+cy.pfBreadcrumb('Traces').click();
+cy.pfBreadcrumb('Observability').should('be.visible');
+
+// Close buttons (chip groups, modals, etc.)
+cy.pfCloseButton('Close chip group').click();      // PatternFly 5
+cy.pfCloseButton('Close label group').click();     // PatternFly 6
+cy.pfCloseButton().click();                        // First close button found (any version)
+```
+
+### Trace & Span Interactions
+
+```typescript
+// Click on traces
+cy.muiFirstTraceLink().click();                    // First trace in list
+cy.muiTraceLink('http-rbac-2').click();            // Specific service trace
+
+// Interact with span bars
+cy.muiFirstSpanBar().click();                      // First span bar
+cy.muiSpanBar('http-rbac-2').click();              // Specific service span
+cy.findByTestId('span-duration-bar').first().click(); // By test ID (multiple spans)
+```
+
+### Trace Attribute Validation
+
+```typescript
+// Single attribute validation
+cy.muiTraceAttribute('net.peer.ip', '1.2.3.4');
+cy.muiTraceAttribute('peer.service', 'telemetrygen-client');
+cy.muiTraceAttribute('k8s.container.name', 'telemetrygen', true); // Optional attribute
+
+// Custom validation with function
+cy.muiTraceAttribute('service.name', (text) => {
+  return ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text);
+}, false, 'TempoStack'); // Required attribute with logging
+
+// Bulk attribute validation (recommended for multiple attributes)
+cy.muiTraceAttributes({
+  'net.peer.ip': { value: '1.2.3.4' },
+  'peer.service': { value: 'telemetrygen-client' },
+  'k8s.container.name': { 
+    value: 'telemetrygen', 
+    optional: true 
+  },
+  'k8s.namespace.name': { 
+    value: (text) => text.startsWith('chainsaw-'),
+    optional: true 
+  },
+  'service.name': { 
+    value: ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2']
+  }
+}, 'Debug'); // Log prefix for debugging
+```
+
+### Complete Workflow Examples
+
+```typescript
+// Complete trace inspection workflow
+describe('Trace inspection', () => {
+  it('should navigate and validate trace details', () => {
+    // Navigate to traces page
+    cy.visit('/observe/traces');
+    
+    // Select Tempo instance
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+    
+    // Set time range
+    cy.pfMenuToggle('Last 30 minutes').click();
+    cy.pfSelectMenuItem('Last 1 hour').click();
+    
+    // Filter by services
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('http-rbac-1');
+    cy.pfCheckMenuItem('http-rbac-2');
+    
+    // Click first trace
+    cy.muiFirstTraceLink().click();
+    
+    // Click on span for details
+    cy.muiFirstSpanBar().click();
+    
+    // Validate trace attributes efficiently
+    cy.muiTraceAttributes({
+      'net.peer.ip': { value: '1.2.3.4' },
+      'peer.service': { value: 'telemetrygen-client' },
+      'service.name': { 
+        value: (text) => text.includes('rbac')
+      }
+    });
+    
+    // Navigate back
+    cy.pfBreadcrumb('Traces').click();
   });
 });
-
-// ✅ BETTER: Break into separate operations with waits
-cy.pfToolbarItem(0).within(() => {
-  cy.get('.pf-v6-c-menu-toggle').first().click();
-});
-cy.get('.pf-v6-c-menu__item').contains('Item').click();
-cy.wait(1000); // Allow React state to stabilize
-cy.pfToolbarItem(1).within(() => {
-  cy.get('.pf-v6-c-menu-toggle').first().click();
-});
 ```
 
-### 2. Rapid Sequential Clicks
+## 🔄 PatternFly 5 & 6 Compatibility
+
+Our commands seamlessly support both PatternFly 5 and PatternFly 6 components:
+
+### Close Buttons
 
 ```typescript
-// ❌ AVOID: Multiple rapid interactions
-cy.pfMenuToggle().click();
-cy.pfMenuItem('Item1').click();
-cy.pfMenuToggle().click(); // Too fast, React state not updated
-cy.pfMenuItem('Item2').click();
+// PatternFly 5 - Chip Group
+// <button aria-label="Close chip group" class="pf-v5-c-button pf-m-plain">
+cy.pfCloseButton('Close chip group').click();
 
-// ✅ BETTER: Add stabilization waits
-cy.pfMenuToggle().click();
-cy.pfMenuItem('Item1').click();
-cy.wait(500); // Let React update
-cy.pfMenuToggle().click();
-cy.pfMenuItem('Item2').click();
+// PatternFly 6 - Label Group  
+// <button aria-label="Close label group" class="pf-v6-c-button pf-m-plain pf-m-no-padding">
+cy.pfCloseButton('Close label group').click();
+
+// Works with both versions automatically
+cy.pfCloseButton('Close').click();  // Finds any close button
 ```
+
+### Menu Components
+
+```typescript
+// Both PF5 and PF6 menu structures supported
+cy.pfMenuToggle('Select Instance').click();     // Works with .pf-v5-c-menu-toggle or .pf-v6-c-menu-toggle
+cy.pfSelectMenuItem('tempo-stack').click();     // Works with .pf-v5-c-menu__item or .pf-v6-c-menu__item
+cy.pfCheckMenuItem('service-name');             // Handles both PF5/PF6 checkbox patterns
+```
+
+### Button Components
+
+```typescript
+// PatternFly button targeting (version-agnostic)
+cy.pfButton('Create Instance').click();         // Targets .pf-v5-c-button or .pf-v6-c-button
+cy.pfEmptyState().should('be.visible');         // Works with both .pf-v5-c-empty-state and .pf-v6-c-empty-state
+```
+
+### Key Benefits
+
+- ✅ **Automatic detection** - Commands work with both PF5 and PF6 automatically
+- ✅ **Future-proof** - Ready for PatternFly version upgrades
+- ✅ **Consistent API** - Same command syntax across versions
+- ✅ **Robust selectors** - Uses semantic attributes over version-specific classes
 
 ## 🛡️ Defensive Programming Patterns
 

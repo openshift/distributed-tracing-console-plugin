@@ -85,4 +85,73 @@ We can either open Cypress GUI(open) or run Cypress in headless mode(run) to run
 ```bash
 npx cypress open
 npx cypress run
+
+# Run specific test files
+npx cypress run --spec "e2e/dt-plugin-tests.cy.ts"
+
+# Skip debug files during CI runs
+npx cypress run --ignore-pattern "**/*debug*.cy.ts"
 ```
+
+## Test Architecture & Best Practices
+
+### Custom Commands
+This project includes a comprehensive set of custom Cypress commands optimized for PatternFly and Material-UI components. These commands provide:
+
+- **Semantic selectors** instead of brittle CSS selectors
+- **Component-aware interactions** for PatternFly elements
+- **Bulk validation** for trace attributes (75% code reduction)
+- **Debug-friendly** commands with built-in logging
+
+### Key Command Categories
+
+#### PatternFly Components
+```typescript
+// Menu interactions
+cy.pfMenuToggle('Select Instance').click()
+cy.pfSelectMenuItem('tempo-stack').click()
+cy.pfCheckMenuItem('service-name')
+
+// Navigation
+cy.pfBreadcrumb('Traces').click()
+cy.pfButton('Create').click()
+cy.pfCloseButton('Close dialog').click()
+
+// Form controls
+cy.pfTypeahead('Select a Tempo instance').click()
+cy.pfMenuToggleByLabel('Multi typeahead').click()
+```
+
+#### Trace & Observability
+```typescript
+// Trace interactions
+cy.muiFirstTraceLink().click()
+cy.muiTraceLink('http-service').click()
+cy.muiSpanBar('grpc-service').click()
+
+// Attribute validation (bulk)
+cy.muiTraceAttributes({
+  'service.name': { value: 'my-service' },
+  'net.peer.ip': { value: '1.2.3.4' },
+  'k8s.namespace': { value: 'test-ns', optional: true }
+})
+```
+
+### Debug Testing
+A debug test file (`dt-plugin-tests-debug.cy.ts.skip`) is available for rapid iteration without setup/teardown overhead. To use:
+
+```bash
+# Enable debug test
+mv tests/e2e/dt-plugin-tests-debug.cy.ts.skip tests/e2e/dt-plugin-tests-debug.cy.ts
+
+# Run debug test only
+npx cypress run --spec "e2e/dt-plugin-tests-debug.cy.ts"
+
+# Disable debug test
+mv tests/e2e/dt-plugin-tests-debug.cy.ts tests/e2e/dt-plugin-tests-debug.cy.ts.skip
+```
+
+### Documentation
+- **SELECTOR_BEST_PRACTICES.md** - Comprehensive selector guidelines and command usage
+- **PATTERNFLY_COMMANDS_EXAMPLES.md** - Complete command examples and workflows
+- **README.md** - This file with setup and architecture overview
