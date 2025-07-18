@@ -7,6 +7,7 @@ import { getProxyURLFor } from '../../../hooks/api';
 import { usePatternFlyTheme } from '../../../components/console/utils/usePatternFlyTheme';
 import { Prec } from '@codemirror/state';
 import { insertNewlineAndIndent } from '@codemirror/commands';
+import { useTimeRange } from '@perses-dev/plugin-system';
 
 interface TraceQLEditorProps {
   id?: string;
@@ -34,13 +35,14 @@ export const codemirrorTheme = EditorView.theme({
 export function TraceQLEditor({ id, tempo, query, setQuery, runQuery }: TraceQLEditorProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { theme } = usePatternFlyTheme();
+  const { timeRange } = useTimeRange();
 
   const traceQLExtension = useMemo(() => {
     const client = tempo
       ? TempoDatasource.createClient({ directUrl: getProxyURLFor(tempo) }, {})
       : undefined;
-    return TraceQLExtension({ client });
-  }, [tempo]);
+    return TraceQLExtension({ client, timeRange });
+  }, [tempo, timeRange]);
 
   const keyBindings = useMemo(
     () =>
