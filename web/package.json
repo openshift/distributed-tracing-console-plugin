@@ -102,7 +102,6 @@
     "react-router-dom": "<7"
   },
   "overrides": {
-    "@mui/x-data-grid": "7.20.0",
     "cheerio": "1.0.0-rc.12"
   }
 }
