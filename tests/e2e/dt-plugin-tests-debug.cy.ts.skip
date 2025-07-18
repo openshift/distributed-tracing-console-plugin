@@ -1,0 +1,35 @@
+import { operatorHubPage } from '../views/operator-hub-page';
+
+// Set constants for the operators that need to be installed for tests.
+const DTP = {
+  namespace: 'openshift-cluster-observability-operator',
+  packageName: 'cluster-observability-operator',
+  operatorName: 'Cluster Observability Operator',
+  config: {
+    kind: 'UIPlugin',
+    name: 'distributed-tracing',
+  },
+};
+
+const OTEL = {
+  namespace: 'openshift-opentelemetry-operator',
+  packageName: 'opentelemetry-product',
+  operatorName: 'Red Hat build of OpenTelemetry',
+};
+
+const TEMPO = {
+  namespace: 'openshift-tempo-operator',
+  packageName: 'tempo-product',
+  operatorName: 'Tempo Operator',
+};
+
+describe('OpenShift Distributed Tracing UI Plugin Debug Tests (NO SETUP/TEARDOWN)', () => {
+  // NOTE: This test file is for debugging purposes only
+  // It skips the long before() and after() setup/teardown steps
+  // Make sure your environment already has the necessary operators and instances set up
+
+  it('Test Distributed Tracing UI plugin with Tempo instances and verify traces using user having cluster-admin role', function () {
+
+    // Add steps below
+
+}); 

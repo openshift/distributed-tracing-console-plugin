@@ -44,6 +44,19 @@ declare global {
       pfButton(text: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
       pfEmptyState(options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
       pfToolbarItem(index?: number, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      pfBreadcrumb(text: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      pfTypeahead(placeholder?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      pfSelectMenuItem(text: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      pfMenuToggleByLabel(ariaLabel: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      pfCheckMenuItem(text: string, shouldCheck?: boolean, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      muiTraceLink(serviceName: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      muiFirstTraceLink(options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      muiSpanBar(serviceName: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      muiFirstSpanBar(options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      muiTraceAttribute(attributeName: string, expectedValue: string | string[] | ((text: string) => boolean), isOptional?: boolean, logPrefix?: string): Chainable<void>;
+      muiTraceAttributes(attributes: { [key: string]: { value: string | string[] | ((text: string) => boolean), optional?: boolean } }, logPrefix?: string): Chainable<void>;
+      pfCloseButton(ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      pfCloseButtonIfExists(ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
     }
   }
 }
@@ -126,31 +139,67 @@ Cypress.Commands.add(
     cy.session(
       [provider, username],
       () => {
-        cy.visit(Cypress.config('baseUrl'));
-        cy.window().then((win: any) => {
-          // Check if auth is disabled (for a local development environment)
-          if (win.SERVER_FLAGS?.authDisabled) {
-            cy.task('log', '  skipping login, console is running with auth disabled');
-            return;
-          }
-
-          cy.task('log', `  Logging in as ${username}`);
+        // Check if this is a Hypershift cluster
+        cy.exec(
+          `oc get node --selector=hypershift.openshift.io/managed --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+          { failOnNonZeroExit: false }
+        ).then((result) => {
+          const isHypershift = result.code === 0 && result.stdout.trim() !== '' && result.stdout.includes('Ready');
+          cy.task('log', `Hypershift cluster detected: ${isHypershift}`);
           
-          // Get the current URL to determine if we've been redirected to OAuth
-          cy.url().then((currentUrl) => {
-            const url = new URL(currentUrl);
-            const oauthOrigin = `${url.protocol}//${url.hostname.replace('console-openshift-console', 'oauth-openshift')}`;
+          cy.visit(Cypress.config('baseUrl'));
+          cy.window().then((win: any) => {
+            // Check if auth is disabled (for a local development environment)
+            if (win.SERVER_FLAGS?.authDisabled) {
+              cy.task('log', '  skipping login, console is running with auth disabled');
+              return;
+            }
+
+            cy.task('log', `  Logging in as ${username}`);
             
-            cy.task('log', `OAuth origin: ${oauthOrigin}`);
-            
+            // Get OAuth URL based on cluster type
+            if (isHypershift) {
+              // For Hypershift, get OAuth URL from oauthclient
+              cy.exec(
+                `oc get oauthclient openshift-browser-client -o go-template --template="{{index .redirectURIs 0}}" --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+                { failOnNonZeroExit: false }
+              ).then((oauthResult) => {
+                if (oauthResult.code === 0 && oauthResult.stdout.trim()) {
+                  // Trim /oauth/token/display from the end to get the base OAuth URL
+                  const oauthOrigin = oauthResult.stdout.trim().replace('/oauth/token/display', '');
+                  cy.task('log', `Hypershift OAuth URL: ${oauthOrigin}`);
+                  performLogin(oauthOrigin);
+                } else {
+                  // Fallback to current URL method if OAuth URL detection fails
+                  cy.url().then((currentUrl) => {
+                    const url = new URL(currentUrl);
+                    const oauthOrigin = `${url.protocol}//${url.hostname.replace('console-openshift-console', 'oauth-openshift')}`;
+                    cy.task('log', `Fallback OAuth origin: ${oauthOrigin}`);
+                    performLogin(oauthOrigin);
+                  });
+                }
+              });
+            } else {
+              // For regular OpenShift, derive OAuth URL from console URL
+              cy.url().then((currentUrl) => {
+                const url = new URL(currentUrl);
+                const oauthOrigin = `${url.protocol}//${url.hostname.replace('console-openshift-console', 'oauth-openshift')}`;
+                cy.task('log', `OAuth origin: ${oauthOrigin}`);
+                performLogin(oauthOrigin);
+              });
+            }
+          });
+          
+          function performLogin(oauthOrigin) {
             // Use cy.origin to handle the OAuth login on different domain
             cy.origin(
               oauthOrigin,
-              { args: { provider, username, password } },
-              ({ provider, username, password }) => {
+              { args: { provider, username, password, isHypershift } },
+              ({ provider, username, password, isHypershift }) => {
                 cy.get('[data-test-id="login"]').should('be.visible');
                 cy.get('body').then(($body) => {
-                  if ($body.text().includes(provider)) {
+                  // For Hypershift clusters, skip provider selection and go directly to login
+                  if (!isHypershift && $body.text().includes(provider)) {
                     cy.contains(provider).should('be.visible').click();
                   }
                 });
@@ -159,7 +208,7 @@ Cypress.Commands.add(
                 cy.get('button[type=submit]').click();
               }
             );
-          });
+          }
         });
       },
       {
@@ -363,7 +412,10 @@ Cypress.Commands.add(
 Cypress.Commands.add(
   'pfEmptyState',
   (options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
-    const defaultOptions = { timeout: 10000, ...options };
+    const defaultOptions = { timeout: 30000, ...options };
+    // Wait for page to load completely first
+    cy.get('body').should('be.visible');
+    // Then look for empty state with extended timeout
     cy.get('.pf-v6-c-empty-state, .pf-v5-c-empty-state', defaultOptions);
   },
 );
@@ -378,5 +430,197 @@ Cypress.Commands.add(
     } else {
       cy.get(selector, defaultOptions);
     }
+  },
+);
+
+Cypress.Commands.add(
+  'pfBreadcrumb',
+  (text: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find breadcrumb anchor by text directly
+    cy.get('.pf-v6-c-breadcrumb__item a, .pf-v5-c-breadcrumb__item a', defaultOptions)
+      .contains(text);
+  },
+);
+
+Cypress.Commands.add(
+  'pfTypeahead',
+  (placeholder?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 20000, ...options };
+    
+    if (placeholder) {
+      // Find typeahead by placeholder text
+      cy.get('input[placeholder="' + placeholder + '"]', defaultOptions)
+        .closest('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle')
+        .find('.pf-v6-c-menu-toggle__button, .pf-v5-c-menu-toggle__button');
+    } else {
+      // Find any typeahead toggle button
+      cy.get('.pf-v6-c-menu-toggle.pf-m-typeahead .pf-v6-c-menu-toggle__button, .pf-v5-c-menu-toggle.pf-m-typeahead .pf-v5-c-menu-toggle__button', defaultOptions);
+    }
+  },
+);
+
+Cypress.Commands.add(
+  'pfSelectMenuItem',
+  (text: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find menu item by text and click its button
+    cy.get('.pf-v6-c-menu__item-text, .pf-v5-c-menu__item-text', defaultOptions)
+      .contains(text)
+      .closest('.pf-v6-c-menu__item, .pf-v5-c-menu__item');
+  },
+);
+
+Cypress.Commands.add(
+  'pfMenuToggleByLabel',
+  (ariaLabel: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find menu toggle button by aria-label (partial match)
+    cy.get(`button[aria-label*="${ariaLabel}"], .pf-v6-c-menu-toggle__button[aria-label*="${ariaLabel}"], .pf-v5-c-menu-toggle__button[aria-label*="${ariaLabel}"]`, defaultOptions);
+  },
+);
+
+Cypress.Commands.add(
+  'pfCheckMenuItem',
+  (text: string, shouldCheck: boolean = true, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find menu item by text and check/uncheck its checkbox
+    cy.contains('.pf-v6-c-menu__item-text, .pf-v5-c-menu__item-text', text, defaultOptions)
+      .closest('.pf-v6-c-menu__item, .pf-v5-c-menu__item')
+      .find('input[type="checkbox"]')
+      .then(($checkbox) => {
+        if (shouldCheck) {
+          cy.wrap($checkbox).check();
+        } else {
+          cy.wrap($checkbox).uncheck();
+        }
+      });
+  },
+);
+
+Cypress.Commands.add(
+  'muiTraceLink',
+  (serviceName: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find Material-UI trace link by service name
+    cy.contains('a.MuiLink-root', serviceName, defaultOptions);
+  },
+);
+
+Cypress.Commands.add(
+  'muiFirstTraceLink',
+  (options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Click the first Material-UI trace link found
+    cy.get('a.MuiLink-root', defaultOptions).first();
+  },
+);
+
+Cypress.Commands.add(
+  'muiSpanBar',
+  (serviceName: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find span by service name and return the container with duration bar
+    cy.contains('strong', serviceName, defaultOptions)
+      .closest('.MuiStack-root');
+  },
+);
+
+Cypress.Commands.add(
+  'muiFirstSpanBar',
+  (options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Click the first span duration bar found
+    cy.findByTestId('span-duration-bar').first();
+  },
+);
+
+Cypress.Commands.add(
+  'muiTraceAttribute',
+  (attributeName: string, expectedValue: string | string[] | ((text: string) => boolean), isOptional: boolean = false, logPrefix: string = '') => {
+    if (isOptional) {
+      // Handle optional attributes with conditional check
+      cy.get('body').then(($body) => {
+        if ($body.find(`.MuiTypography-h5:contains("${attributeName}")`).length > 0) {
+          cy.contains('.MuiTypography-h5', attributeName).next('.MuiTypography-body1').then(($el) => {
+            const actualText = $el.text();
+            if (logPrefix) {
+              cy.log(`Actual text in ${attributeName} (${logPrefix}): ${actualText}`);
+            }
+            
+            if (typeof expectedValue === 'string') {
+              expect(actualText).to.equal(expectedValue);
+            } else if (Array.isArray(expectedValue)) {
+              expect(expectedValue).to.include(actualText);
+            } else if (typeof expectedValue === 'function') {
+              expect(actualText).to.satisfy(expectedValue);
+            }
+          });
+        }
+      });
+    } else {
+      // Handle required attributes
+      cy.contains('.MuiTypography-h5', attributeName).next('.MuiTypography-body1').then(($el) => {
+        const actualText = $el.text();
+        if (logPrefix) {
+          cy.log(`Actual text in ${attributeName} (${logPrefix}): ${actualText}`);
+        }
+        
+        if (typeof expectedValue === 'string') {
+          cy.wrap($el).should('have.text', expectedValue);
+        } else if (Array.isArray(expectedValue)) {
+          expect(expectedValue).to.include(actualText);
+        } else if (typeof expectedValue === 'function') {
+          expect(actualText).to.satisfy(expectedValue);
+        }
+      });
+    }
+  },
+);
+
+Cypress.Commands.add(
+  'muiTraceAttributes',
+  (attributes: { [key: string]: { value: string | string[] | ((text: string) => boolean), optional?: boolean } }, logPrefix: string = '') => {
+    // Check multiple trace attributes in one command
+    Object.entries(attributes).forEach(([attributeName, config]) => {
+      cy.muiTraceAttribute(attributeName, config.value, config.optional || false, logPrefix);
+    });
+  },
+);
+
+Cypress.Commands.add(
+  'pfCloseButton',
+  (ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    
+    if (ariaLabel) {
+      // Find close button by specific aria-label (supports both PF5 and PF6)
+      cy.get(`button[aria-label="${ariaLabel}"], .pf-v6-c-button[aria-label="${ariaLabel}"], .pf-v5-c-button[aria-label="${ariaLabel}"]`, defaultOptions);
+    } else {
+      // Find any close button by common aria-label patterns (supports both PF5 and PF6)
+      cy.get('button[aria-label*="Close"], button[aria-label*="close"], button[aria-label*="Remove"], .pf-v6-c-button[aria-label*="Close"], .pf-v5-c-button[aria-label*="Close"], .pf-v6-c-button[aria-label*="Remove"], .pf-v5-c-button[aria-label*="Remove"]', defaultOptions);
+    }
+  },
+);
+
+// Conditional close button command that only clicks if the element exists
+Cypress.Commands.add(
+  'pfCloseButtonIfExists',
+  (ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    
+    const selector = ariaLabel 
+      ? `button[aria-label="${ariaLabel}"], .pf-v6-c-button[aria-label="${ariaLabel}"], .pf-v5-c-button[aria-label="${ariaLabel}"]`
+      : 'button[aria-label*="Close"], button[aria-label*="close"], button[aria-label*="Remove"], .pf-v6-c-button[aria-label*="Close"], .pf-v5-c-button[aria-label*="Close"], .pf-v6-c-button[aria-label*="Remove"], .pf-v5-c-button[aria-label*="Remove"]';
+    
+    // Check if element exists and click it if found
+    cy.get('body').then(($body) => {
+      if ($body.find(selector).length > 0) {
+        cy.log(`pfCloseButtonIfExists: Found and clicking (${ariaLabel || 'generic close button'})`);
+        cy.get(selector, defaultOptions).click();
+      } else {
+        cy.log(`pfCloseButtonIfExists: Element not found (${ariaLabel || 'generic close button'}), skipping`);
+      }
+    });
   },
 );

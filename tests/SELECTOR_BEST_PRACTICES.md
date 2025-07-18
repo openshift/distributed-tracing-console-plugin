@@ -37,12 +37,37 @@ cy.byTestSelector('menu-dropdown')          // [data-test-selector="menu-dropdow
 
 ### PatternFly Component Selectors
 ```typescript
-// PatternFly-specific helpers
+// Menu Components
 cy.pfMenuToggle('Create a Tempo instance')  // Menu toggle by text
 cy.pfMenuItem('TempoStack instance')         // Menu item selection
+cy.pfSelectMenuItem('chainsaw-rbac / simplst') // Select specific menu item
+
+// Form & Input Components
+cy.pfTypeahead('Select a Tempo instance')    // Typeahead dropdown by placeholder
+cy.pfMenuToggleByLabel('Multi typeahead')   // Menu toggle by aria-label
+cy.pfCheckMenuItem('http-rbac-1')           // Check/uncheck menu items
+
+// UI Navigation
+cy.pfBreadcrumb('Traces')                   // Breadcrumb navigation
 cy.pfButton('View documentation')            // PatternFly button by text
+cy.pfCloseButton('Close chip group')        // Close/remove buttons
+
+// Layout Components
 cy.pfEmptyState()                           // Empty state component
 cy.pfToolbarItem(0)                         // First toolbar item
+
+// Material-UI (Trace Views)
+cy.muiTraceLink('http-rbac-2')              // Click specific trace link
+cy.muiFirstTraceLink()                      // Click first trace link
+cy.muiSpanBar('http-rbac-2')                // Click specific span bar
+cy.muiFirstSpanBar()                        // Click first span bar
+
+// Trace Attribute Validation
+cy.muiTraceAttribute('net.peer.ip', '1.2.3.4')  // Single attribute check
+cy.muiTraceAttributes({                     // Bulk attribute validation
+  'net.peer.ip': { value: '1.2.3.4' },
+  'service.name': { value: (text) => text.includes('rbac') }
+})
 ```
 
 ### Accessibility-Based Selectors
@@ -72,6 +97,8 @@ cy.get(':nth-child(1) > .pf-v6-c-toolbar__item > .pf-v6-c-form > .pf-v6-c-form__
 cy.get('.pf-v6-c-empty-state__title-text')
 cy.get('.MuiDataGrid-row--firstVisible > [data-field="name"] > .MuiBox-root')
 cy.get('.pf-v6-c-menu-toggle__toggle-icon').click()
+cy.get(':nth-child(2) > .pf-v5-c-menu__item > .pf-v5-c-menu__item-main > .pf-v5-c-menu__item-text').click()
+cy.contains('.pf-v5-c-menu__item-text', 'http-rbac-1').closest('.pf-v5-c-menu__item').find('input[type="checkbox"]').check()
 ```
 
 ### ✅ Preferred: Stable, Semantic Selectors
@@ -82,6 +109,9 @@ cy.byAriaLabel('Select Tempo instance')           // PatternFly components have 
 cy.byRole('button', 'Create a Tempo instance')    // Use semantic roles
 cy.byTestID('documentation-link')
 cy.pfMenuToggle('Create a Tempo instance')        // PatternFly-specific helper
+cy.pfSelectMenuItem('chainsaw-rbac / simplst')    // Semantic menu selection
+cy.pfCheckMenuItem('http-rbac-1')                 // Simple checkbox handling
+cy.muiFirstTraceLink()                            // Click first trace link
 ```
 
 ## PatternFly Component Examples
@@ -129,6 +159,92 @@ cy.get('.pf-v6-c-form__group-control > .pf-v6-c-menu-toggle')
 cy.byCy('form-field-selector')
 // OR use form labels (PatternFly forms are accessible):
 cy.byLabelText('Instance Type')
+// OR use our new typeahead commands:
+cy.pfTypeahead('Select a Tempo instance')
+cy.pfMenuToggleByLabel('Multi typeahead checkbox')
+```
+
+## Distributed Tracing UI Specific Commands
+
+### Tempo Instance Selection
+```typescript
+// Old approach (brittle):
+cy.get(':nth-child(1) > .pf-v5-c-toolbar__item > .pf-v5-c-menu-toggle__button').click()
+cy.get(':nth-child(2) > .pf-v5-c-menu__item-text').click()
+
+// New approach (semantic):
+cy.pfTypeahead('Select a Tempo instance').click()
+cy.pfSelectMenuItem('chainsaw-rbac / simplst').click()
+```
+
+### Service Filter Selection  
+```typescript
+// Old approach (verbose and repetitive):
+cy.contains('.pf-v5-c-menu__item-text', 'http-rbac-1')
+  .closest('.pf-v5-c-menu__item')
+  .find('input[type="checkbox"]')
+  .check()
+
+// New approach (concise):
+cy.pfCheckMenuItem('http-rbac-1')
+cy.pfCheckMenuItem('http-rbac-2')
+```
+
+### Navigation & UI Elements
+```typescript
+// Breadcrumb navigation:
+cy.pfBreadcrumb('Traces').click()
+
+// Close buttons (PatternFly 5 & 6):
+cy.pfCloseButton('Close chip group').click()      // PF5 chip group
+cy.pfCloseButton('Close label group').click()     // PF6 label group
+
+// Time range selection:
+cy.pfMenuToggle('Last 30 minutes').click()
+cy.pfSelectMenuItem('Last 1 hour').click()
+```
+
+### Trace Interaction
+```typescript
+// Click traces:
+cy.muiFirstTraceLink().click()              // First trace found
+cy.muiTraceLink('http-rbac-2').click()      // Specific service trace
+
+// Interact with spans:
+cy.muiFirstSpanBar().click()                // First span bar
+cy.muiSpanBar('http-rbac-2').click()        // Specific service span
+cy.findByTestId('span-duration-bar').first().click()  // By test ID
+```
+
+### Trace Attribute Validation
+```typescript
+// Old approach (48+ lines of repetitive code):
+cy.contains('.MuiTypography-h5', 'net.peer.ip').next('.MuiTypography-body1').should('have.text', '1.2.3.4')
+cy.contains('.MuiTypography-h5', 'peer.service').next('.MuiTypography-body1').should('have.text', 'telemetrygen-client')
+cy.get('body').then(($body) => {
+  if ($body.find('.MuiTypography-h5:contains("k8s.container.name")').length > 0) {
+    cy.contains('.MuiTypography-h5', 'k8s.container.name').next('.MuiTypography-body1').should('have.text', 'telemetrygen')
+  }
+})
+// ... many more repetitive lines
+
+// New approach (12 lines, 75% reduction):
+cy.muiTraceAttributes({
+  'net.peer.ip': { value: '1.2.3.4' },
+  'peer.service': { value: 'telemetrygen-client' },
+  'k8s.container.name': { value: 'telemetrygen', optional: true },
+  'k8s.namespace.name': { 
+    value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2'].includes(text),
+    optional: true 
+  },
+  'service.name': { 
+    value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
+  }
+}, 'TempoStack')
+
+// Or individual attribute checks:
+cy.muiTraceAttribute('net.peer.ip', '1.2.3.4')
+cy.muiTraceAttribute('service.name', (text) => text.includes('rbac'), false, 'TempoStack')
 ```
 
 ## Implementation Strategy
