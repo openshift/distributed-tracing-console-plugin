@@ -2,7 +2,7 @@ import { operatorHubPage } from '../views/operator-hub-page';
 
 // Set constants for the operators that need to be installed for tests.
 const DTP = {
-  namespace: 'openshift-cluster-observability-operator',
+  namespace: Cypress.env('COO_NAMESPACE') || 'openshift-cluster-observability-operator',
   packageName: 'cluster-observability-operator',
   operatorName: 'Cluster Observability Operator',
   config: {
@@ -99,7 +99,13 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     } else if (Cypress.env('COO_UI_INSTALL')) {
       cy.log('COO_UI_INSTALL is set. COO, Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
-      operatorHubPage.installOperator(DTP.packageName, 'redhat-operators');
+      if (Cypress.env('COO_NAMESPACE')) {
+        cy.log(`Using custom namespace: ${Cypress.env('COO_NAMESPACE')}`);
+        operatorHubPage.installOperator(DTP.packageName, 'redhat-operators', Cypress.env('COO_NAMESPACE'));
+      } else {
+        cy.log('Using recommended namespace installation');
+        operatorHubPage.installOperator(DTP.packageName, 'redhat-operators');
+      }
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
         expect(text).to.satisfy((t) => 
