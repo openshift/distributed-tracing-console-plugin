@@ -80,6 +80,11 @@ Set the following var to use custom Distributed Tracing UI plugin image. The ima
 export CYPRESS_DT_CONSOLE_IMAGE=<console image>
 ```
 
+Set the following var to specify a custom namespace for the Cluster Observability Operator installation. If not set, defaults to `openshift-cluster-observability-operator`.
+```bash
+export CYPRESS_COO_NAMESPACE=<custom-namespace>
+```
+
 ### Start Cypress
 We can either open Cypress GUI(open) or run Cypress in headless mode(run) to run the tests.
 ```bash
