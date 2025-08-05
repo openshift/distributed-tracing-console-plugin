@@ -57,6 +57,8 @@ declare global {
       muiTraceAttributes(attributes: { [key: string]: { value: string | string[] | ((text: string) => boolean), optional?: boolean } }, logPrefix?: string): Chainable<void>;
       pfCloseButton(ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
       pfCloseButtonIfExists(ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
+      menuToggleContains(text: string | RegExp, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      verifyTraceCount(expectedCount: number | string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
     }
   }
 }
@@ -622,5 +624,37 @@ Cypress.Commands.add(
         cy.log(`pfCloseButtonIfExists: Element not found (${ariaLabel || 'generic close button'}), skipping`);
       }
     });
+  },
+);
+
+// Generic command to find and click menu toggle that contains specific text
+Cypress.Commands.add(
+  'menuToggleContains',
+  (text: string | RegExp, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    
+    cy.log(`Finding menu toggle containing: ${text}`);
+    
+    // Find and click the menu toggle with specified content (PatternFly version agnostic)
+    return cy.get('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle', defaultOptions)
+      .contains(text)
+      .click();
+  },
+);
+
+// Simple command to verify trace count in MUI pagination display
+Cypress.Commands.add(
+  'verifyTraceCount',
+  (expectedCount: number | string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    const countStr = expectedCount.toString();
+    
+    cy.log(`Verifying trace count is ${countStr}`);
+    
+    // Simple direct check - same as the working example
+    cy.get('.MuiTablePagination-displayedRows', defaultOptions)
+      .should('contain', `of ${countStr}`);
+    
+    cy.log(`✓ Verified trace count: ${countStr} traces found`);
   },
 );

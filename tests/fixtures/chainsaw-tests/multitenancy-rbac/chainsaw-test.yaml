@@ -23,6 +23,18 @@ spec:
         file: 02-install-otelcol.yaml
     - assert:
         file: 02-assert.yaml
+  - name: Install hotrod
+    try:
+    - apply:
+        file: install-hotrod.yaml
+    - assert:
+        file: assert-install-hotrod.yaml
+  - name: Generate hotrod traces
+    try:
+    - apply:
+        file: generate-hotrod-traces.yaml
+    - assert:
+        file: assert-generate-hotrod-traces.yaml
   - name: Create non-admin SAs with namespace level access
     try:
     - apply:
