@@ -8,11 +8,11 @@ spec:
     secret:
       name: minio
       type: s3
-  storageSize: 1Gi
+  storageSize: 20Gi
   resources:
     total:
       limits:
-        memory: 4Gi
+        memory: 6Gi
         cpu: 2000m
   tenants:
     mode: openshift
