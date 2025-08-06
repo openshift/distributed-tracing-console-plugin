@@ -431,4 +431,34 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.pfCloseButtonIfExists('Close chip group');
   });
 
+  it('Test trace limit functionality', () => {
+    cy.log('Navigate to the observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+
+    cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+    cy.log('Select tenant: dev');
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    cy.log('Select Namespace filter type');
+    cy.pfMenuToggle('Service Name').click();
+    cy.pfSelectMenuItem('Namespace').click();
+    cy.log('Filter by namespace: chainsaw-rbac');
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('chainsaw-rbac');
+
+    cy.log('Set trace limit to 50 (but verify actual available count)');
+    cy.menuToggleContains('20');
+    cy.pfSelectMenuItem('50').click();
+    cy.verifyTraceCount(50);
+
+    cy.log('Set trace limit to 10 and verify fewer traces shown');
+    cy.menuToggleContains('50');
+    cy.pfSelectMenuItem('20').click();
+    cy.verifyTraceCount(20);
+  });
 });

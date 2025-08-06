@@ -19,6 +19,7 @@ After dependencies are installed successfully and before we run actual tests, pl
 ```bash
 tree -L 1
 .
+├── CLAUDE.md
 ├── cypress
 ├── cypress.config.ts
 ├── Dockerfile
@@ -35,7 +36,7 @@ tree -L 1
 ├── tsconfig.json
 └── views
 
-6 directories, 10 files
+6 directories, 11 files
 ````
 
 ### Export necessary variables
@@ -156,7 +157,17 @@ npx cypress run --spec "e2e/dt-plugin-tests-debug.cy.ts"
 mv tests/e2e/dt-plugin-tests-debug.cy.ts tests/e2e/dt-plugin-tests-debug.cy.ts.skip
 ```
 
+### Chainsaw RBAC Testing
+Chainsaw tests in `fixtures/chainsaw-tests/` validate operator permissions and multi-tenancy scenarios:
+
+- **Multitenancy RBAC**: Tests for role-based access control across multiple tenants
+- **Monolithic Multitenancy RBAC**: Tests for RBAC in monolithic deployment scenarios  
+- **HotRod Integration**: Automatic deployment and trace generation using the Jaeger HotRod example application for comprehensive testing
+
+These tests ensure that the distributed tracing plugin works correctly with different RBAC configurations and deployment models, supporting both upstream and downstream environments.
+
 ### Documentation
+- **CLAUDE.md** - Guidance for Claude AI assistance with this codebase
 - **SELECTOR_BEST_PRACTICES.md** - Comprehensive selector guidelines and command usage
 - **PATTERNFLY_COMMANDS_EXAMPLES.md** - Complete command examples and workflows
 - **README.md** - This file with setup and architecture overview

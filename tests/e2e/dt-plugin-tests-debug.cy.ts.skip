@@ -1,5 +1,3 @@
-import { operatorHubPage } from '../views/operator-hub-page';
-
 // Set constants for the operators that need to be installed for tests.
 const DTP = {
   namespace: 'openshift-cluster-observability-operator',
@@ -24,12 +22,37 @@ const TEMPO = {
 };
 
 describe('OpenShift Distributed Tracing UI Plugin Debug Tests (NO SETUP/TEARDOWN)', () => {
+
+  before(() => {
+    // Only remove cluster-admin role if provider is not kube:admin
+    if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+      cy.log('Remove cluster-admin role from user if exists.');
+      cy.executeAndDelete(
+        `oc adm policy remove-cluster-role-from-user cluster-admin ${Cypress.env('LOGIN_USERNAME')} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+    }
+    // Only add cluster-admin role if provider is not kube:admin
+    if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
+      cy.adminCLI(
+        `oc adm policy add-cluster-role-to-user cluster-admin ${Cypress.env('LOGIN_USERNAME')}`,
+      );
+    }
+    // Simplified login without OAuth URL complexity
+    cy.login(
+      Cypress.env('LOGIN_IDP'),
+      Cypress.env('LOGIN_USERNAME'),
+      Cypress.env('LOGIN_PASSWORD'),
+    );
+  });
+
   // NOTE: This test file is for debugging purposes only
   // It skips the long before() and after() setup/teardown steps
   // Make sure your environment already has the necessary operators and instances set up
 
-  it('Test Distributed Tracing UI plugin with Tempo instances and verify traces using user having cluster-admin role', function () {
+  it('Debug test.', function () {
 
-    // Add steps below
+  // Add steps below.
 
-}); 
+  });
+
+});
