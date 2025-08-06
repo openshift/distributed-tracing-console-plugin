@@ -144,6 +144,10 @@ best practice is to prefix your CSS classnames with your plugin name to avoid
 conflicts. Please don't disable these rules without understanding how they can
 break console styles!
 
+## Testing
+
+This project includes comprehensive end-to-end testing using Cypress and Chainsaw. Tests validate the plugin functionality, RBAC scenarios, and multi-tenancy configurations. For detailed testing instructions, see [tests/README.md](tests/README.md).
+
 ## Reporting
 
 Steps to generate reports
