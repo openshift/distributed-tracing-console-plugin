@@ -11,7 +11,7 @@ RUN make install-frontend-ci-clean
 COPY web/ web/
 RUN make build-frontend
 
-FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_golang_1.23 as go-builder
+FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_golang_1.24 as go-builder
 
 WORKDIR /opt/app-root
 

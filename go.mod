@@ -1,6 +1,6 @@
 module github.com/openshift/distributed-tracing-console-plugin
 
-go 1.22.1
+go 1.24
 
 require (
 	github.com/evanphx/json-patch v5.6.0+incompatible
