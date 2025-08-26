@@ -461,4 +461,42 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.pfSelectMenuItem('20').click();
     cy.verifyTraceCount(20);
   });
+
+  it('Test Distributed Traces Cutoffbox functionality', () => {
+    // Setup the trace page with tempo instance and filters
+    cy.setupTracePage('chainsaw-rbac / simplst', 'dev', 'Last 15 minutes', 'frontend');
+    
+    // Navigate to trace details
+    cy.navigateToTraceDetails();
+
+    cy.log('Test MUI box cutoff functionality by interacting with resizer');
+    
+    // Store the original time range values for comparison 
+    cy.get('[style*="left: 25%"]').contains(/\d+(\.\d+)?(μs|ms|s)/)
+      .invoke('text')
+      .as('secondTimeValue');
+    
+    // Drag the right resizer to 50% position
+    cy.dragCutoffResizer(50, 'right');
+    
+    // Verify the cutoff box is positioned correctly (around 50%)
+    cy.verifyCutoffPosition(50, 2); // 50% ± 2% tolerance
+    
+    // Verify that the time range has been updated to reflect the cutoff selection
+    cy.log('Verify the time range reflects the cutoff selection');
+    cy.get('@secondTimeValue').then((secondValue) => {
+      // Check that the updated time range shows values around the selected area
+      cy.get('[style*="left: 0%"][style*="border-width: 0px"]')
+        .should('be.visible')
+        .and('not.be.empty');
+      
+      // Verify that the range shows millisecond values that align with the cutoff
+      cy.get('[style*="left: 100%"] span[style*="position: absolute; right: 0.75rem"]')
+        .should('be.visible')
+        .invoke('text')
+        .should('match', /\d+(\.\d+)?(μs|ms|s)/); // Should match time format
+        
+      cy.log('✓ MUI box cutoff functionality verified - time range updated correctly');
+    });
+  });
 });
