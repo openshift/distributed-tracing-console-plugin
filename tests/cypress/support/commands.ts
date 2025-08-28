@@ -59,6 +59,11 @@ declare global {
       pfCloseButtonIfExists(ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
       menuToggleContains(text: string | RegExp, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
       verifyTraceCount(expectedCount: number | string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
+      // Tracing-specific commands
+      setupTracePage(tempoInstance: string, tenant: string, timeframe?: string, serviceFilter?: string): Chainable<void>;
+      navigateToTraceDetails(): Chainable<void>;
+      dragCutoffResizer(position: number, resizerType?: 'left' | 'right'): Chainable<void>;
+      verifyCutoffPosition(expectedWidthPercent: number, tolerance?: number): Chainable<void>;
     }
   }
 }
@@ -656,5 +661,114 @@ Cypress.Commands.add(
       .should('contain', `of ${countStr}`);
     
     cy.log(`✓ Verified trace count: ${countStr} traces found`);
+  },
+);
+
+// Tracing-specific commands for common operations
+
+Cypress.Commands.add(
+  'setupTracePage',
+  (tempoInstance: string, tenant: string, timeframe?: string, serviceFilter?: string) => {
+    cy.log(`Setting up trace page: ${tempoInstance} / ${tenant}`);
+    
+    // Navigate to traces page
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    
+    // Select Tempo instance
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem(tempoInstance).click();
+    
+    // Select tenant
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem(tenant).click();
+    
+    // Set timeframe if provided
+    if (timeframe) {
+      cy.pfMenuToggle('Last 30 minutes').click();
+      cy.pfSelectMenuItem(timeframe).click();
+    }
+    
+    // Set service filter if provided
+    if (serviceFilter) {
+      cy.pfMenuToggle('Service Name').click();
+      cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+      cy.pfCheckMenuItem(serviceFilter);
+    }
+    
+    cy.log(`✓ Trace page setup complete for ${tempoInstance} / ${tenant}`);
+  },
+);
+
+Cypress.Commands.add(
+  'navigateToTraceDetails',
+  () => {
+    cy.log('Navigating to trace details');
+    cy.muiFirstTraceLink().click();
+    cy.findByTestId('span-duration-bar').eq(1).click();
+    cy.log('✓ In trace details view');
+  },
+);
+
+Cypress.Commands.add(
+  'dragCutoffResizer',
+  (position: number, resizerType: 'left' | 'right' = 'right') => {
+    cy.log(`Dragging ${resizerType} resizer to ${position}% position`);
+    
+    // Wait for the trace timeline to be fully loaded
+    cy.get(`[data-elem="resizer${resizerType === 'right' ? 'Right' : 'Left'}"]`).should('be.visible');
+    
+    // Perform the drag operation
+    cy.get(`[data-elem="resizer${resizerType === 'right' ? 'Right' : 'Left'}"]`)
+      .first()
+      .then(($resizer) => {
+        const resizerRect = $resizer[0].getBoundingClientRect();
+        
+        // Get the timeline container using canvas as a stable reference point
+        cy.get('canvas[height="60"]')
+          .parent()
+          .then(($timeline) => {
+            const timelineRect = $timeline[0].getBoundingClientRect();
+            const targetX = timelineRect.left + (timelineRect.width * (position / 100));
+            
+            // Drag the resizer to the specified position
+            cy.wrap($resizer)
+              .trigger('mousedown', { which: 1 })
+              .trigger('mousemove', { 
+                clientX: targetX, 
+                clientY: resizerRect.top + resizerRect.height / 2 
+              })
+              .trigger('mouseup');
+          });
+      });
+
+    // Wait for the timeline to update after the drag operation
+    cy.wait(1000);
+    cy.log(`✓ ${resizerType} resizer dragged to ${position}% position`);
+  },
+);
+
+Cypress.Commands.add(
+  'verifyCutoffPosition',
+  (expectedWidthPercent: number, tolerance: number = 2) => {
+    cy.log(`Verifying cutoff box position is around ${expectedWidthPercent}%`);
+    
+    // Verify the cutoff box is positioned correctly
+    cy.get('[data-elem="cutoffBox"]')
+      .last() // Get the right cutoff box
+      .invoke('attr', 'style')
+      .then((style) => {
+        // Extract the width percentage value
+        const widthMatch = style.match(/width:\s*(\d+(?:\.\d+)?)%/);
+        expect(widthMatch).to.not.be.null;
+        const widthValue = parseFloat(widthMatch[1]);
+        
+        // Check within tolerance
+        const minWidth = expectedWidthPercent - tolerance;
+        const maxWidth = expectedWidthPercent + tolerance;
+        expect(widthValue).to.be.within(minWidth, maxWidth);
+        
+        cy.log(`✓ Cutoff box width is ${widthValue}% (within acceptable range of ${minWidth}-${maxWidth}%)`);
+      });
   },
 );
