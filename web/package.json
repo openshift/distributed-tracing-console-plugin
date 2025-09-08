@@ -68,7 +68,7 @@
     "description": "This plugin adds a distributed tracing UI to the Openshift console.",
     "exposedModules": {
       "TracesPage": "./pages/TracesPage/TracesPage",
-      "TraceDetailPage": "./pages/TraceDetailPage"
+      "TraceDetailPage": "./pages/TraceDetailPage/TraceDetailPage"
     },
     "dependencies": {
       "@console/pluginAPI": "*"
@@ -83,13 +83,14 @@
     "@patternfly/react-core": "^6.2.0",
     "@patternfly/react-icons": "^5.4.2",
     "@patternfly/react-templates": "^6.2.2",
-    "@perses-dev/core": "^0.51.0",
-    "@perses-dev/dashboards": "^0.51.0",
-    "@perses-dev/plugin-system": "^0.51.0",
-    "@perses-dev/scatter-chart-plugin": "^0.7.0",
-    "@perses-dev/tempo-plugin": "^0.51.0-rc.3",
-    "@perses-dev/trace-table-plugin": "^0.7.0",
-    "@perses-dev/tracing-gantt-chart-plugin": "^0.7.0",
+    "@perses-dev/components": "^0.52.0",
+    "@perses-dev/core": "^0.52.0",
+    "@perses-dev/dashboards": "^0.52.0",
+    "@perses-dev/plugin-system": "^0.52.0",
+    "@perses-dev/scatter-chart-plugin": "^0.8.0",
+    "@perses-dev/tempo-plugin": "^0.53.1",
+    "@perses-dev/trace-table-plugin": "^0.8.1",
+    "@perses-dev/tracing-gantt-chart-plugin": "^0.9.1",
     "copy-webpack-plugin": "^12.0.2",
     "i18next": "^23.10.0",
     "i18next-http-backend": "^2.5.0",
