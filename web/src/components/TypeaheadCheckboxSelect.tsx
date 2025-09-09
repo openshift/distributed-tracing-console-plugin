@@ -287,7 +287,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       selected={selected}
       onSelect={(_event, selection) => onSelect(selection as string)}
       onOpenChange={(isOpen) => {
-        !isOpen && closeMenu();
+        if (!isOpen) closeMenu();
       }}
       toggle={toggle}
       variant="typeahead"
