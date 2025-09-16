@@ -39,8 +39,13 @@ apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
   name: dev
+  namespace: chainsaw-mmo-rbac
 spec:
   serviceAccount: otel-collector-deployment
+  mode: deployment
+  observability:
+    metrics:
+      enableMetrics: true
   config: |
     extensions:
       bearertokenauth:
@@ -54,6 +59,19 @@ spec:
         protocols:
           http:
   
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]
+        dimensions:
+          - name: http.method
+            default: GET
+          - name: http.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 5s
+
     processors:
       k8sattributes:
         extract:
@@ -89,6 +107,11 @@ spec:
           authenticator: bearertokenauth
         headers:
           X-Scope-OrgID: dev  # tenantName
+      prometheus:
+        add_metric_suffixes: false
+        endpoint: 0.0.0.0:8889
+        resource_to_telemetry_conversion:
+          enabled: true
 
     service:
       telemetry:
@@ -100,11 +123,14 @@ spec:
         traces/grpc:
           receivers: [otlp/grpc]
           processors: [k8sattributes]
-          exporters: [otlp,debug]
+          exporters: [otlp,debug,spanmetrics]
         traces/http:
           receivers: [otlp/http]
           processors: [k8sattributes]
-          exporters: [otlphttp,debug]
+          exporters: [otlphttp,debug,spanmetrics]
+        metrics:
+          receivers: [spanmetrics]
+          exporters: [prometheus,debug]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
