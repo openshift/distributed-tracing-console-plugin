@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-const PF_THEME_DARK_CLASS = 'pf-v5-theme-dark';
-const PF_THEME_DARK_CLASS_LEGACY = 'pf-theme-dark'; // legacy class name needed to support PF4
+// the unversioned class name is required for PF4
+const PF_THEME_DARK_CLASSES = ['pf-v6-theme-dark', 'pf-v5-theme-dark', 'pf-theme-dark'];
 
 /**
  * The @openshift-console/dynamic-plugin-sdk package does not expose the theme setting of the user preferences,
@@ -9,8 +9,10 @@ const PF_THEME_DARK_CLASS_LEGACY = 'pf-theme-dark'; // legacy class name needed 
  */
 function getTheme(): 'light' | 'dark' {
   const classList = document.documentElement.classList;
-  if (classList.contains(PF_THEME_DARK_CLASS) || classList.contains(PF_THEME_DARK_CLASS_LEGACY)) {
-    return 'dark';
+  for (const className of PF_THEME_DARK_CLASSES) {
+    if (classList.contains(className)) {
+      return 'dark';
+    }
   }
   return 'light';
 }

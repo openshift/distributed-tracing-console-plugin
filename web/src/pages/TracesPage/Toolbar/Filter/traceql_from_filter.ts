@@ -18,7 +18,7 @@ export function filterToTraceQL(filter: Filter) {
 }
 
 function escape(q: string) {
-  return q.replace(/"/g, '\\"');
+  return q.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
 }
 
 function stringMatcher(attribute: string, values: string[]) {
