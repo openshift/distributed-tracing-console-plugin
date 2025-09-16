@@ -111,7 +111,7 @@ cy.findByTestId('span-duration-bar').first().click(); // By test ID (multiple sp
 
 ```typescript
 // Single attribute validation
-cy.muiTraceAttribute('net.peer.ip', '1.2.3.4');
+cy.muiTraceAttribute('network.peer.address', '1.2.3.4');
 cy.muiTraceAttribute('peer.service', 'telemetrygen-client');
 cy.muiTraceAttribute('k8s.container.name', 'telemetrygen', true); // Optional attribute
 
@@ -122,7 +122,7 @@ cy.muiTraceAttribute('service.name', (text) => {
 
 // Bulk attribute validation (recommended for multiple attributes)
 cy.muiTraceAttributes({
-  'net.peer.ip': { value: '1.2.3.4' },
+  'network.peer.address': { value: '1.2.3.4' },
   'peer.service': { value: 'telemetrygen-client' },
   'k8s.container.name': { 
     value: 'telemetrygen', 
@@ -168,7 +168,7 @@ describe('Trace inspection', () => {
     
     // Validate trace attributes efficiently
     cy.muiTraceAttributes({
-      'net.peer.ip': { value: '1.2.3.4' },
+      'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: 'telemetrygen-client' },
       'service.name': { 
         value: (text) => text.includes('rbac')
