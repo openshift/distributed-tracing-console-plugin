@@ -15,15 +15,15 @@ import {
   PanelProps,
   PluginRegistry,
   RouterProvider,
-  TimeRangeProvider,
+  TimeRangeProviderWithQueryParams,
   useDataQueriesContext,
+  useInitialTimeRange,
 } from '@perses-dev/plugin-system';
 import {
   DatasourceResource,
   Definition,
   DurationString,
   GlobalDatasourceResource,
-  TimeRangeValue,
   TraceData,
   UnknownSpec,
 } from '@perses-dev/core';
@@ -137,23 +137,20 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
 }
 
 interface PersesDashboardWrapperProps {
-  timeRange?: TimeRangeValue;
-  setTimeRange?: (value: TimeRangeValue) => void;
   children?: React.ReactNode;
 }
 
 /**
  * PersesDashboardWrapper initializes the dashboard time range and variable providers.
  */
-export function PersesDashboardWrapper({
-  timeRange = { pastDuration: '0s' },
-  setTimeRange,
-  children,
-}: PersesDashboardWrapperProps) {
+export function PersesDashboardWrapper({ children }: PersesDashboardWrapperProps) {
+  const DEFAULT_DASHBOARD_DURATION = '30m';
+  const initialTimeRange = useInitialTimeRange(DEFAULT_DASHBOARD_DURATION);
+
   return (
-    <TimeRangeProvider timeRange={timeRange} setTimeRange={setTimeRange}>
+    <TimeRangeProviderWithQueryParams initialTimeRange={initialTimeRange}>
       <VariableProvider>{children}</VariableProvider>
-    </TimeRangeProvider>
+    </TimeRangeProviderWithQueryParams>
   );
 }
 
