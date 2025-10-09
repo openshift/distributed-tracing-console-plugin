@@ -15,7 +15,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom-v5-compat';
@@ -125,9 +125,12 @@ function NoTempoInstance() {
       <PageSection>
         <EmptyState titleText={t('No Tempo instances yet')} headingLevel="h4" icon={PlusCircleIcon}>
           <EmptyStateBody>
-            {t(
-              'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
-            )}
+            <Trans t={t}>
+              To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy
+              enabled.
+              <br />
+              Instances without multi-tenancy are not supported.
+            </Trans>
           </EmptyStateBody>
           <EmptyStateFooter>
             <EmptyStateActions>
