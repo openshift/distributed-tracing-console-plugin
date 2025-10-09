@@ -30,7 +30,7 @@ const createTempoStackLink =
 const createTempoMonolithicLink =
   '/api-resource/all-namespaces/tempo.grafana.com~v1alpha1~TempoMonolithic/instances';
 const viewInstallationDocsLink =
-  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing/distributed-tracing-platform-tempo';
+  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing';
 
 function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
