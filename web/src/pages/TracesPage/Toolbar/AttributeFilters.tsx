@@ -203,7 +203,7 @@ function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterPro
       categoryName={filterName}
       showToolbarItem={show}
     >
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup label={label ?? <>&nbsp;</>} labelHelp={labelHelp}>
           <TypeaheadCheckboxSelect
             isCreatable={true}
@@ -251,7 +251,7 @@ function DurationAttributeFilter(props: DurationAttributeFilterProps) {
       categoryName={filterName}
       showToolbarItem={show}
     >
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup fieldId="min-duration-input" label={t('Min duration')} style={{ width: '14em' }}>
           <DurationTextInput
             id="min-duration-input"
@@ -262,7 +262,7 @@ function DurationAttributeFilter(props: DurationAttributeFilterProps) {
           />
         </FormGroup>
       </Form>
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup fieldId="max-duration-input" label={t('Max duration')} style={{ width: '14em' }}>
           <DurationTextInput
             id="max-duration-input"
@@ -318,7 +318,7 @@ function CustomAttributesFilter(props: CustomAttributesFilterProps) {
       categoryName={filterName}
       showToolbarItem={show}
     >
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup
           fieldId="custom-attributes-input"
           label={t('Custom attributes')}
