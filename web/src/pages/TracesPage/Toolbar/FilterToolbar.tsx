@@ -51,7 +51,6 @@ export function FilterToolbar(props: FilterToolbarProps) {
                 <Button
                   variant="link"
                   onClick={() => setShowAttributeFilters(!showAttributeFilters)}
-                  isDisabled={!showAttributeFilters && !isSimpleTraceQLQuery(query)}
                 >
                   {showAttributeFilters ? t('Show query') : t('Hide query')}
                 </Button>
