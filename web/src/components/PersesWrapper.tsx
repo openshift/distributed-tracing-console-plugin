@@ -38,7 +38,7 @@ import * as tempoPlugin from '@perses-dev/tempo-plugin';
 import * as scatterChartPlugin from '@perses-dev/scatter-chart-plugin';
 import * as traceTablePlugin from '@perses-dev/trace-table-plugin';
 import * as tracingGanttChartPlugin from '@perses-dev/tracing-gantt-chart-plugin';
-import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts';
+import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts/victory';
 import { TempoInstance } from '../hooks/useTempoInstance';
 import { getProxyURLFor } from '../hooks/api';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -47,6 +47,7 @@ import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
 import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
 import { Link as RouterLink, useNavigate } from 'react-router-dom-v5-compat';
+import './PersesWrapper.css';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -75,14 +76,15 @@ const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
 
-const patternflyChartsMultiUnorderedPalette = getThemeColors(
-  ChartThemeColor.multiUnordered,
-).chart.colorScale.flatMap((cssColor) => {
-  // colors are stored as 'var(--pf-chart-theme--multi-color-unordered--ColorScale--3400, #73c5c5)'
-  // need to extract the hex value, because fillStyle() of <canvas> does not support CSS vars
-  const match = cssColor.match(/#[a-fA-F0-9]+/);
-  return match ? [match[0]] : [];
-});
+const chartColorScale = getThemeColors(ChartThemeColor.multiUnordered).chart?.colorScale;
+const patternflyChartsMultiUnorderedPalette = Array.isArray(chartColorScale)
+  ? chartColorScale.flatMap((cssColor: string) => {
+      // colors are stored as 'var(--pf-chart-theme--multi-color-unordered--ColorScale--3400, #73c5c5)'
+      // need to extract the hex value, because fillStyle() of <canvas> does not support CSS vars
+      const match = cssColor.match(/#[a-fA-F0-9]+/);
+      return match ? [match[0]] : [];
+    })
+  : [];
 
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
@@ -110,10 +112,10 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
       ...typography,
       fontFamily: 'var(--pf-t--global--font--family--body)',
     },
-    shape: {
-      borderRadius: 4, // should be var(--pf-t--global--border--radius--tiny), but type must be a number.
-    },
-  });
+    cssVariables: true,
+    // Remove casting once https://github.com/perses/perses/pull/3443 is merged
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
 
   const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
     echartsTheme: {
