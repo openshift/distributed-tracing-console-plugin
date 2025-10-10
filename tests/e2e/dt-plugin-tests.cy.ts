@@ -373,8 +373,8 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
     cy.pfTypeahead('Select a tenant').click();
     cy.pfSelectMenuItem('dev').click();
-    cy.pfMenuToggle('Last 30 minutes').click();
-    cy.pfSelectMenuItem('Last 15 minutes').click();
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 15 minutes').click();
     cy.pfMenuToggle('Service Name').click();
     cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
     cy.pfCheckMenuItem('http-rbac-1');
@@ -403,8 +403,8 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.pfSelectMenuItem('chainsaw-mmo-rbac / mmo-rbac').click();
     cy.pfTypeahead('Select a tenant').click();
     cy.pfSelectMenuItem('dev').click();
-    cy.pfMenuToggle('Last').click();
-    cy.pfSelectMenuItem('Last 1 hour').click();
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
     cy.pfMenuToggle('Service Name').click();
     cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
     cy.pfCheckMenuItem('http-rbac-1');
