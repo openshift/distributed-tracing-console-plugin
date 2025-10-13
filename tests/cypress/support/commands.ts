@@ -59,6 +59,9 @@ declare global {
       pfCloseButtonIfExists(ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
       menuToggleContains(text: string | RegExp, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
       verifyTraceCount(expectedCount: number | string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<void>;
+      // Material-UI specific commands
+      muiSelect(ariaLabel: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
+      muiSelectOption(optionText: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>): Chainable<JQuery<HTMLElement>>;
       // Tracing-specific commands
       setupTracePage(tempoInstance: string, tenant: string, timeframe?: string, serviceFilter?: string): Chainable<void>;
       navigateToTraceDetails(): Chainable<void>;
@@ -595,6 +598,26 @@ Cypress.Commands.add(
   },
 );
 
+// Material-UI Select commands
+
+Cypress.Commands.add(
+  'muiSelect',
+  (ariaLabel: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find Material-UI Select component by aria-label (supports partial match)
+    cy.get(`[role="combobox"][aria-label*="${ariaLabel}"]`, defaultOptions);
+  },
+);
+
+Cypress.Commands.add(
+  'muiSelectOption',
+  (optionText: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
+    const defaultOptions = { timeout: 10000, ...options };
+    // Find Material-UI Select option by text in the listbox
+    cy.get('[role="listbox"] [role="option"]', defaultOptions).contains(optionText);
+  },
+);
+
 Cypress.Commands.add(
   'pfCloseButton',
   (ariaLabel?: string, options?: Partial<Loggable & Timeoutable & Withinable & Shadow>) => {
@@ -685,8 +708,8 @@ Cypress.Commands.add(
     
     // Set timeframe if provided
     if (timeframe) {
-      cy.pfMenuToggle('Last 30 minutes').click();
-      cy.pfSelectMenuItem(timeframe).click();
+      cy.muiSelect('Select time range').click();
+      cy.muiSelectOption(timeframe).click();
     }
     
     // Set service filter if provided
