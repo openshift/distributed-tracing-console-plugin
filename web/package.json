@@ -21,7 +21,7 @@
     "cypress-postreport": "npm run cypress-merge && npm run cypress-generate"
   },
   "devDependencies": {
-    "@cypress/webpack-preprocessor": "^5.15.5",
+    "@cypress/webpack-preprocessor": "^6.0.2",
     "@openshift-console/dynamic-plugin-sdk": "^4.19.0",
     "@openshift-console/dynamic-plugin-sdk-webpack": "^4.19.0",
     "@types/jest": "^28.1.4",
@@ -32,7 +32,7 @@
     "@typescript-eslint/eslint-plugin": "^8.39.1",
     "@typescript-eslint/parser": "^8.39.1",
     "css-loader": "^6.7.1",
-    "cypress": "^11.0.1",
+    "cypress": "^14.2.1",
     "cypress-multi-reporters": "^1.6.2",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.5.0",
