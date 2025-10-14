@@ -78,7 +78,7 @@ export function QueryBrowserBody() {
 
   return (
     <>
-      <PageSection>
+      <PageSection className="mui-pf-theme">
         <Split hasGutter>
           <SplitItem isFilled>
             <Title headingLevel="h1">{t('Traces')}</Title>
@@ -91,7 +91,7 @@ export function QueryBrowserBody() {
         </Split>
         <Divider className="pf-v6-u-mt-md" />
       </PageSection>
-      <PageSection>
+      <PageSection className="mui-pf-theme">
         <Stack hasGutter>
           <FilterToolbar
             tempo={tempo}
