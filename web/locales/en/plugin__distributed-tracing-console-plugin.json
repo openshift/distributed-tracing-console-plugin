@@ -47,7 +47,7 @@
   "To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.": "To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.",
   "Install Tempo operator": "Install Tempo operator",
   "No Tempo instances yet": "No Tempo instances yet",
-  "To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.": "To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.",
+  "To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.<1></1>Instances without multi-tenancy are not supported.": "To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.<1></1>Instances without multi-tenancy are not supported.",
   "Create a Tempo instance": "Create a Tempo instance",
   "Create a TempoStack instance": "Create a TempoStack instance",
   "Create a TempoMonolithic instance": "Create a TempoMonolithic instance",
