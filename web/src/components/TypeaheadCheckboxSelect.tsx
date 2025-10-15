@@ -45,10 +45,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       }
     }
 
-    // selected items should be on top
-    return initialOptions.sort((a, b) =>
-      `${a.selected ? 0 : 1}${a.value}`.localeCompare(`${b.selected ? 0 : 1}${b.value}`),
-    );
+    return initialOptions;
   }, [props.options, props.value, props.isCreatable]);
 
   const [isOpen, setIsOpen] = useState(false);

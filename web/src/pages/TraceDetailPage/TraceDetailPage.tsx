@@ -53,7 +53,12 @@ function TraceDetailPageBody() {
         <PageTitle />
         <Divider className="pf-v6-u-mt-md" />
       </PageSection>
-      <PageSection isFilled hasBodyWrapper={false} style={{ paddingTop: 0 }}>
+      <PageSection
+        isFilled
+        hasBodyWrapper={false}
+        className="mui-pf-theme"
+        style={{ paddingTop: 0 }}
+      >
         <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
           <PersesTracePanelWrapper
             panelOptions={{ showIcons: 'always' }}
