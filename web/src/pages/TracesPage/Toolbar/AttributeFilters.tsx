@@ -148,6 +148,14 @@ export function AttributeFilters(props: AttributeFiltersProps) {
             <HelpIcon />
           </Popover>
         }
+        noResultsFoundText={
+          <Trans t={t}>
+            No results found. Please ensure that the{' '}
+            <Link to={k8sAttributesProcessorLink}>Kubernetes Attributes Processor</Link>
+            <br />
+            is enabled in your OpenTelemetry collector pipeline.
+          </Trans>
+        }
         show={activeFilter === namespaceFilter.value}
         options={namespaceOptions ?? []}
         value={filter.namespace}
@@ -186,6 +194,7 @@ interface TypeaheadStringAttributeFilterProps {
   filterName: string;
   label?: React.ReactNode;
   labelHelp?: React.ReactElement;
+  noResultsFoundText?: React.ReactNode;
   show?: boolean;
   options: TypeaheadSelectOption[];
   value: string[];
@@ -193,7 +202,8 @@ interface TypeaheadStringAttributeFilterProps {
 }
 
 function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterProps) {
-  const { filterName, label, labelHelp, show, options, value, setValue } = props;
+  const { filterName, label, labelHelp, noResultsFoundText, show, options, value, setValue } =
+    props;
 
   return (
     <ToolbarFilter
@@ -211,6 +221,7 @@ function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterPro
             placeholder={`Filter by ${filterName}${
               value.length > 0 ? ' (' + value.length + ')' : ''
             }`}
+            noResultsFoundText={noResultsFoundText}
             options={options}
             value={value}
             setValue={setValue}

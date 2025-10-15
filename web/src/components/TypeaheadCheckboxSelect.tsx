@@ -16,6 +16,7 @@ import { TypeaheadSelectOption } from '@patternfly/react-templates';
 
 export interface TypeaheadCheckboxSelectProps {
   placeholder: string;
+  noResultsFoundText?: React.ReactNode;
   toggleWidth?: string;
   isCreatable?: boolean;
   style?: CSSProperties;
@@ -99,7 +100,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       newSelectOptions = [
         {
           isAriaDisabled: true,
-          children: `No results found`,
+          children: props.noResultsFoundText ?? `No results found`,
           value: NO_RESULTS,
           hasCheckbox: false,
         },
@@ -107,7 +108,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
     }
 
     setSelectOptions(newSelectOptions);
-  }, [inputValue, initialSelectOptions, isOpen, props.isCreatable]);
+  }, [inputValue, initialSelectOptions, isOpen, props.isCreatable, props.noResultsFoundText]);
 
   const createItemId = (value: string) => `select-multi-typeahead-${value.replace(' ', '-')}`;
 
