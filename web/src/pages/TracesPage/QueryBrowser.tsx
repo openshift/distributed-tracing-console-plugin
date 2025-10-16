@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Divider, PageSection, Split, SplitItem, Stack, Title } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TimeRangeSelect } from '../../components/TimeRangeSelect';
@@ -31,11 +31,18 @@ export function QueryBrowserBody() {
   const [query, setQuery] = useQueryParam('q', withDefault(StringParam, '{}'));
   const [limit, setLimit] = useQueryParam('limit', withDefault(NumberParam, DEFAULT_LIMIT));
   const { refresh } = useTimeRange();
+  const isInitialRender = useRef(true);
 
   // Refresh query if Tempo instance or tenant changes.
   // The Perses data source is selected via a mock DatasourceApiImpl implementation in <PersesWrapper>,
   // therefore Perses doesn't refresh automatically if the Tempo instance changes.
   useEffect(() => {
+    // Only call refresh() if the Tempo instance changed, not on the initial render of this component.
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
     refresh();
   }, [tempo, refresh]);
 
@@ -61,13 +68,7 @@ export function QueryBrowserBody() {
       </PageSection>
       <PageSection className="mui-pf-theme">
         <Stack hasGutter>
-          <FilterToolbar
-            tempo={tempo}
-            setTempo={setTempo}
-            query={query}
-            setQuery={setQuery}
-            runQuery={runQuery}
-          />
+          <FilterToolbar tempo={tempo} setTempo={setTempo} query={query} runQuery={runQuery} />
           <PersesTempoDatasourceWrapper
             tempo={tempo}
             queries={[{ kind: 'TempoTraceQuery', spec: { query, limit } }]}

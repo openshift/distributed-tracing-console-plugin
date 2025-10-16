@@ -26,5 +26,10 @@ export function useTagValues(
         .sort((a, b) => a.value.localeCompare(b.value));
     },
     staleTime: 60 * 1000, // cache tag value response for 1m
+    // Keep the previous query result during loading.
+    // Without this setting, the select boxes in the filter bar flicker on every selection,
+    // because the select box data goes from list of values -> undefined (during loading state) -> list of values.
+    // The select box values are refreshed because the absolute time range changes.
+    keepPreviousData: true,
   });
 }
