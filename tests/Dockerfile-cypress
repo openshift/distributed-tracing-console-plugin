@@ -15,6 +15,6 @@ RUN wget -O chainsaw.tar.gz https://github.com/kyverno/chainsaw/releases/downloa
     && mv chainsaw /usr/local/bin/ \
     && rm -rf chainsaw.tar.gz
 
-# Install apache2-utils for htpasswd required by OCP CI
-RUN apt update && apt install -y apache2-utils \
+# Install apache2-utils for htpasswd required by OCP CI, jq and curl for metrics validation
+RUN apt update && apt install -y apache2-utils jq curl \
     && rm -rf /var/lib/apt/lists/*

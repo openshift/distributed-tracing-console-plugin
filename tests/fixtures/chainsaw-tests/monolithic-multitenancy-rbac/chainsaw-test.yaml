@@ -5,6 +5,12 @@ metadata:
 spec:
   namespace: chainsaw-mmo-rbac
   steps:
+  - name: Enable user workload monitoring
+    try:
+    - apply:
+        file: install-user-workload-monitoring.yaml
+    - assert:
+        file: assert-user-workload-monitoring.yaml
   - name: step-01
     try:
     - apply:
@@ -59,3 +65,8 @@ spec:
         file: kubeadmin-traces-verify.yaml
     - assert:
         file: assert-kubeadmin-traces-verify.yaml
+  - name: Verify metrics
+    try:
+    - script:
+        timeout: 5m
+        content: ./check_metrics.sh
