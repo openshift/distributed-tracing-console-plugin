@@ -6,15 +6,16 @@ import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
 import {
   PersesDashboardWrapper,
   PersesTempoDatasourceWrapper,
+  PersesTracePanelWrapper,
   PersesWrapper,
-  PersesPanelPluginWrapper,
-} from '../components/PersesWrapper';
-import { otlpcommonv1 } from '@perses-dev/core';
+} from '../../components/PersesWrapper';
 import { useDataQueries } from '@perses-dev/plugin-system';
-import { useTempoInstance } from '../hooks/useTempoInstance';
-import { TracingApp } from '../TracingApp';
+import { useTempoInstance } from '../../hooks/useTempoInstance';
+import { TracingApp } from '../../TracingApp';
 import { memo } from 'react';
-import { TracingGanttChart } from '@perses-dev/tracing-gantt-chart-plugin';
+import { linkToSpan, linkToTrace, spanAttributeLinks } from '../../links';
+import { StringParam, useQueryParam } from 'use-query-params';
+import './TraceDetailPage.css';
 
 function TraceDetailPage() {
   return (
@@ -35,6 +36,7 @@ function TraceDetailPageBody() {
   const { traceId } = useParams();
   const [tempo] = useTempoInstance();
   const location = useLocation();
+  const [selectedSpanId] = useQueryParam('selectSpan', StringParam);
 
   return (
     <PersesTempoDatasourceWrapper
@@ -51,12 +53,39 @@ function TraceDetailPageBody() {
         <PageTitle />
         <Divider className="pf-v6-u-mt-md" />
       </PageSection>
-      <PageSection isFilled hasBodyWrapper={false}>
-        <PersesPanelPluginWrapper
-          plugin={TracingGanttChart}
-          spec={{ visual: { palette: { mode: 'categorical' } } }}
-          attributeLinks={attributeLinks}
-        />
+      <PageSection
+        isFilled
+        hasBodyWrapper={false}
+        className="mui-pf-theme"
+        style={{ paddingTop: 0 }}
+      >
+        <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
+          <PersesTracePanelWrapper
+            panelOptions={{ showIcons: 'always' }}
+            definition={{
+              kind: 'Panel',
+              spec: {
+                display: { name: `Trace ${traceId}` },
+                plugin: {
+                  kind: 'TracingGanttChart',
+                  spec: {
+                    visual: {
+                      palette: {
+                        mode: 'categorical',
+                      },
+                    },
+                    links: {
+                      trace: linkToTrace(),
+                      span: linkToSpan(),
+                      attributes: spanAttributeLinks,
+                    },
+                    selectedSpanId,
+                  },
+                },
+              },
+            }}
+          />
+        </div>
       </PageSection>
     </PersesTempoDatasourceWrapper>
   );
@@ -101,17 +130,3 @@ function useTraceName(): string {
   // return traceId if span is not loaded or root span is not found
   return traceId ?? '';
 }
-
-const sval = (val?: otlpcommonv1.AnyValue) =>
-  val && 'stringValue' in val ? encodeURIComponent(val.stringValue) : '';
-
-const attributeLinks: Record<string, (attrs: Record<string, otlpcommonv1.AnyValue>) => string> = {
-  'k8s.namespace.name': (attrs) => `/k8s/cluster/namespaces/${sval(attrs['k8s.namespace.name'])}`,
-  'k8s.node.name': (attrs) => `/k8s/cluster/nodes/${sval(attrs['k8s.node.name'])}`,
-  'k8s.deployment.name': (attrs) =>
-    `/k8s/ns/${sval(attrs['k8s.namespace.name'])}/deployments/${sval(
-      attrs['k8s.deployment.name'],
-    )}`,
-  'k8s.pod.name': (attrs) =>
-    `/k8s/ns/${sval(attrs['k8s.namespace.name'])}/pods/${sval(attrs['k8s.pod.name'])}`,
-};

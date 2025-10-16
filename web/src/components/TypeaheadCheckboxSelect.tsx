@@ -16,6 +16,7 @@ import { TypeaheadSelectOption } from '@patternfly/react-templates';
 
 export interface TypeaheadCheckboxSelectProps {
   placeholder: string;
+  noResultsFoundText?: React.ReactNode;
   toggleWidth?: string;
   isCreatable?: boolean;
   style?: CSSProperties;
@@ -45,10 +46,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       }
     }
 
-    // selected items should be on top
-    return initialOptions.sort((a, b) =>
-      `${a.selected ? 0 : 1}${a.value}`.localeCompare(`${b.selected ? 0 : 1}${b.value}`),
-    );
+    return initialOptions;
   }, [props.options, props.value, props.isCreatable]);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -102,7 +100,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       newSelectOptions = [
         {
           isAriaDisabled: true,
-          children: `No results found`,
+          children: props.noResultsFoundText ?? `No results found`,
           value: NO_RESULTS,
           hasCheckbox: false,
         },
@@ -110,7 +108,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
     }
 
     setSelectOptions(newSelectOptions);
-  }, [inputValue, initialSelectOptions, isOpen, props.isCreatable]);
+  }, [inputValue, initialSelectOptions, isOpen, props.isCreatable, props.noResultsFoundText]);
 
   const createItemId = (value: string) => `select-multi-typeahead-${value.replace(' ', '-')}`;
 
@@ -287,7 +285,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       selected={selected}
       onSelect={(_event, selection) => onSelect(selection as string)}
       onOpenChange={(isOpen) => {
-        !isOpen && closeMenu();
+        if (!isOpen) closeMenu();
       }}
       toggle={toggle}
       variant="typeahead"

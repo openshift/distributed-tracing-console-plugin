@@ -138,7 +138,7 @@ cy.muiSpanBar('grpc-service').click()
 // Attribute validation (bulk)
 cy.muiTraceAttributes({
   'service.name': { value: 'my-service' },
-  'net.peer.ip': { value: '1.2.3.4' },
+  'network.peer.address': { value: '1.2.3.4' },
   'k8s.namespace': { value: 'test-ns', optional: true }
 })
 ```
