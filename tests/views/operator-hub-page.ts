@@ -41,7 +41,16 @@ export const operatorHubPage = {
       cy.log('Installing operator using recommended namespace');
       
       // Click operator recommended namespace radio button
-      cy.get('[data-test="Operator recommended Namespace:-radio-input"]').click();
+      // Support both old and new OpenShift versions
+      cy.get('body').then(($body) => {
+        if ($body.find('#operator-namespace-recommended').length > 0) {
+          // New method: use ID selector
+          cy.get('#operator-namespace-recommended').click();
+        } else {
+          // Old method: use data-test attribute
+          cy.get('[data-test="Operator recommended Namespace:-radio-input"]').click();
+        }
+      });
       
       // Enable monitoring checkbox if it exists (only for recommended namespace)
       helperfuncs.clickIfExist('[data-test="enable-monitoring"]');

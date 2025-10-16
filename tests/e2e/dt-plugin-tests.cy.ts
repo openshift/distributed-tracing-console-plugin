@@ -350,7 +350,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       .and('have.text', 'Create a TempoMonolithic instance');
   });
 
-  it('Test Distributed Tracing UI plugin with Tempo instances and verify traces using user having cluster-admin role', function () {
+  it('Test Distributed Tracing UI plugin with Tempo instances and verify traces, span links using user having cluster-admin role', function () {
     cy.log('Create TempoStack and TempoMonolithic instances');
     cy.exec(
       'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/chainsaw-tests',
@@ -358,16 +358,17 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
         env: {
           KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
         },
-        timeout: 1800000,
+        timeout: 1200000,
         failOnNonZeroExit: true
       }
     ) .then((result) => {
       expect(result.code).to.eq(0);
       cy.log(`Chainsaw test ran successfully: ${result.stdout}`);
     });
-    cy.log('Navigate to the observe/traces page');
-    cy.visit('/observe/traces');
 
+    cy.log('Navigate to the /observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
     cy.log('Assert traces in TempoStack instance.');
     cy.pfTypeahead('Select a Tempo instance').click();
     cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
@@ -384,8 +385,8 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.muiFirstTraceLink().click();
     cy.findByTestId('span-duration-bar').eq(1).click();
     cy.muiTraceAttributes({
-      'net.peer.ip': { value: '1.2.3.4' },
-      'peer.service': { value: 'telemetrygen-client' },
+      'network.peer.address': { value: '1.2.3.4' },
+      'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': { 
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
@@ -395,6 +396,122 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
         value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
     }, 'TempoStack');
+    cy.log('Click on the Links tab');
+    cy.get('button.MuiTab-root').contains('Links').click();
+    cy.log('Verify link details are present');
+    // Verify first link (index 0)
+    cy.muiTraceAttribute('link.index', '0', false, 'Links');
+    cy.muiTraceAttribute('link.type', 'random', false, 'Links');
+    // Verify trace ID and span ID have valid format for first link (they will be different each time)
+    cy.contains('.MuiTypography-h5', 'trace ID').first().next('.MuiTypography-body1').invoke('text').then((traceId) => {
+      cy.log(`First link trace ID: ${traceId.trim()}`);
+      expect(traceId.trim()).to.match(/^[A-F0-9]{32}$/);
+    });
+    cy.contains('.MuiTypography-h5', 'span ID').first().next('.MuiTypography-body1').invoke('text').then((spanId) => {
+      cy.log(`First link span ID: ${spanId.trim()}`);
+      expect(spanId.trim()).to.match(/^[A-F0-9]{16}$/);
+    });
+    cy.log('Click on the first trace ID link to navigate to that trace');
+    cy.contains('.MuiTypography-h5', 'trace ID').first().next('.MuiTypography-body1').invoke('text').then((traceId) => {
+      const cleanTraceId = traceId.trim();
+      cy.get('a.MuiLink-root[href*="/observe/traces/"]').first().click();
+      
+      cy.log('Verify URL contains the correct trace ID');
+      cy.url().should('include', `/observe/traces/${cleanTraceId}`);
+      cy.log(`✓ Successfully navigated to trace: ${cleanTraceId}`);
+    });
+    cy.log('Verify navigation by checking trace attributes');
+    cy.findByTestId('span-duration-bar').eq(1).click();
+    cy.muiTraceAttributes({
+      'network.peer.address': { value: '1.2.3.4' },
+      'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
+      'k8s.container.name': { value: 'telemetrygen', optional: true },
+      'k8s.namespace.name': { 
+        value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
+        optional: true 
+      },
+      'service.name': { 
+        value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
+      }
+    }, 'TempoStack');
+
+    cy.log('Rerun the steps and select span ID from links');
+    cy.pfBreadcrumb('Traces').click();
+    cy.pfCloseButtonIfExists('Close chip group');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+    cy.pfMenuToggle('Service Name').click();
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('http-rbac-1');
+    cy.pfCheckMenuItem('http-rbac-2'); 
+    cy.pfCheckMenuItem('grpc-rbac-1');
+    cy.pfCheckMenuItem('grpc-rbac-2');
+    cy.muiFirstTraceLink().click();
+    cy.findByTestId('span-duration-bar').eq(1).click();
+    cy.log('Click on the Links tab again');
+    cy.get('button.MuiTab-root').contains('Links').click();
+    cy.log('Click on the first span ID link to navigate to that span');
+    cy.contains('.MuiTypography-h5', 'trace ID').first().next('.MuiTypography-body1').invoke('text').then((traceId) => {
+      const cleanTraceId = traceId.trim();
+      cy.contains('.MuiTypography-h5', 'span ID').first().next('.MuiTypography-body1').invoke('text').then((spanId) => {
+        const cleanSpanId = spanId.trim();
+        cy.contains('.MuiTypography-h5', 'span ID').first().next('.MuiTypography-body1').find('a').first().click();
+        
+        cy.log('Verify URL contains the correct trace ID and span ID');
+        cy.url().should('include', `/observe/traces/${cleanTraceId}`);
+        cy.url().should('include', `selectSpan=${cleanSpanId}`);
+        cy.log(`✓ Successfully navigated to trace: ${cleanTraceId} with selected span: ${cleanSpanId}`);
+      });
+    });
+    cy.log('Verify navigation by checking trace attributes');
+    cy.findByTestId('span-duration-bar').eq(1).click();
+    cy.muiTraceAttributes({
+      'network.peer.address': { value: '1.2.3.4' },
+      'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
+      'k8s.container.name': { value: 'telemetrygen', optional: true },
+      'k8s.namespace.name': { 
+        value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
+        optional: true 
+      },
+      'service.name': { 
+        value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
+      }
+    }, 'TempoStack');
+
+    cy.log('Rerun the steps and select span links from the Traces page');
+    cy.pfBreadcrumb('Traces').click();
+    cy.pfCloseButtonIfExists('Close chip group');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+    cy.pfMenuToggle('Service Name').click();
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('http-rbac-1');
+    cy.pfCheckMenuItem('http-rbac-2'); 
+    cy.pfCheckMenuItem('grpc-rbac-1');
+    cy.pfCheckMenuItem('grpc-rbac-2');
+    cy.muiFirstTraceLink().click();
+    cy.get('[data-testid="LaunchIcon"]').first().click();
+    cy.get('a[role="menuitem"]').contains('Open linked span').first().click();
+    cy.muiTraceAttributes({
+      'network.peer.address': { value: '1.2.3.4' },
+      'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
+      'k8s.container.name': { value: 'telemetrygen', optional: true },
+      'k8s.namespace.name': { 
+        value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
+        optional: true 
+      },
+      'service.name': { 
+        value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
+      }
+    }, 'TempoMonolithic');
 
     cy.log('Assert traces in TempoMonolithic instance.');
     cy.pfBreadcrumb('Traces').click();
@@ -414,8 +531,8 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.muiFirstTraceLink().click();
     cy.findByTestId('span-duration-bar').eq(1).click();
     cy.muiTraceAttributes({
-      'net.peer.ip': { value: '1.2.3.4' },
-      'peer.service': { value: 'telemetrygen-client' },
+      'network.peer.address': { value: '1.2.3.4' },
+      'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': { 
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),

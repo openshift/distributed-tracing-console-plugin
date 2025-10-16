@@ -63,9 +63,9 @@ cy.muiSpanBar('http-rbac-2')                // Click specific span bar
 cy.muiFirstSpanBar()                        // Click first span bar
 
 // Trace Attribute Validation
-cy.muiTraceAttribute('net.peer.ip', '1.2.3.4')  // Single attribute check
+cy.muiTraceAttribute('network.peer.address', '1.2.3.4')  // Single attribute check
 cy.muiTraceAttributes({                     // Bulk attribute validation
-  'net.peer.ip': { value: '1.2.3.4' },
+  'network.peer.address': { value: '1.2.3.4' },
   'service.name': { value: (text) => text.includes('rbac') }
 })
 ```
@@ -219,7 +219,7 @@ cy.findByTestId('span-duration-bar').first().click()  // By test ID
 ### Trace Attribute Validation
 ```typescript
 // Old approach (48+ lines of repetitive code):
-cy.contains('.MuiTypography-h5', 'net.peer.ip').next('.MuiTypography-body1').should('have.text', '1.2.3.4')
+cy.contains('.MuiTypography-h5', 'network.peer.address').next('.MuiTypography-body1').should('have.text', '1.2.3.4')
 cy.contains('.MuiTypography-h5', 'peer.service').next('.MuiTypography-body1').should('have.text', 'telemetrygen-client')
 cy.get('body').then(($body) => {
   if ($body.find('.MuiTypography-h5:contains("k8s.container.name")').length > 0) {
@@ -230,7 +230,7 @@ cy.get('body').then(($body) => {
 
 // New approach (12 lines, 75% reduction):
 cy.muiTraceAttributes({
-  'net.peer.ip': { value: '1.2.3.4' },
+  'network.peer.address': { value: '1.2.3.4' },
   'peer.service': { value: 'telemetrygen-client' },
   'k8s.container.name': { value: 'telemetrygen', optional: true },
   'k8s.namespace.name': { 
@@ -243,7 +243,7 @@ cy.muiTraceAttributes({
 }, 'TempoStack')
 
 // Or individual attribute checks:
-cy.muiTraceAttribute('net.peer.ip', '1.2.3.4')
+cy.muiTraceAttribute('network.peer.address', '1.2.3.4')
 cy.muiTraceAttribute('service.name', (text) => text.includes('rbac'), false, 'TempoStack')
 ```
 
