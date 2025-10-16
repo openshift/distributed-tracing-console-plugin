@@ -110,7 +110,7 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
   const muiTheme = getTheme(theme, {
     typography: {
       ...typography,
-      fontFamily: 'var(--pf-t--global--font--family--body)',
+      fontFamily: 'var(--pf-v5-global--FontFamily--text)',
     },
     cssVariables: true,
     // Remove casting once https://github.com/perses/perses/pull/3443 is merged

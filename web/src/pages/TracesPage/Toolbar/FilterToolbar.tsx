@@ -32,7 +32,7 @@ export function FilterToolbar(props: FilterToolbarProps) {
   const [showAttributeFilters, setShowAttributeFilters] = useState(isSimpleTraceQLQuery(query));
 
   return (
-    <Toolbar customLabelGroupContent={<></>} hasNoPadding>
+    <Toolbar customChipGroupContent={<></>} className="co-toolbar-no-padding">
       <ToolbarContent>
         <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
         <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">
@@ -42,7 +42,7 @@ export function FilterToolbar(props: FilterToolbarProps) {
             <TraceQLFilter tempo={tempo} query={query} runQuery={runQuery} />
           )}
         </ToolbarToggleGroup>
-        <ToolbarGroup variant="action-group" align={{ default: 'alignEnd' }} alignItems="center">
+        <ToolbarGroup variant="button-group" align={{ default: 'alignRight' }} alignItems="center">
           <ToolbarItem>
             <Form>
               <FormGroup label={<>&nbsp;</>}>

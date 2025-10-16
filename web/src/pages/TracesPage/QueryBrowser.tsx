@@ -56,7 +56,7 @@ export function QueryBrowserBody() {
 
   return (
     <>
-      <PageSection className="mui-pf-theme">
+      <PageSection variant="light" className="mui-pf-theme">
         <Split hasGutter>
           <SplitItem isFilled>
             <Title headingLevel="h1">{t('Traces')}</Title>
@@ -64,9 +64,9 @@ export function QueryBrowserBody() {
           <TimeRangeSelect />
           <LimitSelect limit={limit} setLimit={setLimit} />
         </Split>
-        <Divider className="pf-v6-u-mt-md" />
+        <Divider className="pf-v5-u-mt-md" />
       </PageSection>
-      <PageSection className="mui-pf-theme">
+      <PageSection variant="light" style={{ paddingTop: 0 }} className="mui-pf-theme">
         <Stack hasGutter>
           <FilterToolbar tempo={tempo} setTempo={setTempo} query={query} runQuery={runQuery} />
           <PersesTempoDatasourceWrapper

@@ -1,4 +1,12 @@
-.dt-plugin-time-range-select .MuiSelect-select {
-    /** override hardcoded padding https://github.com/perses/perses/blob/601768a329985efeaaf8c43c3ba1b8f7b26cb08c/ui/components/src/TimeRangeSelector/TimeRangeSelector.tsx#L130 */
-    padding: 2px 38px 2px 16px !important;
+.dt-plugin-time-range-select {
+  fieldset {
+    border: var(--pf-v5-global--BorderWidth--sm) solid var(--pf-v5-global--BorderColor--300);
+    border-block-end-color: var(--pf-v5-global--BorderColor--200);
+    margin-bottom: 1px; /* align with limit traces input */
+  }
+
+  .MuiSelect-root:hover fieldset {
+    border: var(--pf-v5-global--BorderWidth--sm) solid var(--pf-v5-global--BorderColor--300);
+    border-block-end-color: var(--pf-v5-global--active-color--100);
+  }
 }
