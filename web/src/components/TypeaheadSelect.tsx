@@ -121,7 +121,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
 
   const openMenu = useCallback(() => {
     if (!isOpen) {
-      onToggle && onToggle(true);
+      if (onToggle) onToggle(true);
       setIsOpen(true);
     }
   }, [isOpen, setIsOpen, onToggle]);
@@ -213,7 +213,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
   };
 
   const closeMenu = () => {
-    onToggle && onToggle(false);
+    if (onToggle) onToggle(false);
     setIsOpen(false);
     resetActiveAndFocusedItem();
     const option = initialOptions.find((o) => o.value === selected);
@@ -237,7 +237,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
       | undefined,
     option: TypeaheadSelectOption,
   ) => {
-    onSelect && onSelect(_event, option.value);
+    if (onSelect) onSelect(_event, option.value);
 
     setInputValue(String(option.content));
     setFilterValue('');
@@ -260,7 +260,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
 
   const onTextInputChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
     setInputValue(value);
-    onInputChange && onInputChange(value);
+    if (onInputChange) onInputChange(value);
     setFilterValue(value);
 
     resetActiveAndFocusedItem();
@@ -347,7 +347,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
   };
 
   const onToggleClick = () => {
-    onToggle && onToggle(!isOpen);
+    if (onToggle) onToggle(!isOpen);
     setIsOpen(!isOpen);
     textInputRef.current?.focus();
   };
@@ -355,11 +355,11 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
   const onClearButtonClick = () => {
     setSelected('');
     setInputValue('');
-    onInputChange && onInputChange('');
+    if (onInputChange) onInputChange('');
     setFilterValue('');
     resetActiveAndFocusedItem();
     textInputRef.current?.focus();
-    onClearSelection && onClearSelection();
+    if (onClearSelection) onClearSelection();
   };
 
   const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
@@ -413,7 +413,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
       selected={selected}
       onSelect={_onSelect}
       onOpenChange={(isOpen) => {
-        !isOpen && closeMenu();
+        if (!isOpen) closeMenu();
       }}
       toggle={toggle}
       variant="typeahead"

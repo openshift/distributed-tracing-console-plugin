@@ -47,7 +47,7 @@ export function TraceQLFilter({ tempo, query, runQuery }: TraceQLFilterProps) {
           </Form>
         </ToolbarItem>
       </ToolbarGroup>
-      <ToolbarGroup variant="button-group">
+      <ToolbarGroup variant="action-group">
         <ToolbarItem>
           <Form>
             <FormGroup label={<>&nbsp;</>}>

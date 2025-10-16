@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import CodeMirror, { EditorView, keymap } from '@uiw/react-codemirror';
-import { TraceQLExtension } from '@perses-dev/tempo-plugin/lib/components/TraceQLExtension';
+import CodeMirror, { EditorView } from '@uiw/react-codemirror';
+import { keymap } from '@codemirror/view';
+import { TraceQLExtension, TempoDatasource } from '@perses-dev/tempo-plugin';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
 import { getProxyURLFor } from '../../../hooks/api';
 import { usePatternFlyTheme } from '../../../components/console/utils/usePatternFlyTheme';
 import { Prec } from '@codemirror/state';
 import { insertNewlineAndIndent } from '@codemirror/commands';
+import { useTimeRange } from '@perses-dev/plugin-system';
 
 interface TraceQLEditorProps {
   id?: string;
@@ -34,10 +36,14 @@ export const codemirrorTheme = EditorView.theme({
 export function TraceQLEditor({ id, tempo, query, setQuery, runQuery }: TraceQLEditorProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { theme } = usePatternFlyTheme();
+  const { timeRange } = useTimeRange();
 
   const traceQLExtension = useMemo(() => {
-    return TraceQLExtension({ endpoint: tempo ? getProxyURLFor(tempo) : undefined });
-  }, [tempo]);
+    const client = tempo
+      ? TempoDatasource.createClient({ directUrl: getProxyURLFor(tempo) }, {})
+      : undefined;
+    return TraceQLExtension({ client, timeRange });
+  }, [tempo, timeRange]);
 
   const keyBindings = useMemo(
     () =>
@@ -62,7 +68,13 @@ export function TraceQLEditor({ id, tempo, query, setQuery, runQuery }: TraceQLE
   return (
     <CodeMirror
       id={id}
-      className="pf-c-form-control"
+      style={{
+        border:
+          'var(--pf-t--global--border--width--control--default) solid var(--pf-t--global--border--color--default)',
+        borderRadius: 'var(--pf-t--global--border--radius--small)',
+        padding:
+          'var(--pf-t--global--spacer--control--vertical--default) var(--pf-t--global--spacer--control--horizontal--default)',
+      }}
       theme={theme == 'dark' ? 'dark' : 'light'}
       aria-label="trace query input"
       placeholder={t('TraceQL Query')}

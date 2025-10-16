@@ -23,7 +23,7 @@ import { DurationField, Filter, splitByUnquotedWhitespace } from './Filter/filte
 import { useTagValues } from '../../../hooks/useTagValues';
 import { Link } from 'react-router-dom-v5-compat';
 import { useTimeRange } from '@perses-dev/plugin-system';
-import { isAbsoluteTimeRange, toAbsoluteTimeRange } from '@perses-dev/core';
+import { getUnixTimeRange } from '@perses-dev/tempo-plugin';
 
 const k8sAttributesProcessorLink =
   'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/red_hat_build_of_opentelemetry/configuring-the-collector#kubernetes-attributes-processor_otel-collector-processors';
@@ -48,7 +48,7 @@ const attributeFilterOptions = [
 interface AttributeFiltersProps {
   tempo: TempoInstance | undefined;
   query: string;
-  setQuery: (query: string) => void;
+  runQuery: (query: string) => void;
 }
 
 const statusOptions = [
@@ -59,44 +59,42 @@ const statusOptions = [
 
 export function AttributeFilters(props: AttributeFiltersProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { tempo, query, setQuery } = props;
+  const { tempo, query, runQuery } = props;
   const [activeFilter, setActiveFilter] = useState<string | undefined>(
     attributeFilterOptions[0].value,
   );
 
   const filter = traceQLToFilter(query);
   const setFilter = (filter: Filter) => {
-    setQuery(filterToTraceQL(filter));
+    runQuery(filterToTraceQL(filter));
   };
 
-  const { timeRange } = useTimeRange();
-  const absTimeRange = !isAbsoluteTimeRange(timeRange) ? toAbsoluteTimeRange(timeRange) : timeRange;
-  const startTime = Math.round(absTimeRange.start.getTime() / 1000);
-  const endTime = Math.round(absTimeRange.end.getTime() / 1000);
+  const { absoluteTimeRange } = useTimeRange();
+  const { start, end } = getUnixTimeRange(absoluteTimeRange);
 
   const { data: serviceNameOptions } = useTagValues(
     tempo,
     'resource.service.name',
     filterToTraceQL({ ...filter, serviceName: [] }),
     activeFilter === serviceNameFilter.value,
-    startTime,
-    endTime,
+    start,
+    end,
   );
   const { data: spanNameOptions } = useTagValues(
     tempo,
     'name',
     filterToTraceQL({ ...filter, spanName: [] }),
     activeFilter === spanNameFilter.value,
-    startTime,
-    endTime,
+    start,
+    end,
   );
   const { data: namespaceOptions } = useTagValues(
     tempo,
     'resource.k8s.namespace.name',
     filterToTraceQL({ ...filter, namespace: [] }),
     activeFilter === namespaceFilter.value,
-    startTime,
-    endTime,
+    start,
+    end,
   );
 
   return (
@@ -148,6 +146,14 @@ export function AttributeFilters(props: AttributeFiltersProps) {
             <HelpIcon />
           </Popover>
         }
+        noResultsFoundText={
+          <Trans t={t}>
+            No results found. Please ensure that the{' '}
+            <Link to={k8sAttributesProcessorLink}>Kubernetes Attributes Processor</Link>
+            <br />
+            is enabled in your OpenTelemetry collector pipeline.
+          </Trans>
+        }
         show={activeFilter === namespaceFilter.value}
         options={namespaceOptions ?? []}
         value={filter.namespace}
@@ -186,6 +192,7 @@ interface TypeaheadStringAttributeFilterProps {
   filterName: string;
   label?: React.ReactNode;
   labelHelp?: React.ReactElement;
+  noResultsFoundText?: React.ReactNode;
   show?: boolean;
   options: TypeaheadSelectOption[];
   value: string[];
@@ -193,24 +200,26 @@ interface TypeaheadStringAttributeFilterProps {
 }
 
 function TypeaheadStringAttributeFilter(props: TypeaheadStringAttributeFilterProps) {
-  const { filterName, label, labelHelp, show, options, value, setValue } = props;
+  const { filterName, label, labelHelp, noResultsFoundText, show, options, value, setValue } =
+    props;
 
   return (
     <ToolbarFilter
-      chips={value}
-      deleteChip={(_category, label) => setValue(value.filter((x) => x !== label))}
-      deleteChipGroup={() => setValue([])}
+      labels={value}
+      deleteLabel={(_category, label) => setValue(value.filter((x) => x !== label))}
+      deleteLabelGroup={() => setValue([])}
       categoryName={filterName}
       showToolbarItem={show}
     >
-      <Form>
-        <FormGroup label={label ?? <>&nbsp;</>} labelIcon={labelHelp}>
+      <Form onSubmit={(e) => e.preventDefault()}>
+        <FormGroup label={label ?? <>&nbsp;</>} labelHelp={labelHelp}>
           <TypeaheadCheckboxSelect
             isCreatable={true}
             toggleWidth="20em"
             placeholder={`Filter by ${filterName}${
               value.length > 0 ? ' (' + value.length + ')' : ''
             }`}
+            noResultsFoundText={noResultsFoundText}
             options={options}
             value={value}
             setValue={setValue}
@@ -245,13 +254,13 @@ function DurationAttributeFilter(props: DurationAttributeFilterProps) {
 
   return (
     <ToolbarFilter
-      chips={labels}
-      deleteChip={() => setValue({ min: undefined, max: undefined })}
-      deleteChipGroup={() => setValue({ min: undefined, max: undefined })}
+      labels={labels}
+      deleteLabel={() => setValue({ min: undefined, max: undefined })}
+      deleteLabelGroup={() => setValue({ min: undefined, max: undefined })}
       categoryName={filterName}
       showToolbarItem={show}
     >
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup fieldId="min-duration-input" label={t('Min duration')} style={{ width: '14em' }}>
           <DurationTextInput
             id="min-duration-input"
@@ -262,7 +271,7 @@ function DurationAttributeFilter(props: DurationAttributeFilterProps) {
           />
         </FormGroup>
       </Form>
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup fieldId="max-duration-input" label={t('Max duration')} style={{ width: '14em' }}>
           <DurationTextInput
             id="max-duration-input"
@@ -312,17 +321,17 @@ function CustomAttributesFilter(props: CustomAttributesFilterProps) {
 
   return (
     <ToolbarFilter
-      chips={value}
-      deleteChip={(_category, label) => setValue(value.filter((x) => x !== label))}
-      deleteChipGroup={() => setValue([])}
+      labels={value}
+      deleteLabel={(_category, label) => setValue(value.filter((x) => x !== label))}
+      deleteLabelGroup={() => setValue([])}
       categoryName={filterName}
       showToolbarItem={show}
     >
-      <Form>
+      <Form onSubmit={(e) => e.preventDefault()}>
         <FormGroup
           fieldId="custom-attributes-input"
           label={t('Custom attributes')}
-          labelIcon={
+          labelHelp={
             <Popover
               headerContent={<div>{t('Filter by attributes')}</div>}
               bodyContent={

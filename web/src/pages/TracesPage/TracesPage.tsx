@@ -10,14 +10,12 @@ import {
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateHeader,
-  EmptyStateIcon,
   MenuToggle,
   PageSection,
   Title,
 } from '@patternfly/react-core';
 import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom-v5-compat';
@@ -32,7 +30,7 @@ const createTempoStackLink =
 const createTempoMonolithicLink =
   '/api-resource/all-namespaces/tempo.grafana.com~v1alpha1~TempoMonolithic/instances';
 const viewInstallationDocsLink =
-  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing/distributed-tracing-platform-tempo';
+  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/distributed_tracing';
 
 function TracesPage() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -54,24 +52,30 @@ export default memo(TracesPage);
  * and shows an empty state instead of the query browser.
  */
 function TracesPageBody() {
-  const { loading, error, tempoResources } = useTempoResources();
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const { isLoading, error, data: tempoResources } = useTempoResources();
   const [tempo] = useTempoInstance();
 
   // show loading state (loading the list of Tempo CRs in the cluster)
   // only if no Tempo instance is selected (from the query params)
-  if (!tempo && loading) {
+  if (!tempo && isLoading) {
     return <LoadingState />;
   }
 
   if (error) {
-    if (error.errorType === 'TempoCRDNotFound') {
+    if (error.json?.errorType === 'TempoCRDNotFound') {
       return <TempoOperatorNotInstalledState />;
     } else {
-      return <ErrorState errorType={error.errorType} error={error.error} />;
+      return (
+        <ErrorState
+          errorType={error.json?.errorType}
+          error={error.json?.error ?? t('Error connecting to the Tracing UI plugin backend')}
+        />
+      );
     }
   }
 
-  if (!loading && tempoResources && tempoResources.length === 0) {
+  if (!isLoading && tempoResources && tempoResources.length === 0) {
     return <NoTempoInstance />;
   }
 
@@ -82,16 +86,15 @@ function TempoOperatorNotInstalledState() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
     <>
-      <PageSection variant="light">
+      <PageSection>
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <EmptyState>
-          <EmptyStateHeader
-            titleText={t("Tempo operator isn't installed yet")}
-            headingLevel="h4"
-            icon={<EmptyStateIcon icon={WrenchIcon} />}
-          />
+        <EmptyState
+          titleText={t("Tempo operator isn't installed yet")}
+          headingLevel="h4"
+          icon={WrenchIcon}
+        >
           <EmptyStateBody>
             {t(
               'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
@@ -116,20 +119,18 @@ function NoTempoInstance() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection>
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
       <PageSection>
-        <EmptyState>
-          <EmptyStateHeader
-            titleText={t('No Tempo instances yet')}
-            headingLevel="h4"
-            icon={<EmptyStateIcon icon={PlusCircleIcon} />}
-          />
+        <EmptyState titleText={t('No Tempo instances yet')} headingLevel="h4" icon={PlusCircleIcon}>
           <EmptyStateBody>
-            {t(
-              'To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
-            )}
+            <Trans t={t}>
+              To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy
+              enabled.
+              <br />
+              Instances without multi-tenancy are not supported.
+            </Trans>
           </EmptyStateBody>
           <EmptyStateFooter>
             <EmptyStateActions>
@@ -177,18 +178,20 @@ function NoTempoInstance() {
 
 interface ErrorStateProps {
   errorType?: string;
-  error: string;
+  error?: string;
 }
 
 function ErrorState({ errorType, error }: ErrorStateProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   return (
     <>
-      <PageSection variant="light">
+      <PageSection>
         <Title headingLevel="h1">{t('Traces')}</Title>
       </PageSection>
-      <PageSection variant="light">
-        <ErrorAlert error={{ name: errorType ?? t('Error'), message: error }} />
+      <PageSection>
+        <ErrorAlert
+          error={{ name: errorType ?? t('Error'), message: error ?? t('Unknown error') }}
+        />
       </PageSection>
     </>
   );

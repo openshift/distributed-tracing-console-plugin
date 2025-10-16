@@ -20,7 +20,7 @@ interface TempoResourceOption extends TypeaheadSelectOption {
 
 export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdownProps) => {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { loading: tempoResourcesLoading, tempoResources } = useTempoResources();
+  const { isLoading, data: tempoResources } = useTempoResources();
 
   const options: TempoResourceOption[] = (tempoResources ?? [])
     .map((tempo) => ({
@@ -33,7 +33,7 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
 
   let selected: TempoResourceOption | undefined = undefined;
   if (tempo) {
-    if (tempoResourcesLoading) {
+    if (isLoading) {
       // Preselect the dropdown option without waiting until the list of TempoResources is loaded to prevent flickering.
       // To accomplish this, we'll create a slightly inaccurate TempoResourceSelectOption,
       // because the kind and the list of tenants is not known before the list of TempoResources is loaded.
@@ -73,13 +73,13 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
   };
 
   return (
-    <ToolbarGroup variant="filter-group" spaceItems={{ default: 'spaceItemsSm' }}>
+    <ToolbarGroup variant="filter-group">
       <ToolbarItem>
         <Form>
           <FormGroup
             fieldId="tempoinstance-select"
             label={t('Tempo instance')}
-            labelIcon={
+            labelHelp={
               <Popover
                 headerContent={<div>{t('Select a Tempo instance')}</div>}
                 bodyContent={
@@ -99,7 +99,7 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
               toggleWidth="22em"
               placeholder={t('Select a Tempo instance')}
               allowClear={false}
-              loading={tempoResourcesLoading}
+              loading={isLoading}
               options={options}
               value={selected?.value}
               setValue={onSelect}
