@@ -1,6 +1,9 @@
 .dt-plugin-trace-table {
+  /** min height, required for loading state */
+  min-height: 280px;
+
   /* Perses panel components are usually in a panel wrapper with a border and 12px padding; remove this padding here. */
-  &:first-child {
+  & > .MuiBox-root {
     padding: 0;
   }
 

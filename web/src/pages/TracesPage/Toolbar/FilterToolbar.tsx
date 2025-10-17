@@ -22,15 +22,13 @@ interface FilterToolbarProps {
   tempo: TempoInstance | undefined;
   setTempo: (tempo?: TempoInstance) => void;
   query: string;
-  /** Update the query. Fetches the search results only if the query changed. */
-  setQuery: (query: string) => void;
   /** Update and execute the query. Always fetches the search results. */
   runQuery: (query: string) => void;
 }
 
 export function FilterToolbar(props: FilterToolbarProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { tempo, setTempo, query, setQuery, runQuery } = props;
+  const { tempo, setTempo, query, runQuery } = props;
   const [showAttributeFilters, setShowAttributeFilters] = useState(isSimpleTraceQLQuery(query));
 
   return (
@@ -39,7 +37,7 @@ export function FilterToolbar(props: FilterToolbarProps) {
         <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
         <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">
           {showAttributeFilters ? (
-            <AttributeFilters tempo={tempo} query={query} setQuery={setQuery} />
+            <AttributeFilters tempo={tempo} query={query} runQuery={runQuery} />
           ) : (
             <TraceQLFilter tempo={tempo} query={query} runQuery={runQuery} />
           )}
@@ -51,7 +49,6 @@ export function FilterToolbar(props: FilterToolbarProps) {
                 <Button
                   variant="link"
                   onClick={() => setShowAttributeFilters(!showAttributeFilters)}
-                  isDisabled={!showAttributeFilters && !isSimpleTraceQLQuery(query)}
                 >
                   {showAttributeFilters ? t('Show query') : t('Hide query')}
                 </Button>

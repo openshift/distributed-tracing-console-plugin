@@ -10,7 +10,7 @@ import {
 } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
 import { useTranslation } from 'react-i18next';
-import { linkToTraceDetailPage } from '../../links';
+import { linkToTrace } from '../../links';
 import './TraceTable.css';
 
 interface TraceTableProps {
@@ -40,13 +40,13 @@ export function TraceTable({ setQuery }: TraceTableProps) {
       <PersesPanelPluginWrapper
         plugin={PersesTraceTable}
         noResults={noResults}
-        spec={{ visual: { palette: { mode: 'categorical' } } }}
-        traceLink={traceDetailLink}
+        spec={{
+          visual: { palette: { mode: 'categorical' } },
+          links: {
+            trace: linkToTrace(),
+          },
+        }}
       />
     </div>
   );
-}
-
-export function traceDetailLink({ traceId }: { traceId: string }) {
-  return linkToTraceDetailPage(traceId);
 }
