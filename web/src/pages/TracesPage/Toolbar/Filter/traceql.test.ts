@@ -56,6 +56,19 @@ describe('TraceQL query', () => {
         ],
       },
     },
+    {
+      query: '{ name = "service \\\\ \\" end" && span.http.route="/some/regex \\\\ \\" end" }',
+      expected: {
+        serviceName: [],
+        spanName: ['service \\ " end'],
+        namespace: [],
+        status: [],
+        spanDuration: {},
+        traceDuration: {},
+        // custom matcher values are not escaped
+        customMatchers: ['span.http.route="/some/regex \\\\ \\" end"'],
+      },
+    },
   ])('parse $query', ({ query, expected }) => {
     const filter = traceQLToFilter(query);
     expect(filter).toEqual(expected);

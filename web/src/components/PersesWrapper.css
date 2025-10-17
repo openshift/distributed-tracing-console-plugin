@@ -1,0 +1,6 @@
+/* This theme styles Material UI components to look like PatternFly components */
+
+.mui-pf-theme {
+    --mui-palette-text-primary: var(--pf-t--global--text--color--regular);
+    --mui-shape-borderRadius: var(--pf-t--global--border--radius--small);
+}
