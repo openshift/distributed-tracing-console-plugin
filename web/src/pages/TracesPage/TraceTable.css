@@ -1,6 +1,9 @@
 .dt-plugin-trace-table {
+  /** min height, required for loading state */
+  min-height: 280px;
+
   /* Perses panel components are usually in a panel wrapper with a border and 12px padding; remove this padding here. */
-  &:first-child {
+  & > .MuiBox-root {
     padding: 0;
   }
 
@@ -13,7 +16,7 @@
     }
   }
 
-  /* style tracing service names Material UI <Chip> component like a PatternFly <Label> */
+  /* style tracing service names Material UI <Chip> component like a filled PatternFly <Label> */
   .MuiChip-colorDefault {
     background-color: color-mix(in srgb, var(--service-color) 20%, transparent);
 

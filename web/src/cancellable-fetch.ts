@@ -66,7 +66,10 @@ export const cancellableFetch = <T>(
   }
 
   const timeoutPromise = new Promise<T>((_resolve, reject) => {
-    setTimeout(() => reject(new TimeoutError(url.toString(), timeout)), timeout);
+    setTimeout(() => {
+      abort();
+      reject(new TimeoutError(url.toString(), timeout));
+    }, timeout);
   });
 
   const request = () => Promise.race([fetchPromise, timeoutPromise]);

@@ -1,47 +1,28 @@
 import React, { useState } from 'react';
-import {
-  Bullseye,
-  Button,
-  EmptyState,
-  EmptyStateBody,
-  Flex,
-  FlexItem,
-} from '@patternfly/react-core';
+import { Button, Flex, FlexItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { PersesPanelPluginWrapper } from '../../components/PersesWrapper';
+import { PersesPanelPluginWrapper, usePersesTraceData } from '../../components/PersesWrapper';
 import { ExpandIcon, CompressIcon } from '@patternfly/react-icons';
 import { useRefWidth } from '../../components/console/utils/ref-width-hook';
-import { useHistory } from 'react-router-dom';
-import { linkToTraceDetailPage } from '../../links';
+import { linkToTrace } from '../../links';
 import { ScatterChart } from '@perses-dev/scatter-chart-plugin';
 
 export function ScatterPlot() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const history = useHistory();
   const [isVisible, setVisible] = useState(true);
   const [ref, width] = useRefWidth();
+  const { loading, hasTraceData } = usePersesTraceData();
 
-  const clickHandler = (data: { traceId: string }) => {
-    history.push(linkToTraceDetailPage(data.traceId));
-  };
-
-  const noResults = (
-    <Bullseye>
-      <EmptyState>
-        <EmptyStateBody>{t('No datapoints found.')}</EmptyStateBody>
-      </EmptyState>
-    </Bullseye>
-  );
+  if (!loading && !hasTraceData) {
+    // the trace table already shows a custom empty state
+    return null;
+  }
 
   return (
     <div>
       <Flex>
         <FlexItem align={{ default: 'alignRight' }}>
-          <Button
-            variant="link"
-            className="pf-m-link pf-v5-u-text-align-right"
-            onClick={() => setVisible(!isVisible)}
-          >
+          <Button variant="link" onClick={() => setVisible(!isVisible)}>
             {isVisible ? (
               <>
                 <CompressIcon /> {t('Hide graph')}
@@ -66,13 +47,13 @@ export function ScatterPlot() {
         >
           <PersesPanelPluginWrapper
             plugin={ScatterChart}
-            noResults={noResults}
             contentDimensions={{
               width,
               height: 200,
             }}
-            spec={{}}
-            onClick={clickHandler}
+            spec={{
+              link: linkToTrace(),
+            }}
           />
         </div>
       )}

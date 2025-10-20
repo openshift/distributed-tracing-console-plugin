@@ -1,0 +1,12 @@
+.dt-plugin-time-range-select {
+  fieldset {
+    border: var(--pf-v5-global--BorderWidth--sm) solid var(--pf-v5-global--BorderColor--300);
+    border-block-end-color: var(--pf-v5-global--BorderColor--200);
+    margin-bottom: 1px; /* align with limit traces input */
+  }
+
+  .MuiSelect-root:hover fieldset {
+    border: var(--pf-v5-global--BorderWidth--sm) solid var(--pf-v5-global--BorderColor--300);
+    border-block-end-color: var(--pf-v5-global--active-color--100);
+  }
+}
