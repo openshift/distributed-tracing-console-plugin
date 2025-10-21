@@ -46,7 +46,7 @@ import { ErrorAlert } from './ErrorAlert';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
 import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
-import { Link as RouterLink, useNavigate } from 'react-router-dom-v5-compat';
+import { Link as RouterLink, useHistory } from 'react-router-dom';
 import './PersesWrapper.css';
 
 class DatasourceApiImpl implements DatasourceApi {
@@ -105,12 +105,12 @@ interface PersesWrapperProps {
  */
 export function PersesWrapper({ children }: PersesWrapperProps) {
   const { theme } = usePatternFlyTheme();
-  const navigate = useNavigate();
+  const history = useHistory();
 
   const muiTheme = getTheme(theme, {
     typography: {
       ...typography,
-      fontFamily: 'var(--pf-v5-global--FontFamily--text)',
+      fontFamily: 'var(--pf-global--FontFamily--sans-serif)',
     },
     cssVariables: true,
     // Remove casting once https://github.com/perses/perses/pull/3443 is merged
@@ -129,7 +129,7 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <RouterProvider RouterComponent={RouterLink} navigate={navigate}>
+      <RouterProvider RouterComponent={RouterLink} navigate={history.push}>
         <ChartsProvider chartsTheme={chartsTheme}>
           <PluginRegistry pluginLoader={pluginLoader}>{children}</PluginRegistry>
         </ChartsProvider>

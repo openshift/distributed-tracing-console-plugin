@@ -21,7 +21,7 @@ import { traceQLToFilter } from './Filter/traceql_to_filter';
 import { TypeaheadCheckboxSelect } from '../../../components/TypeaheadCheckboxSelect';
 import { DurationField, Filter, splitByUnquotedWhitespace } from './Filter/filter';
 import { useTagValues } from '../../../hooks/useTagValues';
-import { Link } from 'react-router-dom-v5-compat';
+import { Link } from 'react-router-dom';
 import { useTimeRange } from '@perses-dev/plugin-system';
 import { getUnixTimeRange } from '@perses-dev/tempo-plugin';
 

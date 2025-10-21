@@ -48,7 +48,7 @@ export function DebouncedTextInput({
   }, [setValue, isValidInput, waitTime]);
 
   const handleChange = useCallback(
-    (_event: React.FormEvent<HTMLInputElement>, newValue: string) => {
+    (newValue: string) => {
       setDraftValue(newValue);
       debouncedSetValue(newValue);
     },

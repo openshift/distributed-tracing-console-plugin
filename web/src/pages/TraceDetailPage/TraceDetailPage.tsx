@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Breadcrumb, BreadcrumbItem, Divider, PageSection, Title } from '@patternfly/react-core';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import {
   PersesDashboardWrapper,
   PersesTempoDatasourceWrapper,
@@ -33,7 +33,7 @@ export default memo(TraceDetailPage);
 
 function TraceDetailPageBody() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { traceId } = useParams();
+  const { traceId } = useParams<{ traceId?: string }>();
   const [tempo] = useTempoInstance();
   const location = useLocation();
   const [selectedSpanId] = useQueryParam('selectSpan', StringParam);
@@ -51,7 +51,7 @@ function TraceDetailPageBody() {
           <BreadcrumbItem isActive>{t('Trace details')}</BreadcrumbItem>
         </Breadcrumb>
         <PageTitle />
-        <Divider className="pf-v5-u-mt-md" />
+        <Divider className="pf-u-mt-md" />
       </PageSection>
       <PageSection variant="light" isFilled className="mui-pf-theme" style={{ paddingTop: 0 }}>
         <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
@@ -103,7 +103,7 @@ function PageTitle() {
 }
 
 function useTraceName(): string {
-  const { traceId } = useParams();
+  const { traceId } = useParams<{ traceId?: string }>();
   const { queryResults } = useDataQueries('TraceQuery');
   const trace = queryResults[0]?.data?.trace;
 

@@ -1,9 +1,5 @@
 import React, { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Select,
-  SelectOption,
-  SelectList,
-  SelectOptionProps,
   MenuToggle,
   MenuToggleElement,
   TextInputGroup,
@@ -11,6 +7,7 @@ import {
   TextInputGroupUtilities,
   Button,
 } from '@patternfly/react-core';
+import { Select, SelectList, SelectOption, SelectOptionProps } from '@patternfly/react-core/next';
 import { TimesIcon } from '@patternfly/react-icons';
 import { TypeaheadSelectOption } from './TypeaheadSelect';
 
@@ -86,10 +83,10 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       if (!newSelectOptions.length) {
         newSelectOptions = [
           {
-            isAriaDisabled: true,
+            isDisabled: true,
             children: `No results found for "${inputValue}"`,
             value: NO_RESULTS,
-            hasCheckbox: false,
+            hasCheck: false,
           },
         ];
       }
@@ -99,10 +96,10 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
     if (!newSelectOptions.length) {
       newSelectOptions = [
         {
-          isAriaDisabled: true,
+          isDisabled: true,
           children: props.noResultsFoundText ?? `No results found`,
           value: NO_RESULTS,
-          hasCheckbox: false,
+          hasCheck: false,
         },
       ];
     }
@@ -115,7 +112,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
   const setActiveAndFocusedItem = (itemIndex: number) => {
     setFocusedItemIndex(itemIndex);
     const focusedItem = selectOptions[itemIndex];
-    setActiveItemId(createItemId(focusedItem.value));
+    setActiveItemId(createItemId(String(focusedItem.value)));
   };
 
   const resetActiveAndFocusedItem = () => {
@@ -189,13 +186,8 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
 
     switch (event.key) {
       case 'Enter':
-        if (
-          isOpen &&
-          focusedItem &&
-          focusedItem.value !== NO_RESULTS &&
-          !focusedItem.isAriaDisabled
-        ) {
-          onSelect(focusedItem.value);
+        if (isOpen && focusedItem && focusedItem.value !== NO_RESULTS && !focusedItem.isDisabled) {
+          onSelect(String(focusedItem.value));
         }
 
         if (!isOpen) {
@@ -254,7 +246,11 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
         <TextInputGroupMain
           value={inputValue}
           onClick={onInputClick}
-          onChange={onTextInputChange}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onChange={(a: any, b: any) =>
+            // event handler arguments got flipped in v4.271.0: https://github.com/patternfly/patternfly-react/commit/58fc84a6ee257f12139324814590f8c6d7a91fd2
+            typeof b === 'string' ? onTextInputChange(a, b) : onTextInputChange(b, a)
+          }
           onKeyDown={onInputKeyDown}
           id="multi-typeahead-select-checkbox-input"
           autoComplete="off"
@@ -262,7 +258,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
           placeholder={props.placeholder}
           {...(activeItemId && { 'aria-activedescendant': activeItemId })}
           role="combobox"
-          isExpanded={isOpen}
+          // isExpanded={isOpen}
           aria-controls="select-multi-typeahead-checkbox-listbox"
         />
         <TextInputGroupUtilities {...(selected.length === 0 ? { style: { display: 'none' } } : {})}>
@@ -288,18 +284,19 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
         if (!isOpen) closeMenu();
       }}
       toggle={toggle}
-      variant="typeahead"
+      // variant="typeahead"
       style={props.style}
     >
       <SelectList isAriaMultiselectable id="select-multi-typeahead-checkbox-listbox">
         {selectOptions.map((option, index) => (
           <SelectOption
-            {...(!option.isDisabled && !option.isAriaDisabled && { hasCheckbox: true })}
-            isSelected={selected.includes(option.value)}
-            key={option.value || option.children}
+            {...(!option.isDisabled && !option.isDisabled && { hasCheck: true })}
+            isSelected={selected.includes(String(option.value))}
+            key={String(option.value)}
             isFocused={focusedItemIndex === index}
             className={option.className}
-            id={createItemId(option.value)}
+            id={createItemId(String(option.value))}
+            itemId={option.value}
             {...option}
             ref={null}
           />

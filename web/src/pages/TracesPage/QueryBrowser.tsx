@@ -64,7 +64,7 @@ export function QueryBrowserBody() {
           <TimeRangeSelect />
           <LimitSelect limit={limit} setLimit={setLimit} />
         </Split>
-        <Divider className="pf-v5-u-mt-md" />
+        <Divider className="pf-u-mt-md" />
       </PageSection>
       <PageSection variant="light" style={{ paddingTop: 0 }} className="mui-pf-theme">
         <Stack hasGutter>

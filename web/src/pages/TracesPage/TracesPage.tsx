@@ -5,14 +5,12 @@ import {
   Button,
   Dropdown,
   DropdownItem,
-  DropdownList,
+  DropdownToggle,
   EmptyState,
-  EmptyStateActions,
   EmptyStateBody,
-  EmptyStateFooter,
-  EmptyStateHeader,
   EmptyStateIcon,
-  MenuToggle,
+  EmptyStatePrimary,
+  EmptyStateSecondaryActions,
   PageSection,
   Title,
 } from '@patternfly/react-core';
@@ -20,7 +18,7 @@ import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/rea
 import { useTranslation, Trans } from 'react-i18next';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom-v5-compat';
+import { Link } from 'react-router-dom';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { LoadingState } from '../../components/LoadingState';
 import { TracingApp } from '../../TracingApp';
@@ -93,23 +91,18 @@ function TempoOperatorNotInstalledState() {
       </PageSection>
       <PageSection>
         <EmptyState>
-          <EmptyStateHeader
-            titleText={t("Tempo operator isn't installed yet")}
-            headingLevel="h4"
-            icon={<EmptyStateIcon icon={WrenchIcon} />}
-          />
+          <EmptyStateIcon icon={WrenchIcon} />
+          <Title headingLevel="h2" size="lg">
+            {t("Tempo operator isn't installed yet")}
+          </Title>
           <EmptyStateBody>
             {t(
               'To get started, install the Tempo operator and create a TempoStack or TempoMonolithic instance with multi-tenancy enabled.',
             )}
           </EmptyStateBody>
-          <EmptyStateFooter>
-            <EmptyStateActions>
-              <Button component={(props) => <Link {...props} to={installOperatorLink} />}>
-                {t('Install Tempo operator')}
-              </Button>
-            </EmptyStateActions>
-          </EmptyStateFooter>
+          <Button component={(props) => <Link {...props} to={installOperatorLink} />}>
+            {t('Install Tempo operator')}
+          </Button>
         </EmptyState>
       </PageSection>
     </>
@@ -127,11 +120,10 @@ function NoTempoInstance() {
       </PageSection>
       <PageSection>
         <EmptyState>
-          <EmptyStateHeader
-            titleText={t('No Tempo instances yet')}
-            headingLevel="h4"
-            icon={<EmptyStateIcon icon={PlusCircleIcon} />}
-          />
+          <EmptyStateIcon icon={PlusCircleIcon} />
+          <Title headingLevel="h2" size="lg">
+            {t('No Tempo instances yet')}
+          </Title>
           <EmptyStateBody>
             <Trans t={t}>
               To get started, create a TempoStack or TempoMonolithic instance with multi-tenancy
@@ -140,44 +132,43 @@ function NoTempoInstance() {
               Instances without multi-tenancy are not supported.
             </Trans>
           </EmptyStateBody>
-          <EmptyStateFooter>
-            <EmptyStateActions>
-              <Dropdown
-                isOpen={isOpen}
-                onOpenChange={setOpen}
-                toggle={(toggleRef) => (
-                  <MenuToggle
-                    ref={toggleRef}
-                    variant="primary"
-                    onClick={() => setOpen(!isOpen)}
-                    isExpanded={isOpen}
-                  >
-                    {t('Create a Tempo instance')}
-                  </MenuToggle>
-                )}
-              >
-                <DropdownList>
-                  <DropdownItem key="createTempoStackLink" to={createTempoStackLink}>
-                    {t('Create a TempoStack instance')}
-                  </DropdownItem>
-                  <DropdownItem key="createTempoMonolithicLink" to={createTempoMonolithicLink}>
-                    {t('Create a TempoMonolithic instance')}
-                  </DropdownItem>
-                </DropdownList>
-              </Dropdown>
-            </EmptyStateActions>
-            <EmptyStateActions>
-              <Button
-                variant="link"
-                component="a"
-                href={viewInstallationDocsLink}
-                icon={<ExternalLinkAltIcon />}
-                iconPosition="right"
-              >
-                {t('View documentation')}
-              </Button>
-            </EmptyStateActions>
-          </EmptyStateFooter>
+          <EmptyStatePrimary>
+            <Dropdown
+              isOpen={isOpen}
+              toggle={
+                <DropdownToggle toggleVariant="primary" onToggle={setOpen}>
+                  {t('Create a Tempo instance')}
+                </DropdownToggle>
+              }
+              dropdownItems={[
+                <DropdownItem
+                  key="createTempoStackLink"
+                  component={
+                    <Link to={createTempoStackLink}>{t('Create a TempoStack instance')}</Link>
+                  }
+                />,
+                <DropdownItem
+                  key="createTempoMonolithicLink"
+                  component={
+                    <Link to={createTempoMonolithicLink}>
+                      {t('Create a TempoMonolithic instance')}
+                    </Link>
+                  }
+                />,
+              ]}
+            />
+          </EmptyStatePrimary>
+          <EmptyStateSecondaryActions>
+            <Button
+              variant="link"
+              component="a"
+              href={viewInstallationDocsLink}
+              icon={<ExternalLinkAltIcon />}
+              iconPosition="right"
+            >
+              {t('View documentation')}
+            </Button>
+          </EmptyStateSecondaryActions>
         </EmptyState>
       </PageSection>
     </>

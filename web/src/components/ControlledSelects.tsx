@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SimpleSelect, SimpleSelectOption, SimpleSelectProps } from '@patternfly/react-templates';
+import { SimpleSelect, SimpleSelectOption, SimpleSelectProps } from './SimpleSelect';
 import { TypeaheadSelect, TypeaheadSelectOption, TypeaheadSelectProps } from './TypeaheadSelect';
 
 // This file provides controlled variants of the Select components of the @patternfly/react-templates package.

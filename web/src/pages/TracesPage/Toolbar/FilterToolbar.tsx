@@ -42,7 +42,7 @@ export function FilterToolbar(props: FilterToolbarProps) {
             <TraceQLFilter tempo={tempo} query={query} runQuery={runQuery} />
           )}
         </ToolbarToggleGroup>
-        <ToolbarGroup variant="button-group" align={{ default: 'alignRight' }} alignItems="center">
+        <ToolbarGroup variant="button-group" alignment={{ default: 'alignRight' }}>
           <ToolbarItem>
             <Form>
               <FormGroup label={<>&nbsp;</>}>

@@ -16,16 +16,18 @@ import {
   MenuToggle,
   MenuToggleElement,
   MenuToggleProps,
-  Select,
-  SelectList,
-  SelectOption,
-  SelectOptionProps,
-  SelectProps,
   TextInputGroup,
   TextInputGroupMain,
   TextInputGroupUtilities,
   Spinner,
 } from '@patternfly/react-core';
+import {
+  Select,
+  SelectList,
+  SelectOption,
+  SelectOptionProps,
+  SelectProps,
+} from '@patternfly/react-core/next';
 import { TimesIcon } from '@patternfly/react-icons';
 
 /**
@@ -169,7 +171,7 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
       if (!newSelectOptions.length) {
         newSelectOptions = [
           {
-            isAriaDisabled: true,
+            isDisabled: true,
             content:
               typeof noOptionsFoundMessage === 'string'
                 ? noOptionsFoundMessage
@@ -187,7 +189,7 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
     if (!newSelectOptions.length) {
       newSelectOptions = [
         {
-          isAriaDisabled: true,
+          isDisabled: true,
           content: noOptionsAvailableMessage,
           value: NO_RESULTS,
         },
@@ -330,12 +332,7 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
     switch (event.key) {
       case 'Enter':
         event.preventDefault();
-        if (
-          isOpen &&
-          focusedItem &&
-          focusedItem.value !== NO_RESULTS &&
-          !focusedItem.isAriaDisabled
-        ) {
+        if (isOpen && focusedItem && focusedItem.value !== NO_RESULTS && !focusedItem.isDisabled) {
           selectOption(event, focusedItem);
         }
 
@@ -394,14 +391,18 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
         <TextInputGroupMain
           value={inputValue}
           onClick={onInputClick}
-          onChange={onTextInputChange}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onChange={(a: any, b: any) =>
+            // event handler arguments got flipped in v4.271.0: https://github.com/patternfly/patternfly-react/commit/58fc84a6ee257f12139324814590f8c6d7a91fd2
+            typeof b === 'string' ? onTextInputChange(a, b) : onTextInputChange(b, a)
+          }
           onKeyDown={onInputKeyDown}
           autoComplete="off"
           innerRef={textInputRef}
           placeholder={placeholder}
           {...(activeItemId && { 'aria-activedescendant': activeItemId })}
           role="combobox"
-          isExpanded={isOpen}
+          // isExpanded={isOpen}
           aria-controls="select-typeahead-listbox"
         />
 
@@ -428,13 +429,13 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
         if (!isOpen) closeMenu();
       }}
       toggle={toggle}
-      variant="typeahead"
+      // variant="typeahead"
       ref={innerRef}
       {...props}
     >
       <SelectList>
         {props.loading ? (
-          <SelectOption isLoading key="loading" value="loading">
+          <SelectOption isLoading key="loading" itemId="loading">
             <Spinner size="lg" />
           </SelectOption>
         ) : (
@@ -444,7 +445,7 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
             return (
               <SelectOption
                 key={value}
-                value={value}
+                itemId={value}
                 isFocused={focusedItemIndex === index}
                 {...props}
               >
