@@ -1,5 +1,5 @@
 # This Dockerfile is used for local testing of images. All images should be available for public use
-FROM registry.redhat.io/ubi9/nodejs-18:latest AS web-builder
+FROM registry.redhat.io/ubi9/nodejs-22:latest AS web-builder
 
 WORKDIR /opt/app-root
 
