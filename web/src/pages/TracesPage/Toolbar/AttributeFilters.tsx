@@ -11,7 +11,7 @@ import { FilterIcon, HelpIcon } from '@patternfly/react-icons';
 import { Trans, useTranslation } from 'react-i18next';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
 import { ControlledSimpleSelect } from '../../../components/ControlledSelects';
-import { TypeaheadSelectOption } from '@patternfly/react-templates';
+import { TypeaheadSelectOption } from '../../../components/TypeaheadSelect';
 import { filterToTraceQL } from './Filter/traceql_from_filter';
 import {
   DebouncedTextInput,
