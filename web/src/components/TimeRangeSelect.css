@@ -1,0 +1,5 @@
+.dt-plugin-time-range-select {
+  fieldset {
+    margin-bottom: 1px; /* align with limit traces input */
+  }
+}

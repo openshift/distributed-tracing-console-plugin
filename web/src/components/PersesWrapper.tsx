@@ -10,27 +10,35 @@ import { ThemeProvider } from '@mui/material';
 import {
   DataQueriesProvider,
   dynamicImportPluginLoader,
+  PanelData,
   PanelPlugin,
   PanelProps,
   PluginRegistry,
-  TimeRangeProvider,
+  RouterProvider,
+  TimeRangeProviderWithQueryParams,
   useDataQueriesContext,
+  useInitialTimeRange,
 } from '@perses-dev/plugin-system';
 import {
   DatasourceResource,
   Definition,
   DurationString,
   GlobalDatasourceResource,
-  TimeRangeValue,
+  TraceData,
   UnknownSpec,
 } from '@perses-dev/core';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DatasourceApi, DatasourceStoreProvider, VariableProvider } from '@perses-dev/dashboards';
+import {
+  DatasourceApi,
+  DatasourceStoreProvider,
+  Panel,
+  PanelProps as DashboardPanelProps,
+  VariableProvider,
+} from '@perses-dev/dashboards';
 import * as tempoPlugin from '@perses-dev/tempo-plugin';
 import * as scatterChartPlugin from '@perses-dev/scatter-chart-plugin';
 import * as traceTablePlugin from '@perses-dev/trace-table-plugin';
 import * as tracingGanttChartPlugin from '@perses-dev/tracing-gantt-chart-plugin';
-import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts';
+import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts/victory';
 import { TempoInstance } from '../hooks/useTempoInstance';
 import { getProxyURLFor } from '../hooks/api';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -38,6 +46,8 @@ import { ErrorAlert } from './ErrorAlert';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
 import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
+import { Link as RouterLink, useHistory } from 'react-router-dom';
+import './PersesWrapper.css';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -66,14 +76,15 @@ const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
 
-const patternflyChartsMultiUnorderedPalette = getThemeColors(
-  ChartThemeColor.multiUnordered,
-).chart.colorScale.flatMap((cssColor) => {
-  // colors are stored as 'var(--pf-chart-theme--multi-color-unordered--ColorScale--3400, #73c5c5)'
-  // need to extract the hex value, because fillStyle() of <canvas> does not support CSS vars
-  const match = cssColor.match(/#[a-fA-F0-9]+/);
-  return match ? [match[0]] : [];
-});
+const chartColorScale = getThemeColors(ChartThemeColor.multiUnordered).chart?.colorScale;
+const patternflyChartsMultiUnorderedPalette = Array.isArray(chartColorScale)
+  ? chartColorScale.flatMap((cssColor: string) => {
+      // colors are stored as 'var(--pf-chart-theme--multi-color-unordered--ColorScale--3400, #73c5c5)'
+      // need to extract the hex value, because fillStyle() of <canvas> does not support CSS vars
+      const match = cssColor.match(/#[a-fA-F0-9]+/);
+      return match ? [match[0]] : [];
+    })
+  : [];
 
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
@@ -85,15 +96,6 @@ const pluginLoader = dynamicImportPluginLoader(
   })),
 );
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 0,
-    },
-  },
-});
-
 interface PersesWrapperProps {
   children?: React.ReactNode;
 }
@@ -103,16 +105,17 @@ interface PersesWrapperProps {
  */
 export function PersesWrapper({ children }: PersesWrapperProps) {
   const { theme } = usePatternFlyTheme();
+  const history = useHistory();
 
   const muiTheme = getTheme(theme, {
     typography: {
       ...typography,
-      fontFamily: 'var(--pf-v5-global--FontFamily--text)',
+      fontFamily: 'var(--pf-global--FontFamily--sans-serif)',
     },
-    shape: {
-      borderRadius: 0,
-    },
-  });
+    cssVariables: true,
+    // Remove casting once https://github.com/perses/perses/pull/3443 is merged
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
 
   const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
     echartsTheme: {
@@ -126,33 +129,30 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <ChartsProvider chartsTheme={chartsTheme}>
-        <PluginRegistry pluginLoader={pluginLoader}>
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        </PluginRegistry>
-      </ChartsProvider>
+      <RouterProvider RouterComponent={RouterLink} navigate={history.push}>
+        <ChartsProvider chartsTheme={chartsTheme}>
+          <PluginRegistry pluginLoader={pluginLoader}>{children}</PluginRegistry>
+        </ChartsProvider>
+      </RouterProvider>
     </ThemeProvider>
   );
 }
 
 interface PersesDashboardWrapperProps {
-  timeRange?: TimeRangeValue;
-  setTimeRange?: (value: TimeRangeValue) => void;
   children?: React.ReactNode;
 }
 
 /**
  * PersesDashboardWrapper initializes the dashboard time range and variable providers.
  */
-export function PersesDashboardWrapper({
-  timeRange = { pastDuration: '0s' },
-  setTimeRange,
-  children,
-}: PersesDashboardWrapperProps) {
+export function PersesDashboardWrapper({ children }: PersesDashboardWrapperProps) {
+  const DEFAULT_DASHBOARD_DURATION = '30m';
+  const initialTimeRange = useInitialTimeRange(DEFAULT_DASHBOARD_DURATION);
+
   return (
-    <TimeRangeProvider timeRange={timeRange} setTimeRange={setTimeRange}>
+    <TimeRangeProviderWithQueryParams initialTimeRange={initialTimeRange}>
       <VariableProvider>{children}</VariableProvider>
-    </TimeRangeProvider>
+    </TimeRangeProviderWithQueryParams>
   );
 }
 
@@ -207,15 +207,18 @@ interface PersesPanelPluginWrapperProps<T> {
 /**
  * PersesPanelWrapper renders a Perses panel plugin and shows PatternFly empty, loading states and error states.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function PersesPanelPluginWrapper<T extends PanelPlugin<Spec, PanelProps<Spec>>, Spec = any>(
+export function PersesPanelPluginWrapper<
+  T extends PanelPlugin<Spec, PanelProps<Spec, TraceData>>,
+  Spec = any, // eslint-disable-line @typescript-eslint/no-explicit-any
+>(
   props: PersesPanelPluginWrapperProps<T> &
     Omit<React.ComponentProps<T['PanelComponent']>, 'queryResults'>,
 ) {
   const { plugin, noResults, ...otherProps } = props;
   const { isFetching, isLoading, queryResults } = useDataQueriesContext();
 
-  if (isLoading || isFetching) {
+  // queryResults is an empty array until the TempoTraceQuery plugin is loaded
+  if (isLoading || isFetching || queryResults.length === 0) {
     return <LoadingState />;
   }
 
@@ -226,7 +229,7 @@ export function PersesPanelPluginWrapper<T extends PanelPlugin<Spec, PanelProps<
 
   const queryResultsWithData = queryResults.flatMap((q) =>
     q.data ? [{ data: q.data, definition: q.definition }] : [],
-  );
+  ) as PanelData<TraceData>[];
   const traceDataFound = queryResultsWithData.some(
     ({ data }) =>
       ('searchResult' in data && data.searchResult && data.searchResult.length > 0) ||
@@ -241,4 +244,49 @@ export function PersesPanelPluginWrapper<T extends PanelPlugin<Spec, PanelProps<
       <plugin.PanelComponent queryResults={queryResultsWithData} {...otherProps} />
     </ErrorBoundary>
   );
+}
+
+interface PersesTracePanelWrapperProps {
+  noResults?: React.ReactElement;
+}
+
+/**
+ * PersesTracePanelWrapper renders a full Perses panel, including panel header and panel content.
+ */
+export function PersesTracePanelWrapper(props: PersesTracePanelWrapperProps & DashboardPanelProps) {
+  const { noResults, ...panelProps } = props;
+  const { loading, error, hasTraceData } = usePersesTraceData();
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error) {
+    return <ErrorAlert error={error as Error} />;
+  }
+
+  if (!hasTraceData && noResults) {
+    return <>{noResults}</>;
+  }
+
+  return (
+    <ErrorBoundary FallbackComponent={ErrorAlert}>
+      <Panel {...panelProps} />
+    </ErrorBoundary>
+  );
+}
+
+export function usePersesTraceData(): { loading: boolean; error?: unknown; hasTraceData: boolean } {
+  const { isLoading, isFetching, queryResults } = useDataQueriesContext();
+
+  // queryResults is an empty array until the TempoTraceQuery plugin is loaded
+  const loading = isLoading || isFetching || queryResults.length === 0;
+  const error = queryResults.find((d) => d.error)?.error;
+  const hasTraceData = queryResults.some(
+    ({ data }) =>
+      (data && 'searchResult' in data && data.searchResult && data.searchResult.length > 0) ||
+      (data && 'trace' in data && data.trace),
+  );
+
+  return { loading, error, hasTraceData };
 }

@@ -1,0 +1,36 @@
+/* This theme styles Material UI components to look like PatternFly components */
+
+.mui-pf-theme {
+    --mui-palette-text-primary: var(--pf-global--FontFamily--sans-serif);
+    --mui-shape-borderRadius: 0;
+}
+
+/* <Select> component */
+.mui-pf-theme .MuiSelect-root {
+    background-color: light-dark(var(--pf-global--BackgroundColor--100), var(--pf-global--BackgroundColor--400, var(--pf-global--BackgroundColor--100)));
+}
+
+.mui-pf-theme .MuiSelect-root fieldset {
+    border: var(--pf-global--BorderWidth--sm) solid light-dark(var(--pf-global--BorderColor--300), transparent);
+    border-block-end-color: light-dark(var(--pf-global--BorderColor--200), var(--pf-global--BorderColor--400, transparent));
+}
+
+.mui-pf-theme .MuiSelect-root:hover fieldset {
+    border: var(--pf-global--BorderWidth--sm) solid light-dark(var(--pf-global--BorderColor--300), transparent);
+    border-block-end-color: var(--pf-global--active-color--100);
+}
+
+/* When the Select is open */
+.mui-pf-theme .MuiSelect-root.Mui-focused fieldset {
+    border: var(--pf-global--BorderWidth--sm) solid light-dark(var(--pf-global--BorderColor--300), transparent);
+    border-block-end: var(--pf-global--BorderWidth--md) solid var(--pf-global--active-color--100);
+}
+
+/* When the MUI Menu is open, it is attached directly to <body> */
+.MuiMenu-root .MuiMenu-paper {
+    background-color: light-dark(var(--pf-global--BackgroundColor--100), var(--pf-global--BackgroundColor--300, var(--pf-global--BackgroundColor--100)));
+}
+
+.MuiMenu-root .MuiMenuItem-root:hover {
+    background-color: light-dark(var(--pf-global--BackgroundColor--200), var(--pf-global--BackgroundColor--400, transparent));
+}

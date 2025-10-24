@@ -1,58 +1,54 @@
-import {
-  Popover,
-  Select,
-  SelectOption,
-  SelectOptionObject,
-  SelectVariant,
-  Spinner,
-  Stack,
-} from '@patternfly/react-core';
-import * as React from 'react';
+import React from 'react';
+import { Form, FormGroup, Popover, ToolbarGroup, ToolbarItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TempoResource, useTempoResources } from '../hooks/useTempoResources';
-import { TypeaheadSelect } from './TypeaheadSelect';
 import { TempoInstance } from '../hooks/useTempoInstance';
+import { ResourceIcon } from '@openshift-console/dynamic-plugin-sdk';
+import { ControlledTypeaheadSelect } from './ControlledSelects';
+import { TypeaheadSelectOption } from './TypeaheadSelect';
 import { HelpIcon } from '@patternfly/react-icons';
 
 interface TempoInstanceDropdownProps {
   tempo: TempoInstance | undefined;
-  setTempo: (tempo: TempoInstance) => void;
+  setTempo: (tempo?: TempoInstance) => void;
 }
 
-class TempoResourceSelectOption implements SelectOptionObject {
-  constructor(public tempo: TempoResource) {}
-  public toString() {
-    return `${this.tempo.namespace} / ${this.tempo.name}`;
-  }
-  public compareTo(other: TempoResourceSelectOption) {
-    return (
-      this.tempo.kind === other.tempo.kind &&
-      this.tempo.namespace === other.tempo.namespace &&
-      this.tempo.name === other.tempo.name
-    );
-  }
+interface TempoResourceOption extends TypeaheadSelectOption {
+  tempo: TempoResource;
+  value: string;
 }
 
 export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdownProps) => {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { loading: tempoResourcesLoading, tempoResources } = useTempoResources();
-  const [isOpen, setIsOpen] = React.useState(false);
-  const options = (tempoResources ?? [])
-    .map((tempo) => new TempoResourceSelectOption(tempo))
-    .sort((a, b) => a.toString().localeCompare(b.toString()));
+  const { isLoading, data: tempoResources } = useTempoResources();
 
-  let selected: TempoResourceSelectOption | undefined = undefined;
+  const options: TempoResourceOption[] = (tempoResources ?? [])
+    .map((tempo) => ({
+      value: `${tempo.namespace}__${tempo.name}`,
+      content: `${tempo.namespace} / ${tempo.name}`,
+      icon: <ResourceIcon groupVersionKind={{ kind: tempo.kind, version: '' }} />,
+      tempo,
+    }))
+    .sort((a, b) => a.value.localeCompare(b.value));
+
+  let selected: TempoResourceOption | undefined = undefined;
   if (tempo) {
-    if (tempoResourcesLoading) {
+    if (isLoading) {
       // Preselect the dropdown option without waiting until the list of TempoResources is loaded to prevent flickering.
       // To accomplish this, we'll create a slightly inaccurate TempoResourceSelectOption,
       // because the kind and the list of tenants is not known before the list of TempoResources is loaded.
-      selected = new TempoResourceSelectOption({
-        kind: 'TempoStack',
-        namespace: tempo.namespace,
-        name: tempo.name,
-        tenants: tempo.tenant ? [tempo.tenant] : undefined,
-      });
+      selected = {
+        value: `${tempo.namespace}__${tempo.name}`,
+        content: `${tempo.namespace} / ${tempo.name}`,
+        icon: <ResourceIcon groupVersionKind={{ kind: 'TempoStack', version: '' }} />,
+        tempo: {
+          kind: 'TempoStack',
+          namespace: tempo.namespace,
+          name: tempo.name,
+          tenants: tempo.tenant ? [tempo.tenant] : undefined,
+        },
+      };
+      options.push(selected);
     } else {
       selected = options.find(
         (o) => o.tempo.namespace == tempo.namespace && o.tempo.name == tempo.name,
@@ -60,78 +56,76 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
     }
   }
 
-  const onToggle = () => {
-    setIsOpen(!isOpen);
-  };
+  const onSelect = (value?: string) => {
+    if (!value) {
+      setTempo(undefined);
+      return;
+    }
 
-  const onSelect = (_event: React.MouseEvent | React.ChangeEvent, value: SelectOptionObject) => {
-    const option = value as TempoResourceSelectOption;
-    setTempo({
-      namespace: option.tempo.namespace,
-      name: option.tempo.name,
-      tenant: option.tempo.tenants?.[0], // select first tenant by default, or undefined if no tenants
-    });
-    setIsOpen(false);
-  };
-
-  const onFilter = (_event: React.ChangeEvent<HTMLInputElement> | null, value: string) => {
-    return options
-      .filter((option) => {
-        return option.toString().includes(value);
-      })
-      .map((item, index) => {
-        return <SelectOption key={index} value={item}></SelectOption>;
+    const option = options.find((o) => o.value === value);
+    if (option && option.value !== selected?.value) {
+      setTempo({
+        namespace: option.tempo.namespace,
+        name: option.tempo.name,
+        tenant: option.tempo.tenants?.[0], // select first tenant by default, or undefined if no tenants
       });
+    }
   };
 
   return (
-    <>
-      <Stack>
-        <label htmlFor="tempoinstance-dropdown">
-          {t('Tempo Instance')}{' '}
-          <Popover
-            headerContent={<div>{t('Select a Tempo instance')}</div>}
-            bodyContent={<div>{t('tempoinstance_helptext')}</div>}
+    <ToolbarGroup variant="filter-group" spaceItems={{ default: 'spaceItemsSm' }}>
+      <ToolbarItem>
+        <Form>
+          <FormGroup
+            fieldId="tempoinstance-select"
+            label={t('Tempo instance')}
+            labelIcon={
+              <Popover
+                headerContent={<div>{t('Select a Tempo instance')}</div>}
+                bodyContent={
+                  <div>
+                    {t(
+                      'TempoStack and TempoMonolithic instances with multi-tenancy are supported. Instances without multi-tenancy are not supported.',
+                    )}
+                  </div>
+                }
+              >
+                <HelpIcon />
+              </Popover>
+            }
           >
-            <HelpIcon />
-          </Popover>
-        </label>
-        <Select
-          id="tempoinstance-dropdown"
-          variant={SelectVariant.typeahead}
-          onFilter={onFilter}
-          onToggle={onToggle}
-          onSelect={onSelect}
-          selections={selected}
-          isOpen={isOpen}
-          placeholderText={t('Select a Tempo instance')}
-          typeAheadAriaLabel={t('Select a Tempo instance')}
-          width={320}
-        >
-          {tempoResourcesLoading
-            ? [
-                <SelectOption isLoading key="custom-loading" value="loading">
-                  <Spinner size="lg" />
-                </SelectOption>,
-              ]
-            : // TODO: show resource icon in <SelectOption>
-              options.map((option, index) => <SelectOption key={index} value={option} />)}
-        </Select>
-      </Stack>
+            <ControlledTypeaheadSelect
+              id="tempoinstance-select"
+              toggleWidth="22em"
+              placeholder={t('Select a Tempo instance')}
+              allowClear={false}
+              loading={isLoading}
+              options={options}
+              value={selected?.value}
+              setValue={onSelect}
+              style={{ maxHeight: '50vh', overflow: 'auto' }}
+            />
+          </FormGroup>
+        </Form>
+      </ToolbarItem>
       {selected?.tempo.tenants && selected.tempo.tenants.length > 0 && tempo && (
-        <Stack>
-          <label htmlFor="tenant-dropdown">{t('Tenant')}</label>
-          <TypeaheadSelect
-            id="tenant-dropdown"
-            width={200}
-            label={t('Select a tenant')}
-            allowClear={false}
-            options={selected.tempo.tenants}
-            selected={tempo.tenant}
-            setSelected={(tenant) => setTempo({ ...tempo, tenant })}
-          />
-        </Stack>
+        <ToolbarItem>
+          <Form>
+            <FormGroup fieldId="tenant-select" label={t('Tenant')}>
+              <ControlledTypeaheadSelect
+                id="tenant-select"
+                toggleWidth="15em"
+                placeholder={t('Select a tenant')}
+                allowClear={false}
+                options={selected.tempo.tenants.map((t) => ({ value: t, content: t }))}
+                value={tempo.tenant}
+                setValue={(tenant) => setTempo({ ...tempo, tenant })}
+                style={{ maxHeight: '50vh', overflow: 'auto' }}
+              />
+            </FormGroup>
+          </Form>
+        </ToolbarItem>
       )}
-    </>
+    </ToolbarGroup>
   );
 };

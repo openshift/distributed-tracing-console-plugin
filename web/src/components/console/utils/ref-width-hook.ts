@@ -17,7 +17,7 @@ export const useRefWidth = () => {
   const clientWidth = ref.current?.clientWidth;
 
   useEffect(() => {
-    width !== clientWidth && setWidth(clientWidth);
+    if (width !== clientWidth) setWidth(clientWidth);
   }, [clientWidth, width]);
 
   return [ref, width] as [React.Ref<HTMLDivElement>, number];
