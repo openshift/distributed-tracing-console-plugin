@@ -29,6 +29,6 @@
   }
 
   .MuiListItemText-primary {
-    font-weight: var(--pf-t--global--font--weight--body--bold);
+    font-weight: 500;
   }
 }

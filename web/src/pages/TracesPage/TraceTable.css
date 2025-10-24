@@ -12,7 +12,7 @@
     --DataGrid-containerBackground: inherit;
 
     .MuiDataGrid-columnHeaderTitle {
-      font-size: var(--pf-global--FontSize--sm);
+      font-size: var(--pf-v5-global--FontSize--sm);
     }
   }
 
