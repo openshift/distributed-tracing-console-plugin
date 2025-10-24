@@ -12,7 +12,7 @@ import {
   Button,
 } from '@patternfly/react-core';
 import { TimesIcon } from '@patternfly/react-icons';
-import { TypeaheadSelectOption } from '@patternfly/react-templates';
+import { TypeaheadSelectOption } from './TypeaheadSelect';
 
 export interface TypeaheadCheckboxSelectProps {
   placeholder: string;
@@ -25,7 +25,7 @@ export interface TypeaheadCheckboxSelectProps {
   setValue: (value: string[]) => void;
 }
 
-// based on https://www.patternfly.org/components/menus/select#multiple-typeahead-with-create-option
+// based on https://www.patternfly.org/components/menus/select/#multiple-typeahead-with-checkboxes
 export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
   const initialSelectOptions = useMemo(() => {
     const needToSelect = new Set(props.value);
