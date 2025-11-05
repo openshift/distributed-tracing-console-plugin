@@ -21,7 +21,7 @@ spec:
                 -G \
                 --header "Authorization: Bearer $token" \
                 --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                 --data-urlencode 'q={ resource.service.name="grpc-rbac-1" }' \
                 | tee /tmp/jaeger.out
               num_traces=$(jq ".traces | length" /tmp/jaeger.out)
@@ -33,13 +33,13 @@ spec:
               echo "Fetch the first trace ID and store it in a variable"
               traceID=$(curl -G --header "Authorization: Bearer $token" \
                               --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                              https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                              https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                               --data-urlencode 'q={ resource.service.name="grpc-rbac-1" }' | jq -r '.traces[0].traceID')
 
               echo "Use the trace ID to fetch the complete trace"
               traceOutput=$(curl -G --header "Authorization: Bearer $token" \
                                     --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                                    https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
+                                    https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
 
               echo "Check for the strings in the trace output"
               stringsToSearch=(
@@ -64,7 +64,7 @@ spec:
                 -G \
                 --header "Authorization: Bearer $token" \
                 --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                 --data-urlencode 'q={ resource.service.name="grpc-rbac-2" }' \
                 | tee /tmp/jaeger.out
               num_traces=$(jq ".traces | length" /tmp/jaeger.out)
@@ -76,13 +76,13 @@ spec:
               echo "Fetch the first trace ID and store it in a variable"
               traceID=$(curl -G --header "Authorization: Bearer $token" \
                               --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                              https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                              https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                               --data-urlencode 'q={ resource.service.name="grpc-rbac-2" }' | jq -r '.traces[0].traceID')
 
               echo "Use the trace ID to fetch the complete trace"
               traceOutput=$(curl -G --header "Authorization: Bearer $token" \
                                     --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                                    https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
+                                    https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
 
               echo "Check for the strings in the trace output"
               stringsToSearch=(
@@ -126,7 +126,7 @@ spec:
                 -G \
                 --header "Authorization: Bearer $token" \
                 --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                 --data-urlencode 'q={ resource.service.name="http-rbac-1" }' \
                 | tee /tmp/jaeger.out
               num_traces=$(jq ".traces | length" /tmp/jaeger.out)
@@ -138,13 +138,13 @@ spec:
               echo "Fetch the first trace ID and store it in a variable"
               traceID=$(curl -G --header "Authorization: Bearer $token" \
                               --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                              https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                              https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                               --data-urlencode 'q={ resource.service.name="http-rbac-1" }' | jq -r '.traces[0].traceID')
 
               echo "Use the trace ID to fetch the complete trace"
               traceOutput=$(curl -G --header "Authorization: Bearer $token" \
                                     --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                                    https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
+                                    https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
 
               echo "Check for the strings in the trace output"
               stringsToSearch=(
@@ -168,7 +168,7 @@ spec:
                 -G \
                 --header "Authorization: Bearer $token" \
                 --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                 --data-urlencode 'q={ resource.service.name="http-rbac-2" }' \
                 | tee /tmp/jaeger.out
               num_traces=$(jq ".traces | length" /tmp/jaeger.out)
@@ -180,13 +180,13 @@ spec:
               echo "Fetch the first trace ID and store it in a variable"
               traceID=$(curl -G --header "Authorization: Bearer $token" \
                               --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                              https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/search \
+                              https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/search \
                               --data-urlencode 'q={ resource.service.name="http-rbac-2" }' | jq -r '.traces[0].traceID')
 
               echo "Use the trace ID to fetch the complete trace"
               traceOutput=$(curl -G --header "Authorization: Bearer $token" \
                                     --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-                                    https://tempo-simplst-gateway.chainsaw-rbac.svc:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
+                                    https://tempo-simplst-gateway.chainsaw-rbac.svc.cluster.local:8080/api/traces/v1/dev/tempo/api/traces/$traceID)
 
               echo "Check for the strings in the trace output"
               stringsToSearch=(
