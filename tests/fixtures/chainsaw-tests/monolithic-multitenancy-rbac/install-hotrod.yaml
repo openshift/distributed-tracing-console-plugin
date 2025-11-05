@@ -25,7 +25,7 @@ spec:
             - containerPort: 8080
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://dev-collector.chainsaw-mmo-rbac.svc:4318
+              value: http://dev-collector.chainsaw-mmo-rbac.svc.cluster.local:4318
 ---
 apiVersion: v1
 kind: Service
