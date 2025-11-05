@@ -78,7 +78,7 @@ metadata:
   name: minio
   namespace: chainsaw-rbac
 stringData:
-  endpoint: http://minio:9000
+  endpoint: http://minio.chainsaw-rbac.svc.cluster.local:9000
   bucket: tempo
   access_key_id: tempo
   access_key_secret: supersecret
