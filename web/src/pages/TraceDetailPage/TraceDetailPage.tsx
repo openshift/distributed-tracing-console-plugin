@@ -1,5 +1,13 @@
 import * as React from 'react';
-import { Breadcrumb, BreadcrumbItem, Divider, PageSection, Title } from '@patternfly/react-core';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  Button,
+  Divider,
+  PageSection,
+  Title,
+  Tooltip,
+} from '@patternfly/react-core';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
@@ -16,6 +24,11 @@ import { memo } from 'react';
 import { linkToSpan, linkToTrace, spanAttributeLinks } from '../../links';
 import { StringParam, useQueryParam } from 'use-query-params';
 import './TraceDetailPage.css';
+import { MagicIcon } from '@patternfly/react-icons';
+import { useDispatch } from 'react-redux';
+import { attachmentSet, AttachmentTypes, openOLS, setQuery } from '../../hooks/ols_actions';
+import { dump as dumpYAML } from 'js-yaml';
+import { useOLSEnabled } from '../../hooks/useOLSEnabled';
 
 function TraceDetailPage() {
   return (
@@ -37,6 +50,7 @@ function TraceDetailPageBody() {
   const [tempo] = useTempoInstance();
   const location = useLocation();
   const [selectedSpanId] = useQueryParam('selectSpan', StringParam);
+  const olsEnabled = useOLSEnabled();
 
   return (
     <PersesTempoDatasourceWrapper
@@ -61,7 +75,10 @@ function TraceDetailPageBody() {
       >
         <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
           <PersesTracePanelWrapper
-            panelOptions={{ showIcons: 'always' }}
+            panelOptions={{
+              showIcons: 'always',
+              extra: olsEnabled ? () => <LightspeedButton /> : undefined,
+            }}
             definition={{
               kind: 'Panel',
               spec: {
@@ -129,4 +146,33 @@ function useTraceName(): string {
 
   // return traceId if span is not loaded or root span is not found
   return traceId ?? '';
+}
+
+function LightspeedButton() {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const dispatch = useDispatch();
+  const { queryResults } = useDataQueries('TraceQuery');
+  const traceName = useTraceName();
+  const trace = queryResults[0]?.data?.trace;
+
+  const handleTraceAISummaryClick = () => {
+    const traceYaml = dumpYAML(trace, { lineWidth: -1 }).trim();
+
+    dispatch(openOLS());
+    dispatch(attachmentSet(AttachmentTypes.YAML, 'Trace', traceName, '', '', traceYaml));
+    dispatch(
+      setQuery('Analyze this trace in my OpenShift cluster and highlight any errors and outliers.'),
+    );
+  };
+
+  return (
+    <Tooltip content={t('Ask OpenShift Lightspeed')}>
+      <Button
+        variant="plain"
+        onClick={handleTraceAISummaryClick}
+        aria-label={t('Ask OpenShift Lightspeed')}
+        icon={<MagicIcon />}
+      />
+    </Tooltip>
+  );
 }
