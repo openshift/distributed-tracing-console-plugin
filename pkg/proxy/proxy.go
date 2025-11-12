@@ -65,17 +65,22 @@ func FilterHeaders(r *http.Response) error {
 
 func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*httputil.ReverseProxy, error) {
 	// TODO: allow custom CA per datasource
-	serviceCertPEM, err := os.ReadFile(h.serviceCAfile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read certificate file: tried '%s' and got %v", h.serviceCAfile, err)
+	var serviceProxyTLSConfig *tls.Config
+	if h.serviceCAfile != "" {
+		serviceCertPEM, err := os.ReadFile(h.serviceCAfile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read certificate file: tried '%s' and got %v", h.serviceCAfile, err)
+		}
+
+		serviceProxyRootCAs := x509.NewCertPool()
+		if !serviceProxyRootCAs.AppendCertsFromPEM(serviceCertPEM) {
+			return nil, fmt.Errorf("no CA found for Kubernetes services, proxy to datasources will fail")
+		}
+
+		serviceProxyTLSConfig = oscrypto.SecureTLSConfig(&tls.Config{
+			RootCAs: serviceProxyRootCAs,
+		})
 	}
-	serviceProxyRootCAs := x509.NewCertPool()
-	if !serviceProxyRootCAs.AppendCertsFromPEM(serviceCertPEM) {
-		return nil, fmt.Errorf("no CA found for Kubernetes services, proxy to datasources will fail")
-	}
-	serviceProxyTLSConfig := oscrypto.SecureTLSConfig(&tls.Config{
-		RootCAs: serviceProxyRootCAs,
-	})
 
 	const (
 		dialerKeepalive       = 30 * time.Second
@@ -122,6 +127,9 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 	default:
 		return nil, fmt.Errorf("invalid Tempo resource with kind '%s'", tempo.Kind)
 	}
+
+	// For local development, set the target URL to a local Tempo instance
+	// targetURL = "http://localhost:3200"
 
 	proxyURL, err := url.Parse(targetURL)
 	if err != nil {
