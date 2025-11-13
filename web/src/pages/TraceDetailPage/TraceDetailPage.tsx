@@ -148,22 +148,44 @@ function useTraceName(): string {
   return traceId ?? '';
 }
 
+const MAX_TRACE_SIZE_MB = 1;
+
 function LightspeedButton() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const dispatch = useDispatch();
   const { queryResults } = useDataQueries('TraceQuery');
   const traceName = useTraceName();
-  const trace = queryResults[0]?.data?.trace;
+  const trace = queryResults[0]?.data?.trace ?? '';
+  const traceYaml = React.useMemo(() => {
+    return dumpYAML(trace, { lineWidth: -1 }).trim();
+  }, [trace]);
 
   const handleTraceAISummaryClick = () => {
-    const traceYaml = dumpYAML(trace, { lineWidth: -1 }).trim();
-
     dispatch(openOLS());
     dispatch(attachmentSet(AttachmentTypes.YAML, 'Trace', traceName, '', '', traceYaml));
     dispatch(
       setQuery('Analyze this trace in my OpenShift cluster and highlight any errors and outliers.'),
     );
+
+    // Workaround to trigger resizing of chatbox input field
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 0);
   };
+
+  // Sanity check to avoid sending large traces to the LLM
+  if (traceYaml.length > MAX_TRACE_SIZE_MB * 1024 * 1024) {
+    const errorMsg = t(
+      'Trace is too large to be analyzed by OpenShift Lightspeed. Max size is {{max}} MB.',
+      { max: MAX_TRACE_SIZE_MB },
+    );
+
+    return (
+      <Tooltip content={errorMsg}>
+        <Button isAriaDisabled variant="plain" aria-label={errorMsg} icon={<MagicIcon />} />
+      </Tooltip>
+    );
+  }
 
   return (
     <Tooltip content={t('Ask OpenShift Lightspeed')}>
