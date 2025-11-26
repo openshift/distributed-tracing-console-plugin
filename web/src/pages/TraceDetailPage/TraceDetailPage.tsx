@@ -25,10 +25,9 @@ import { linkToSpan, linkToTrace, spanAttributeLinks } from '../../links';
 import { StringParam, useQueryParam } from 'use-query-params';
 import './TraceDetailPage.css';
 import { MagicIcon } from '@patternfly/react-icons';
-import { useDispatch } from 'react-redux';
-import { attachmentSet, AttachmentTypes, openOLS, setQuery } from '../../hooks/ols_actions';
 import { dump as dumpYAML } from 'js-yaml';
-import { useOLSEnabled } from '../../hooks/useOLSEnabled';
+import { useResolvedExtensions } from '@openshift-console/dynamic-plugin-sdk';
+import { AttachmentTypes, isOpenOLSHandlerExtension, OpenOLSHandlerProps } from '../../hooks/ols';
 
 function TraceDetailPage() {
   return (
@@ -50,7 +49,10 @@ function TraceDetailPageBody() {
   const [tempo] = useTempoInstance();
   const location = useLocation();
   const [selectedSpanId] = useQueryParam('selectSpan', StringParam);
-  const olsEnabled = useOLSEnabled();
+  const [extensions, resolved] = useResolvedExtensions(isOpenOLSHandlerExtension);
+  const useOpenOLS = resolved
+    ? (extensions[0]?.properties?.provider as OpenOLSHandlerProps['provider'])
+    : undefined;
 
   return (
     <PersesTempoDatasourceWrapper
@@ -77,7 +79,7 @@ function TraceDetailPageBody() {
           <PersesTracePanelWrapper
             panelOptions={{
               showIcons: 'always',
-              extra: olsEnabled ? () => <LightspeedButton /> : undefined,
+              extra: useOpenOLS ? () => <LightspeedButton useOpenOLS={useOpenOLS} /> : undefined,
             }}
             definition={{
               kind: 'Panel',
@@ -150,24 +152,33 @@ function useTraceName(): string {
 
 const MAX_TRACE_SIZE_MB = 1;
 
-function LightspeedButton() {
+interface LightspeedButtonProps {
+  useOpenOLS: OpenOLSHandlerProps['provider'];
+}
+
+function LightspeedButton({ useOpenOLS }: LightspeedButtonProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const dispatch = useDispatch();
   const { queryResults } = useDataQueries('TraceQuery');
   const traceName = useTraceName();
   const trace = queryResults[0]?.data?.trace ?? '';
   const traceYaml = React.useMemo(() => {
     return dumpYAML(trace, { lineWidth: -1 }).trim();
   }, [trace]);
+  const openOLS = useOpenOLS();
 
   const handleTraceAISummaryClick = () => {
-    dispatch(openOLS());
-    dispatch(attachmentSet(AttachmentTypes.YAML, 'Trace', traceName, '', '', traceYaml));
-    dispatch(
-      setQuery('Analyze this trace in my OpenShift cluster and highlight any errors and outliers.'),
-    );
+    const traceAttachment = {
+      attachmentType: AttachmentTypes.YAML,
+      kind: 'Trace',
+      name: traceName,
+      value: traceYaml,
+      namespace: '',
+    };
+    openOLS('Analyze this trace in my OpenShift cluster and highlight any errors and outliers.', [
+      traceAttachment,
+    ]);
 
-    // Workaround to trigger resizing of chatbox input field
+    // Workaround to trigger resizing of Lightspeed UI input field
     setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 0);
