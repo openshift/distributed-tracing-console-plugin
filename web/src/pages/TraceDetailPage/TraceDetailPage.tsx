@@ -1,5 +1,13 @@
 import * as React from 'react';
-import { Breadcrumb, BreadcrumbItem, Divider, PageSection, Title } from '@patternfly/react-core';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  Button,
+  Divider,
+  PageSection,
+  Title,
+  Tooltip,
+} from '@patternfly/react-core';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
@@ -16,6 +24,10 @@ import { memo } from 'react';
 import { linkToSpan, linkToTrace, spanAttributeLinks } from '../../links';
 import { StringParam, useQueryParam } from 'use-query-params';
 import './TraceDetailPage.css';
+import { MagicIcon } from '@patternfly/react-icons';
+import { dump as dumpYAML } from 'js-yaml';
+import { useResolvedExtensions } from '@openshift-console/dynamic-plugin-sdk';
+import { AttachmentTypes, isOpenOLSHandlerExtension, OpenOLSHandlerProps } from '../../hooks/ols';
 
 function TraceDetailPage() {
   return (
@@ -37,6 +49,10 @@ function TraceDetailPageBody() {
   const [tempo] = useTempoInstance();
   const location = useLocation();
   const [selectedSpanId] = useQueryParam('selectSpan', StringParam);
+  const [extensions, resolved] = useResolvedExtensions(isOpenOLSHandlerExtension);
+  const useOpenOLS = resolved
+    ? (extensions[0]?.properties?.provider as OpenOLSHandlerProps['provider'])
+    : undefined;
 
   return (
     <PersesTempoDatasourceWrapper
@@ -61,7 +77,10 @@ function TraceDetailPageBody() {
       >
         <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
           <PersesTracePanelWrapper
-            panelOptions={{ showIcons: 'always' }}
+            panelOptions={{
+              showIcons: 'always',
+              extra: useOpenOLS ? () => <LightspeedButton useOpenOLS={useOpenOLS} /> : undefined,
+            }}
             definition={{
               kind: 'Panel',
               spec: {
@@ -129,4 +148,64 @@ function useTraceName(): string {
 
   // return traceId if span is not loaded or root span is not found
   return traceId ?? '';
+}
+
+const MAX_TRACE_SIZE_MB = 1;
+
+interface LightspeedButtonProps {
+  useOpenOLS: OpenOLSHandlerProps['provider'];
+}
+
+function LightspeedButton({ useOpenOLS }: LightspeedButtonProps) {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const { queryResults } = useDataQueries('TraceQuery');
+  const traceName = useTraceName();
+  const trace = queryResults[0]?.data?.trace ?? '';
+  const traceYaml = React.useMemo(() => {
+    return dumpYAML(trace, { lineWidth: -1 }).trim();
+  }, [trace]);
+  const openOLS = useOpenOLS();
+
+  const handleTraceAISummaryClick = () => {
+    const traceAttachment = {
+      attachmentType: AttachmentTypes.YAML,
+      kind: 'Trace',
+      name: traceName,
+      value: traceYaml,
+      namespace: '',
+    };
+    openOLS('Analyze this trace in my OpenShift cluster and highlight any errors and outliers.', [
+      traceAttachment,
+    ]);
+
+    // Workaround to trigger resizing of Lightspeed UI input field
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 0);
+  };
+
+  // Sanity check to avoid sending large traces to the LLM
+  if (traceYaml.length > MAX_TRACE_SIZE_MB * 1024 * 1024) {
+    const errorMsg = t(
+      'Trace is too large to be analyzed by OpenShift Lightspeed. Max size is {{max}} MB.',
+      { max: MAX_TRACE_SIZE_MB },
+    );
+
+    return (
+      <Tooltip content={errorMsg}>
+        <Button isAriaDisabled variant="plain" aria-label={errorMsg} icon={<MagicIcon />} />
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip content={t('Ask OpenShift Lightspeed')}>
+      <Button
+        variant="plain"
+        onClick={handleTraceAISummaryClick}
+        aria-label={t('Ask OpenShift Lightspeed')}
+        icon={<MagicIcon />}
+      />
+    </Tooltip>
+  );
 }

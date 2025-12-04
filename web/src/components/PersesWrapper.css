@@ -31,3 +31,7 @@
 .MuiMenu-root .MuiMenuItem-root:hover {
     background-color: var(--pf-t--global--background--color--action--plain--hover);
 }
+
+.MuiSvgIcon-root {
+    color: var(--pf-t--global--text--color--regular);
+}
