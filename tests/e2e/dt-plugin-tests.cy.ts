@@ -353,7 +353,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
   it('Test Distributed Tracing UI plugin with Tempo instances and verify traces, span links using user having cluster-admin role', function () {
     cy.log('Create TempoStack and TempoMonolithic instances');
     cy.exec(
-      'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/chainsaw-tests',
+      'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/chainsaw-tests',
       {
         env: {
           KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
