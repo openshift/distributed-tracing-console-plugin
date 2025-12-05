@@ -9,7 +9,7 @@ RUN wget -O oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clien
     && rm -rf oc.tar.gz
 
 # Install chainsaw
-RUN wget -O chainsaw.tar.gz https://github.com/kyverno/chainsaw/releases/download/v0.2.12/chainsaw_linux_amd64.tar.gz \
+RUN wget -O chainsaw.tar.gz https://github.com/kyverno/chainsaw/releases/download/v0.2.13/chainsaw_linux_amd64.tar.gz \
     && tar -xvzf chainsaw.tar.gz \
     && chmod +x chainsaw \
     && mv chainsaw /usr/local/bin/ \
