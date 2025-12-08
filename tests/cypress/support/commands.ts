@@ -82,6 +82,25 @@ declare global {
       adminCLI(command: string, options?: any): Chainable<Element>;
       login(provider?: string, username?: string, password?: string): Chainable<Element>;
       executeAndDelete(command: string): Chainable<Element>;
+      // Lightspeed/OLS specific commands
+      interceptFeedback(
+        alias: string,
+        conversationId: string,
+        sentiment: number,
+        userFeedback: string,
+        userQuestionStartsWith: string,
+      ): Chainable<Element>;
+      interceptQuery(
+        alias: string,
+        query: string,
+        conversationId?: string | null,
+        attachments?: Array<{ attachment_type: string; content_type: string }>,
+      ): Chainable<Element>;
+      interceptQueryWithError(
+        alias: string,
+        query: string,
+        errorMessage: string,
+      ): Chainable<Element>;
     }
   }
 }
@@ -737,31 +756,37 @@ Cypress.Commands.add(
   'dragCutoffResizer',
   (position: number, resizerType: 'left' | 'right' = 'right') => {
     cy.log(`Dragging ${resizerType} resizer to ${position}% position`);
-    
+
     // Wait for the trace timeline to be fully loaded
     cy.get(`[data-elem="resizer${resizerType === 'right' ? 'Right' : 'Left'}"]`).should('be.visible');
-    
+
     // Perform the drag operation
     cy.get(`[data-elem="resizer${resizerType === 'right' ? 'Right' : 'Left'}"]`)
       .first()
       .then(($resizer) => {
         const resizerRect = $resizer[0].getBoundingClientRect();
-        
+
         // Get the timeline container using canvas as a stable reference point
         cy.get('canvas[height="60"]')
           .parent()
           .then(($timeline) => {
             const timelineRect = $timeline[0].getBoundingClientRect();
             const targetX = timelineRect.left + (timelineRect.width * (position / 100));
-            
+
+            cy.log(`Timeline bounds: left=${timelineRect.left}, width=${timelineRect.width}`);
+            cy.log(`Target position: ${position}% = ${targetX}px (timeline left + ${timelineRect.width * (position / 100)}px)`);
+
             // Drag the resizer to the specified position
             cy.wrap($resizer)
-              .trigger('mousedown', { which: 1 })
-              .trigger('mousemove', { 
-                clientX: targetX, 
-                clientY: resizerRect.top + resizerRect.height / 2 
+              .trigger('mousedown', { which: 1, force: true })
+              .wait(100) // Small delay between mousedown and mousemove
+              .trigger('mousemove', {
+                clientX: targetX,
+                clientY: resizerRect.top + resizerRect.height / 2,
+                force: true
               })
-              .trigger('mouseup');
+              .wait(100) // Small delay before mouseup
+              .trigger('mouseup', { force: true });
           });
       });
 
@@ -775,7 +800,7 @@ Cypress.Commands.add(
   'verifyCutoffPosition',
   (expectedWidthPercent: number, tolerance: number = 2) => {
     cy.log(`Verifying cutoff box position is around ${expectedWidthPercent}%`);
-    
+
     // Verify the cutoff box is positioned correctly
     cy.get('[data-elem="cutoffBox"]')
       .last() // Get the right cutoff box
@@ -785,13 +810,113 @@ Cypress.Commands.add(
         const widthMatch = style.match(/width:\s*(\d+(?:\.\d+)?)%/);
         expect(widthMatch).to.not.be.null;
         const widthValue = parseFloat(widthMatch[1]);
-        
+
         // Check within tolerance
         const minWidth = expectedWidthPercent - tolerance;
         const maxWidth = expectedWidthPercent + tolerance;
         expect(widthValue).to.be.within(minWidth, maxWidth);
-        
+
         cy.log(`✓ Cutoff box width is ${widthValue}% (within acceptable range of ${minWidth}-${maxWidth}%)`);
       });
+  },
+);
+
+// Lightspeed/OLS API intercept commands
+// Based on lightspeed-console/cypress/support/commands.ts
+
+const OLS_API_BASE_URL = '/api/proxy/plugin/lightspeed-console-plugin/ols';
+const getOlsApiUrl = (path: string): string => `${OLS_API_BASE_URL}${path}`;
+
+const MOCK_STREAMED_RESPONSE_BODY = `data: {"event": "start", "data": {"conversation_id": "5f424596-a4f9-4a3a-932b-46a768de3e7c"}}
+
+data: {"event": "token", "data": {"id": 0, "token": "Mock"}}
+
+data: {"event": "token", "data": {"id": 1, "token": " OLS"}}
+
+data: {"event": "token", "data": {"id": 2, "token": " response"}}
+
+data: {"event": "end", "data": {"referenced_documents": [], "truncated": false}}
+`;
+
+type OlsAttachment = { attachment_type: string; content_type: string };
+
+Cypress.Commands.add(
+  'interceptQuery',
+  (
+    alias: string,
+    query: string,
+    conversationId: string | null = null,
+    attachments: Array<OlsAttachment> = [],
+  ) => {
+    cy.intercept('POST', getOlsApiUrl('/v1/streaming_query'), (request) => {
+      expect(request.body.media_type).to.equal('application/json');
+      expect(request.body.conversation_id).to.equal(conversationId);
+      expect(request.body.query).to.equal(query);
+
+      expect(request.body.attachments).to.have.lengthOf(attachments.length);
+      attachments.forEach((a, i) => {
+        expect(request.body.attachments[i].attachment_type).to.equal(a.attachment_type);
+        expect(request.body.attachments[i].content_type).to.equal(a.content_type);
+      });
+
+      request.reply({ body: MOCK_STREAMED_RESPONSE_BODY, delay: 1000 });
+    }).as(alias);
+  },
+);
+
+const MOCK_STREAMED_RESPONSE_WITH_ERROR_BODY = `data: {"event": "start", "data": {"conversation_id": "5f424596-a4f9-4a3a-932b-46a768de3e7c"}}
+
+data: {"event": "token", "data": {"id": 0, "token": "Partial"}}
+
+data: {"event": "token", "data": {"id": 1, "token": " response"}}
+
+data: {"event": "tool_call", "data": {"id": 123, "name": "ABC", "args": {"some_key": "some_value"}}}
+
+data: {"event": "tool_result", "data": {"id": 123,  "content": "Tool response", "status": "success"}}
+
+data: {"event": "error", "data": "MOCK_ERROR_MESSAGE"}
+`;
+
+Cypress.Commands.add(
+  'interceptQueryWithError',
+  (alias: string, query: string, errorMessage: string) => {
+    cy.intercept('POST', getOlsApiUrl('/v1/streaming_query'), (request) => {
+      expect(request.body.query).to.equal(query);
+      const responseBody = MOCK_STREAMED_RESPONSE_WITH_ERROR_BODY.replace(
+        'MOCK_ERROR_MESSAGE',
+        errorMessage,
+      );
+      request.reply({ body: responseBody, delay: 500 });
+    }).as(alias);
+  },
+);
+
+const USER_FEEDBACK_MOCK_RESPONSE = { body: { message: 'Feedback received' } };
+
+Cypress.Commands.add(
+  'interceptFeedback',
+  (
+    alias: string,
+    conversationId: string,
+    sentiment: number,
+    userFeedback: string,
+    userQuestionStartsWith: string,
+  ) => {
+    cy.intercept('POST', getOlsApiUrl('/v1/feedback'), (request) => {
+      const bodyWithoutUserQuestion = { ...request.body };
+      delete bodyWithoutUserQuestion.user_question;
+
+      expect(bodyWithoutUserQuestion).to.deep.equal({
+        /* eslint-disable camelcase */
+        conversation_id: conversationId,
+        sentiment,
+        user_feedback: userFeedback,
+        llm_response: 'Mock OLS response',
+        /* eslint-enable camelcase */
+      });
+      expect(request.body.user_question.startsWith(userQuestionStartsWith)).to.equal(true);
+
+      request.reply(USER_FEEDBACK_MOCK_RESPONSE);
+    }).as(alias);
   },
 );
