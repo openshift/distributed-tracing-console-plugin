@@ -7,17 +7,24 @@ export const operatorHubPage = {
       `/operatorhub/subscribe?pkg=${operatorName}&catalog=${csName}&catalogNamespace=openshift-marketplace`,
     );
     cy.get('body').should('be.visible');
-    
+
     // Wait for page to fully load - look for install button as a sign the page is ready
     cy.get('[data-test="install-operator"]').should('be.visible');
-    
-    // Wait for the radio button to actually be selected
-    cy.get('[data-test="All namespaces on the cluster-radio-input"]').should('be.checked');
-    
+
     if (installNamespace) {
       // Custom namespace installation flow
       cy.log(`Installing operator in custom namespace: ${installNamespace}`);
-      
+
+      // Wait for the "A specific namespace on the cluster" radio button to be available
+      cy.get('input[data-test="A specific namespace on the cluster-radio-input"]').should('be.visible');
+
+      // Check if it's already selected, if not click it
+      cy.get('input[data-test="A specific namespace on the cluster-radio-input"]').then(($radio) => {
+        if (!$radio.is(':checked')) {
+          cy.get('input[data-test="A specific namespace on the cluster-radio-input"]').click();
+        }
+      });
+
       // Step 1: Click "Select a Namespace" radio button (this shows the dropdown)
       cy.get('input[data-test="Select a Namespace-radio-input"]').should('be.visible');
       cy.get('input[data-test="Select a Namespace-radio-input"]').click();
@@ -39,7 +46,19 @@ export const operatorHubPage = {
     } else {
       // Recommended namespace installation flow
       cy.log('Installing operator using recommended namespace');
-      
+
+      // Check which radio button is initially selected (All namespaces vs A specific namespace)
+      cy.get('body').then(($body) => {
+        const allNamespacesChecked = $body.find('[data-test="All namespaces on the cluster-radio-input"]:checked').length > 0;
+        const specificNamespaceChecked = $body.find('[data-test="A specific namespace on the cluster-radio-input"]:checked').length > 0;
+
+        if (allNamespacesChecked) {
+          cy.log('All namespaces is selected by default');
+        } else if (specificNamespaceChecked) {
+          cy.log('A specific namespace is selected by default');
+        }
+      });
+
       // Click operator recommended namespace radio button
       // Support both old and new OpenShift versions
       cy.get('body').then(($body) => {
