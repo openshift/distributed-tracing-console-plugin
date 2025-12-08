@@ -1,4 +1,5 @@
 import { operatorHubPage } from '../views/operator-hub-page';
+import { olsHelpers, OLS_SELECTORS } from '../views/lightspeed';
 
 // Set constants for the operators that need to be installed for tests.
 const DTP = {
@@ -23,11 +24,27 @@ const TEMPO = {
   operatorName: 'Tempo Operator',
 };
 
+const LIGHTSPEED = {
+  namespace: 'openshift-lightspeed',
+  packageName: 'lightspeed-operator',
+  operatorName: 'Lightspeed Operator',
+};
+
 describe('OpenShift Distributed Tracing UI Plugin tests', () => {
   before(() => {
     // Cleanup any existing resources from interrupted tests
     cy.log('Cleanup any existing resources from previous interrupted tests');
     if (Cypress.env('SKIP_COO_INSTALL')) {
+      cy.log('Delete Lightspeed OLSConfig if exists.');
+      cy.executeAndDelete(
+        `oc delete olsconfig cluster -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Lightspeed secret if exists.');
+      cy.executeAndDelete(
+        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
       cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
       cy.executeAndDelete(
         `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
@@ -50,6 +67,16 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
         );
       }
     } else {
+      cy.log('Delete Lightspeed OLSConfig if exists.');
+      cy.executeAndDelete(
+        `oc delete olsconfig cluster -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Lightspeed secret if exists.');
+      cy.executeAndDelete(
+        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
       cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
       cy.executeAndDelete(
         `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
@@ -72,6 +99,9 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
 
       cy.log('Remove Tempo Operator if exists');
       cy.executeAndDelete(`oc delete namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      cy.log('Remove Lightspeed Operator if exists');
+      cy.executeAndDelete(`oc delete namespace ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
 
       // Only remove cluster-admin role if provider is not kube:admin
       if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
@@ -97,7 +127,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     if (Cypress.env('SKIP_COO_INSTALL')) {
       cy.log('SKIP_COO_INSTALL is set. Skipping Cluster Observability Operator installation.');
     } else if (Cypress.env('COO_UI_INSTALL')) {
-      cy.log('COO_UI_INSTALL is set. COO, Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
+      cy.log('COO_UI_INSTALL is set. COO, Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
       if (Cypress.env('COO_NAMESPACE')) {
         cy.log(`Using custom namespace: ${Cypress.env('COO_NAMESPACE')}`);
@@ -108,7 +138,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       }
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
@@ -116,7 +146,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       operatorHubPage.installOperator(OTEL.packageName, 'redhat-operators');
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
@@ -124,12 +154,20 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install Lightspeed Operator');
+      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
     } else if (Cypress.env('KONFLUX_COO_BUNDLE_IMAGE')) {
-      cy.log('KONFLUX_COO_BUNDLE_IMAGE is set. COO operator will be installed from Konflux bundle. Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
+      cy.log('KONFLUX_COO_BUNDLE_IMAGE is set. COO operator will be installed from Konflux bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
       cy.exec(
         `oc --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} apply -f ./fixtures/coo-imagecontentsourcepolicy.yaml` ,
@@ -148,7 +186,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       operatorHubPage.installOperator(OTEL.packageName, 'redhat-operators');
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
@@ -156,12 +194,20 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install Lightspeed Operator');
+      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
     } else if (Cypress.env('CUSTOM_COO_BUNDLE_IMAGE')) {
-      cy.log('CUSTOM_COO_BUNDLE_IMAGE is set. COO operator will be installed from custom built bundle. Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source');
+      cy.log('CUSTOM_COO_BUNDLE_IMAGE is set. COO operator will be installed from custom built bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
       cy.exec(
         `oc --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} apply -f ./fixtures/coo-imagecontentsourcepolicy.yaml` ,
@@ -180,7 +226,7 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       operatorHubPage.installOperator(OTEL.packageName, 'redhat-operators');
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
@@ -188,7 +234,15 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
       operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
       cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
         const text = $el.text();
-        expect(text).to.satisfy((t) => 
+        expect(text).to.satisfy((t) =>
+          t.includes('ready for use') || t.includes('Operator installed successfully')
+        );
+      });
+      cy.log('Install Lightspeed Operator');
+      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+        const text = $el.text();
+        expect(text).to.satisfy((t) =>
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
@@ -217,6 +271,50 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     } else {
       cy.log('DT_CONSOLE_IMAGE is NOT set. Skipping patching the image in COO operator CSV.');
     }
+
+    cy.log('Set Lightspeed Console Plugin image in operator CSV');
+    if (Cypress.env('LIGHTSPEED_CONSOLE_IMAGE')) {
+      cy.log('LIGHTSPEED_CONSOLE_IMAGE is set. the image will be patched in Lightspeed operator CSV');
+      cy.exec(
+        './fixtures/update-lightspeed-plugin-image.sh',
+        {
+          env: {
+            LIGHTSPEED_CONSOLE_IMAGE: Cypress.env('LIGHTSPEED_CONSOLE_IMAGE'),
+            KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+            LIGHTSPEED_NAMESPACE: `${LIGHTSPEED.namespace}`
+          },
+          timeout: 240000,
+          failOnNonZeroExit: true
+        }
+      ) .then((result) => {
+        expect(result.code).to.eq(0);
+        cy.log(`Lightspeed CSV updated successfully with Lightspeed Console Plugin image: ${result.stdout}`);
+      });
+    } else {
+      cy.log('LIGHTSPEED_CONSOLE_IMAGE is NOT set. Skipping patching the image in Lightspeed operator CSV.');
+    }
+
+    cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
+    cy.exec(
+      `chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/lightspeed --values - <<EOF
+LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}
+LIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}
+EOF`,
+      {
+        env: {
+          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+        },
+        timeout: 1800000,
+        failOnNonZeroExit: true
+      }
+    ) .then((result) => {
+      expect(result.code).to.eq(0);
+      cy.log(`Lightspeed Chainsaw test ran successfully: ${result.stdout}`);
+    });
+
+    cy.log('Wait for Lightspeed popover to open by default and close it');
+    cy.visit('/');
+    olsHelpers.waitForPopoverAndClose();
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
     cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
@@ -249,6 +347,9 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
           cy.log('No web console update alert found after 2 minutes, navigating to traces page');
           cy.visit('/observe/traces');
           cy.url().should('include', '/observe/traces');
+          cy.get('body').should('be.visible');
+          // Wait for the page to fully render
+          cy.wait(3000);
         }
       });
     };
@@ -259,6 +360,16 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
 
   after(() => {
     if (Cypress.env('SKIP_COO_INSTALL')) {
+      cy.log('Delete Lightspeed OLSConfig.');
+      cy.executeAndDelete(
+        `oc delete olsconfig cluster -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Lightspeed secret.');
+      cy.executeAndDelete(
+        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
       cy.log('Delete Distributed Tracing UI Plugin instance.');
       cy.executeAndDelete(
         `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
@@ -281,6 +392,16 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
         );
       }
     } else {
+      cy.log('Delete Lightspeed OLSConfig.');
+      cy.executeAndDelete(
+        `oc delete olsconfig cluster -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
+      cy.log('Delete Lightspeed secret.');
+      cy.executeAndDelete(
+        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      );
+
       cy.log('Delete Distributed Tracing UI Plugin instance.');
       cy.executeAndDelete(
         `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
@@ -303,6 +424,9 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
 
       cy.log('Remove Tempo Operator');
       cy.executeAndDelete(`oc delete namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+      cy.log('Remove Lightspeed Operator');
+      cy.executeAndDelete(`oc delete namespace ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
 
       // Only remove cluster-admin role if provider is not kube:admin
       if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
@@ -369,6 +493,9 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.log('Navigate to the /observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.get('body').should('be.visible');
+    // Wait for the page to fully render
+    cy.wait(3000);
     cy.log('Assert traces in TempoStack instance.');
     cy.pfTypeahead('Select a Tempo instance').click();
     cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
@@ -552,6 +679,9 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.get('body').should('be.visible');
+    // Wait for the page to fully render
+    cy.wait(3000);
 
     cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
     cy.pfTypeahead('Select a Tempo instance').click();
@@ -615,5 +745,90 @@ describe('OpenShift Distributed Tracing UI Plugin tests', () => {
         
       cy.log('✓ MUI box cutoff functionality verified - time range updated correctly');
     });
+  });
+
+  it('Test AI Traces summary with OpenShift Lightspeed', () => {
+    cy.log('Navigate to the /observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.get('body').should('be.visible');
+    // Wait for the page to fully render
+    cy.wait(3000);
+
+    cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+    cy.log('Select tenant: dev');
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    cy.log('Select time range: Last 15 minutes');
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+
+    cy.log('Select service name: frontend');
+    cy.pfMenuToggle('Service Name').click();
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.pfCheckMenuItem('frontend');
+
+    cy.log('Click on the first trace');
+    cy.muiFirstTraceLink().click();
+
+    cy.log('Wait for trace details to load and click Ask OpenShift Lightspeed button');
+    cy.get('button.pf-v6-c-button.pf-m-plain[aria-label="Ask OpenShift Lightspeed"]', { timeout: 10000 })
+      .filter(':visible')
+      .first()
+      .click();
+
+    cy.log('Verify Lightspeed popover panel is visible');
+    olsHelpers.verifyPopoverVisible();
+
+    cy.log('Verify Lightspeed panel title');
+    cy.contains('h1', 'Red Hat OpenShift Lightspeed')
+      .should('be.visible');
+
+    cy.log('Verify the prompt input textarea has the expected text');
+    cy.get(OLS_SELECTORS.promptInput)
+      .should('be.visible')
+      .and('have.value', 'Analyze this trace in my OpenShift cluster and highlight any errors and outliers.');
+
+    cy.log('Verify the trace context attachment is present');
+    cy.get('.ols-plugin__context-label-text')
+      .should('be.visible')
+      .and('have.text', 'frontend: /dispatch');
+
+    cy.log('Click the Send button to submit the query');
+    cy.get('.pf-chatbot__message-bar-actions button[aria-label="Send"]')
+      .should('be.visible')
+      .click();
+
+    cy.log('Wait for AI response and verify trace analysis content');
+    cy.get('.pf-chatbot__message--bot', { timeout: 30000 })
+      .should('be.visible')
+      .and('contain.text', 'trace');
+
+    cy.log('Verify AI response contains analysis of trace services');
+    cy.get('.pf-chatbot__message--bot')
+      .should(($message) => {
+        const text = $message.text().toLowerCase();
+        // Verify at least 2 of the key services are mentioned
+        const serviceMatches = [
+          text.includes('driver'),
+          text.includes('customer'),
+          text.includes('route'),
+          text.includes('frontend') || text.includes('dispatch')
+        ].filter(Boolean);
+        expect(serviceMatches.length).to.be.at.least(2, 'Expected at least 2 services to be mentioned in the analysis');
+      });
+
+    cy.log('Verify AI response mentions Redis or database interactions');
+    cy.get('.pf-chatbot__message--bot')
+      .should(($message) => {
+        const text = $message.text().toLowerCase();
+        expect(text).to.match(/redis|database|mysql/);
+      });
+
+    cy.log('✓ AI Traces summary with OpenShift Lightspeed verified');
   });
 });
