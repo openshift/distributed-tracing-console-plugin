@@ -1,0 +1,20 @@
+apiVersion: ols.openshift.io/v1alpha1
+kind: OLSConfig
+metadata:
+  name: cluster
+  namespace: openshift-lightspeed
+spec:
+  llm:
+    providers:
+      - name: tracing_ai
+        type: rhelai_vllm
+        url: ($LIGHTSPEED_PROVIDER_URL)
+        credentialsSecretRef:
+          name: rhelai-token
+        models:
+          - name: "meta-llama/Llama-3.3-70B-Instruct"
+  ols:
+    defaultModel: meta-llama/Llama-3.3-70B-Instruct
+    defaultProvider: tracing_ai
+    deployment:
+      replicas: 1

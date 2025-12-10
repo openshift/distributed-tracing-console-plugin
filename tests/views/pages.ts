@@ -118,6 +118,20 @@ export const listPage = {
   },
 };
 
+export const pages = {
+  goToPodDetails: (ns, podName) => {
+    pages.goToPodsList(ns);
+    listPage.filter.byName(podName);
+    listPage.rows.countShouldBeWithin(1, 4);
+    listPage.rows.clickFirstLinkInFirstRow();
+  },
+  goToPodsList: (ns: string | null = null) => {
+    cy.visit(ns ? `/k8s/ns/${ns}/pods` : '/k8s/all-namespaces/pods');
+    listPage.rows.shouldBeLoaded();
+  },
+};
+
+// Keep Pages for backward compatibility
 export const Pages = {
   gotoPodsList: () => {
     cy.visit('/k8s/all-namespaces/core~v1~Pod');
