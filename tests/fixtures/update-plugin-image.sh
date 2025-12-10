@@ -17,6 +17,6 @@ sed -i "s#^\([[:space:]]*- image:\).*distributed-tracing-console-plugin.*#\1 ${D
 oc replace -f "${RANDOM_FILE}" --kubeconfig "${KUBECONFIG}"
 
 # Wait for the operator to reconcile the change and make sure all the pods are running.
-sleep 5
+sleep 10
 oc wait --for=condition=Ready pods --selector=app.kubernetes.io/part-of=observability-operator -n "${DTP_NAMESPACE}" --timeout=60s
 oc wait --for=condition=ready pods -l app.kubernetes.io/name=observability-operator -n "${DTP_NAMESPACE}" --timeout=60s --kubeconfig "${KUBECONFIG}"

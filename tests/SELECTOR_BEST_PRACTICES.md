@@ -68,6 +68,28 @@ cy.muiTraceAttributes({                     // Bulk attribute validation
   'network.peer.address': { value: '1.2.3.4' },
   'service.name': { value: (text) => text.includes('rbac') }
 })
+
+// Lightspeed/OLS Integration
+import { olsHelpers, OLS_SELECTORS, OLS_TEXT } from '../views/lightspeed';
+
+// Lightspeed Helper Functions
+olsHelpers.openPopover()                    // Open Lightspeed popover
+olsHelpers.closePopover()                   // Close Lightspeed popover
+olsHelpers.waitForPopoverAndClose()         // Wait for popover and close (default 2 min timeout)
+olsHelpers.waitForPopoverAndClose(60000)    // Custom timeout
+olsHelpers.sendPrompt('Summarize trace')    // Send prompt to Lightspeed
+olsHelpers.verifyPopoverVisible()           // Verify popover with expected content
+
+// Lightspeed Selectors (direct access)
+cy.get(OLS_SELECTORS.popover)               // '.ols-plugin__popover'
+cy.get(OLS_SELECTORS.mainButton)            // '.ols-plugin__popover-button'
+cy.get(OLS_SELECTORS.minimizeButton)        // 'button.ols-plugin__popover-control[title="Minimize"]'
+cy.get(OLS_SELECTORS.promptInput)           // Textarea for prompt input
+
+// Lightspeed API Intercepts
+cy.interceptQuery('alias', 'query text', 'conversation-id', [{ attachment_type: 'trace', content_type: 'application/json' }])
+cy.interceptQueryWithError('alias', 'query', 'error message')
+cy.interceptFeedback('alias', 'conversation-id', sentiment, 'feedback', 'question starts with')
 ```
 
 ### Accessibility-Based Selectors
@@ -214,6 +236,43 @@ cy.muiTraceLink('http-rbac-2').click()      // Specific service trace
 cy.muiFirstSpanBar().click()                // First span bar
 cy.muiSpanBar('http-rbac-2').click()        // Specific service span
 cy.findByTestId('span-duration-bar').first().click()  // By test ID
+```
+
+### Lightspeed AI Integration
+```typescript
+// Import Lightspeed helpers
+import { olsHelpers, OLS_SELECTORS } from '../views/lightspeed';
+
+// Basic Lightspeed workflow:
+olsHelpers.openPopover();
+olsHelpers.sendPrompt('Summarize this trace');
+olsHelpers.closePopover();
+
+// With API intercepts for testing:
+cy.interceptQuery(
+  'traceSummary',
+  'Summarize this trace',
+  null,
+  [{ attachment_type: 'trace', content_type: 'application/json' }]
+);
+
+olsHelpers.openPopover();
+olsHelpers.sendPrompt('Summarize this trace');
+cy.wait('@traceSummary');
+
+// Verify response
+cy.get(OLS_SELECTORS.popover).should('contain', 'Mock OLS response');
+
+// Submit feedback
+cy.interceptFeedback(
+  'feedback',
+  'conversation-id-123',
+  1,                        // 1 = positive, -1 = negative
+  'Very helpful!',
+  'Summarize this trace'
+);
+
+olsHelpers.closePopover();
 ```
 
 ### Trace Attribute Validation

@@ -48,6 +48,8 @@ export CYPRESS_BASE_URL=https://<console_route_spec_host>
 export CYPRESS_LOGIN_IDP=flexy-htpasswd-provider
 export CYPRESS_LOGIN_USERS=username:password
 export CYPRESS_KUBECONFIG_PATH=~/Downloads/kubeconfig
+export CYPRESS_LIGHTSPEED_PROVIDER_URL=<lightspeed-provider-url>
+export CYPRESS_LIGHTSPEED_PROVIDER_TOKEN=<lightspeed-api-token>
 ```
 Using kubeadmin user.
 ```bash
@@ -55,6 +57,8 @@ export CYPRESS_BASE_URL=https://<console_route_spec_host>
 export CYPRESS_LOGIN_IDP=kube:admin
 export CYPRESS_LOGIN_USERS=kubeadmin:password
 export CYPRESS_KUBECONFIG_PATH=~/Downloads/kubeconfig
+export CYPRESS_LIGHTSPEED_PROVIDER_URL=<lightspeed-provider-url>
+export CYPRESS_LIGHTSPEED_PROVIDER_TOKEN=<lightspeed-api-token>
 ```
 
 Set the var to skip Cluster Observability and all the required operators installation.
@@ -62,16 +66,16 @@ Set the var to skip Cluster Observability and all the required operators install
 export CYPRESS_SKIP_COO_INSTALL=true
 ```
 
-Set the var to install Cluster Observability, OpenTelemetry and Tempo operators from redhat-operators catalog source.
+Set the var to install Cluster Observability, OpenTelemetry, Tempo and Lightspeed operators from redhat-operators catalog source.
 ```bash
 export CYPRESS_COO_UI_INSTALL=true
 ```
 
-Set the var to install Cluster Observability Operator using Konflux bundle. Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source.
+Set the var to install Cluster Observability Operator using Konflux bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source.
 ```bash
 export CYPRESS_KONFLUX_COO_BUNDLE_IMAGE=<COO image>
 ```
-Set the var to use custom Cluster Observability Operator bundle image. Tempo and OpenTelemetry operators will be installed from redhat-operators catalog source.
+Set the var to use custom Cluster Observability Operator bundle image. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source.
 ```bash
 export CYPRESS_CUSTOM_COO_BUNDLE_IMAGE=<COO bundle image>
 ```
@@ -79,6 +83,11 @@ export CYPRESS_CUSTOM_COO_BUNDLE_IMAGE=<COO bundle image>
 Set the following var to use custom Distributed Tracing UI plugin image. The image will be patched in Cluster Observability Operator CSV.
 ```bash
 export CYPRESS_DT_CONSOLE_IMAGE=<console image>
+```
+
+Set the following var to use custom Lightspeed console plugin image. The image will be patched in Lightspeed Operator CSV.
+```bash
+export CYPRESS_LIGHTSPEED_CONSOLE_IMAGE=<lightspeed console image>
 ```
 
 Set the following var to specify a custom namespace for the Cluster Observability Operator installation. If not set, defaults to `openshift-cluster-observability-operator`.
@@ -161,10 +170,27 @@ mv tests/e2e/dt-plugin-tests-debug.cy.ts tests/e2e/dt-plugin-tests-debug.cy.ts.s
 Chainsaw tests in `fixtures/chainsaw-tests/` validate operator permissions and multi-tenancy scenarios:
 
 - **Multitenancy RBAC**: Tests for role-based access control across multiple tenants
-- **Monolithic Multitenancy RBAC**: Tests for RBAC in monolithic deployment scenarios  
+- **Monolithic Multitenancy RBAC**: Tests for RBAC in monolithic deployment scenarios
 - **HotRod Integration**: Automatic deployment and trace generation using the Jaeger HotRod example application for comprehensive testing
 
 These tests ensure that the distributed tracing plugin works correctly with different RBAC configurations and deployment models, supporting both upstream and downstream environments.
+
+### Chainsaw Lightspeed Setup
+Chainsaw tests in `fixtures/lightspeed/` handle initial setup of OpenShift Lightspeed for AI-powered trace analysis integration:
+
+- **Lightspeed Configuration**: Deploys OLSConfig with AI provider settings
+- **Secret Management**: Creates credential secret for Lightspeed API authentication
+- **Parameters**: Set `CYPRESS_LIGHTSPEED_PROVIDER_URL` and `CYPRESS_LIGHTSPEED_PROVIDER_TOKEN` environment variables (Cypress automatically strips the `CYPRESS_` prefix when passing them to Chainsaw via heredoc)
+
+Example manual run:
+```bash
+chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/lightspeed --values - <<EOF
+LIGHTSPEED_PROVIDER_URL: <lightspeed-provider-url>
+LIGHTSPEED_PROVIDER_TOKEN: <lightspeed-api-token>
+EOF
+```
+
+Ensure the environment variables are set before running Cypress tests to properly configure Lightspeed.
 
 ### Documentation
 - **CLAUDE.md** - Guidance for Claude AI assistance with this codebase
