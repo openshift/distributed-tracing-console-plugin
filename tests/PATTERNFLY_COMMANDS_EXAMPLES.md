@@ -81,6 +81,65 @@ cy.pfMenuToggle('Last 30 minutes').click();
 cy.pfSelectMenuItem('Last 1 hour').click();
 ```
 
+### Lightspeed/OLS Integration
+
+```typescript
+// Import Lightspeed helpers and selectors
+import { olsHelpers, OLS_SELECTORS, OLS_TEXT } from '../views/lightspeed';
+
+// Open and close Lightspeed popover
+olsHelpers.openPopover();
+olsHelpers.closePopover();
+
+// Wait for popover after Lightspeed operator installation
+olsHelpers.waitForPopoverAndClose();        // Default 2 minute timeout
+olsHelpers.waitForPopoverAndClose(60000);   // Custom 1 minute timeout
+
+// Send prompts to Lightspeed
+olsHelpers.openPopover();
+olsHelpers.sendPrompt('Summarize this trace');
+
+// Verify popover content
+olsHelpers.verifyPopoverVisible();
+
+// Direct selector access
+cy.get(OLS_SELECTORS.popover).should('be.visible');
+cy.get(OLS_SELECTORS.mainButton).click();
+cy.get(OLS_SELECTORS.minimizeButton).should('exist');
+cy.get(OLS_SELECTORS.promptInput).type('Help me understand this error');
+```
+
+### Lightspeed API Intercepts
+
+```typescript
+// Intercept query requests
+cy.interceptQuery(
+  'queryAlias',
+  'What is causing the slow response time?',
+  'conversation-id-123',
+  [{ attachment_type: 'trace', content_type: 'application/json' }]
+);
+cy.wait('@queryAlias');
+
+// Intercept query with error
+cy.interceptQueryWithError(
+  'errorAlias',
+  'Analyze this trace',
+  'Service temporarily unavailable'
+);
+cy.wait('@errorAlias');
+
+// Intercept feedback submission
+cy.interceptFeedback(
+  'feedbackAlias',
+  'conversation-id-123',
+  1,                                    // Sentiment: 1 (positive), -1 (negative)
+  'Very helpful analysis!',
+  'What is causing'                     // User question starts with
+);
+cy.wait('@feedbackAlias');
+```
+
 ### Navigation Commands
 
 ```typescript
@@ -146,37 +205,94 @@ describe('Trace inspection', () => {
   it('should navigate and validate trace details', () => {
     // Navigate to traces page
     cy.visit('/observe/traces');
-    
+
     // Select Tempo instance
     cy.pfTypeahead('Select a Tempo instance').click();
     cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
-    
+
     // Set time range
     cy.pfMenuToggle('Last 30 minutes').click();
     cy.pfSelectMenuItem('Last 1 hour').click();
-    
+
     // Filter by services
     cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
     cy.pfCheckMenuItem('http-rbac-1');
     cy.pfCheckMenuItem('http-rbac-2');
-    
+
     // Click first trace
     cy.muiFirstTraceLink().click();
-    
+
     // Click on span for details
     cy.muiFirstSpanBar().click();
-    
+
     // Validate trace attributes efficiently
     cy.muiTraceAttributes({
       'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: 'telemetrygen-client' },
-      'service.name': { 
+      'service.name': {
         value: (text) => text.includes('rbac')
       }
     });
-    
+
     // Navigate back
     cy.pfBreadcrumb('Traces').click();
+  });
+});
+
+// AI-powered trace analysis with Lightspeed
+describe('AI Trace Summary', () => {
+  it('should use Lightspeed to analyze trace', () => {
+    // Import Lightspeed helpers
+    import { olsHelpers, OLS_SELECTORS } from '../views/lightspeed';
+
+    // Navigate to traces page
+    cy.visit('/observe/traces');
+    cy.get('body').should('be.visible');
+    cy.wait(3000);
+
+    // Select instance and filters
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    // Select time range
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 15 minutes').click();
+
+    // Open first trace
+    cy.muiFirstTraceLink().click();
+
+    // Intercept Lightspeed query
+    cy.interceptQuery(
+      'traceSummary',
+      'Summarize this trace',
+      null,
+      [{ attachment_type: 'trace', content_type: 'application/json' }]
+    );
+
+    // Open Lightspeed and request summary
+    olsHelpers.openPopover();
+    olsHelpers.sendPrompt('Summarize this trace');
+
+    // Wait for AI response
+    cy.wait('@traceSummary');
+
+    // Verify response appears
+    cy.get(OLS_SELECTORS.popover)
+      .should('contain', 'Mock OLS response');
+
+    // Submit feedback
+    cy.interceptFeedback(
+      'positiveFeedback',
+      '5f424596-a4f9-4a3a-932b-46a768de3e7c',
+      1,
+      'Very helpful!',
+      'Summarize this trace'
+    );
+
+    // Close popover
+    olsHelpers.closePopover();
   });
 });
 ```
