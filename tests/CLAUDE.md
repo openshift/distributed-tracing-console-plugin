@@ -52,8 +52,15 @@ export CYPRESS_CUSTOM_COO_BUNDLE_IMAGE=<image>
 # Optional: Use custom console image
 export CYPRESS_DT_CONSOLE_IMAGE=<image>
 
+# Optional: Use custom Lightspeed console plugin image
+export CYPRESS_LIGHTSPEED_CONSOLE_IMAGE=<lightspeed-console-image>
+
 # Optional: Custom namespace (defaults to openshift-cluster-observability-operator)
 export CYPRESS_COO_NAMESPACE=<namespace>
+
+# Lightspeed integration (Chainsaw tests in fixtures/lightspeed/)
+export CYPRESS_LIGHTSPEED_PROVIDER_URL=<lightspeed-provider-url>
+export CYPRESS_LIGHTSPEED_PROVIDER_TOKEN=<lightspeed-api-token>
 ```
 
 ## Architecture
@@ -79,10 +86,11 @@ The test suite includes comprehensive PatternFly-aware custom commands:
 3. **Debug Tests**: Rapid iteration tests without full setup/teardown
 
 ### Operator Testing
-Tests install and verify three main operators:
+Tests install and verify four main operators:
 - **Cluster Observability Operator (COO)**: Main plugin operator
 - **OpenTelemetry Operator**: Telemetry data collection
 - **Tempo Operator**: Trace storage and query
+- **Lightspeed Operator**: AI-powered trace analysis and insights
 
 ### Test Configuration
 - **cypress.config.ts**: Main Cypress configuration with custom browser settings
