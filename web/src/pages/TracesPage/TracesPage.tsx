@@ -22,9 +22,19 @@ import { Link } from 'react-router-dom-v5-compat';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { LoadingState } from '../../components/LoadingState';
 import { TracingApp } from '../../TracingApp';
+import { getOCPVersion } from '../../components/console/utils/getOCPVersion';
 
-const installOperatorLink =
-  '/operatorhub/all-namespaces?keyword=Tempo&details-item=tempo-product-redhat-operators-openshift-marketplace';
+function getInstallOperatorLink() {
+  const v = getOCPVersion();
+
+  // Starting with OCP 4.20, the URL to OperatorHub/Software Catalog changed.
+  // If version is undefined, assume latest version.
+  if (!v || v.major > 4 || (v.major === 4 && v.minor >= 20)) {
+    return '/catalog/ns/default?keyword=Tempo&selectedId=tempo-product-redhat-operators-openshift-marketplace';
+  }
+  return '/operatorhub/all-namespaces?keyword=Tempo&details-item=tempo-product-redhat-operators-openshift-marketplace';
+}
+
 const createTempoStackLink =
   '/api-resource/all-namespaces/tempo.grafana.com~v1alpha1~TempoStack/instances';
 const createTempoMonolithicLink =
@@ -84,6 +94,8 @@ function TracesPageBody() {
 
 function TempoOperatorNotInstalledState() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const installOperatorLink = getInstallOperatorLink();
+
   return (
     <>
       <PageSection>
