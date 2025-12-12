@@ -30,7 +30,7 @@ const LIGHTSPEED = {
   operatorName: 'Lightspeed Operator',
 };
 
-describe('OpenShift Distributed Tracing UI Plugin tests', () => {
+describe('tracing-uiplugin', () => {
   before(() => {
     // Cleanup any existing resources from interrupted tests
     cy.log('Cleanup any existing resources from previous interrupted tests');
@@ -360,6 +360,26 @@ EOF`,
 
   after(() => {
     if (Cypress.env('SKIP_COO_INSTALL')) {
+      cy.log('Reinstall Tempo Operator');
+      cy.exec(
+        `oc get namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        { failOnNonZeroExit: false }
+      ).then((result) => {
+        if (result.code !== 0) {
+          cy.log('Tempo Operator namespace not found, reinstalling...');
+          operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
+          cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+            const text = $el.text();
+            expect(text).to.satisfy((t: string) =>
+              t.includes('ready for use') || t.includes('Operator installed successfully')
+            );
+          });
+          cy.log('Tempo Operator reinstalled successfully');
+        } else {
+          cy.log('Tempo Operator namespace exists, skipping reinstall');
+        }
+      });
+
       cy.log('Delete Lightspeed OLSConfig.');
       cy.executeAndDelete(
         `oc delete olsconfig cluster -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
@@ -440,7 +460,7 @@ EOF`,
 
   // Tests start from here.
   
-  it('Test Distributed Tracing UI plugin page without any Tempo instances', () => {
+  it('[Capability:UIPlugin][Capability:EmptyState] Test Distributed Tracing UI plugin page without any Tempo instances', () => {
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
@@ -474,7 +494,7 @@ EOF`,
       .and('have.text', 'Create a TempoMonolithic instance');
   });
 
-  it('Test Distributed Tracing UI plugin with Tempo instances and verify traces, span links using user having cluster-admin role', function () {
+  it('[Capability:UIPlugin][Capability:TraceVisualization][Capability:SpanLinks][Capability:RBAC] Test Distributed Tracing UI plugin with Tempo instances and verify traces, span links using user having cluster-admin role', function () {
     cy.log('Create TempoStack and TempoMonolithic instances');
     cy.exec(
       'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/chainsaw-tests',
@@ -675,7 +695,7 @@ EOF`,
     cy.pfCloseButtonIfExists('Close chip group');
   });
 
-  it('Test trace limit functionality', () => {
+  it('[Capability:UIPlugin][Capability:TraceLimits] Test trace limit functionality', () => {
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
@@ -709,7 +729,7 @@ EOF`,
     cy.verifyTraceCount(20);
   });
 
-  it('Test Distributed Traces Cutoffbox functionality', () => {
+  it('[Capability:UIPlugin][Capability:TraceVisualization][Capability:TimeRange] Test Distributed Traces Cutoffbox functionality', () => {
     // Setup the trace page with tempo instance and filters
     cy.setupTracePage('chainsaw-rbac / simplst', 'dev', 'Last 15 minutes', 'frontend');
     
@@ -747,7 +767,7 @@ EOF`,
     });
   });
 
-  it('Test AI Traces summary with OpenShift Lightspeed', () => {
+  it('[Capability:UIPlugin][Capability:AIIntegration][Capability:Lightspeed] Test AI Traces summary with OpenShift Lightspeed', () => {
     cy.log('Navigate to the /observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
@@ -830,5 +850,59 @@ EOF`,
       });
 
     cy.log('✓ AI Traces summary with OpenShift Lightspeed verified');
+    olsHelpers.waitForPopoverAndClose();
+  });
+
+  it('[Capability:OperatorLifecycle][Capability:Installation] Test "Install Tempo operator" if operator is not installed', () => {
+    cy.log('Delete Chainsaw test namespaces and resources');
+    cy.exec(
+      `for ns in $(oc get projects -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} | grep "chainsaw-" | sed 's|project.project.openshift.io/||'); do oc get opentelemetrycollectors.opentelemetry.io,tempostacks.tempo.grafana.com,tempomonolithics.tempo.grafana.com,pvc -n $ns -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null | xargs --no-run-if-empty -I {} oc patch {} -n $ns --type merge -p '{"metadata":{"finalizers":[]}}' --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; oc delete project $ns --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} || true; done`,
+      {
+        timeout: 300000,
+        failOnNonZeroExit: false
+      }
+    );
+
+    cy.log('Delete Tempo Operator namespace and wait for deletion');
+    cy.executeAndDelete(`oc delete namespace ${TEMPO.namespace} --wait=true --timeout=300s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+    cy.log('Delete Tempo Operator and wait for deletion');
+    cy.executeAndDelete(`oc delete operator tempo-product.${TEMPO.namespace} --wait=true --timeout=300s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+    cy.log('Delete Tempo CustomResourceDefinitions');
+    cy.executeAndDelete(`oc delete customresourcedefinitions.apiextensions.k8s.io tempomonolithics.tempo.grafana.com tempostacks.tempo.grafana.com --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
+
+    cy.log('Navigate to the observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.get('body').should('be.visible');
+    cy.wait(3000);
+
+    cy.log('Verify empty state shows "Tempo operator isn\'t installed yet"');
+    cy.pfEmptyState().within(() => {
+      cy.get('h1, h2, h3, h4, h5, h6').should('contain.text', 'Tempo operator isn\'t installed yet');
+    });
+
+    cy.log('Verify "Install Tempo operator" button is visible');
+    cy.pfButton('Install Tempo operator').should('be.visible');
+
+    cy.log('Click the "Install Tempo operator" button');
+    cy.pfButton('Install Tempo operator').click();
+
+    cy.log('Verify redirect to OperatorHub Tempo Operator page');
+    cy.url({ timeout: 30000 }).should('match', /\/(operatorhub|catalog)\//);
+    cy.url().should('match', /tempo/i);
+
+    cy.log('Wait for page body to be visible');
+    cy.get('body').should('be.visible');
+
+    cy.log('Wait for catalog page to load completely');
+    cy.wait(3000);
+
+    cy.log('Verify Tempo Operator details modal Install button exists');
+    // Support both old and new OpenShift versions
+    cy.get('[data-test="catalog-details-modal-cta"], [data-test-id="operator-install-btn"]', { timeout: 60000 }).should('exist');
+
+    cy.log('✓ "Install Tempo operator" button successfully redirects to OperatorHub');
   });
 });
