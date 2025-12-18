@@ -1,6 +1,6 @@
 module github.com/openshift/distributed-tracing-console-plugin
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/evanphx/json-patch v5.6.0+incompatible
@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/openshift/library-go v0.0.0-20240412173449-eb2f24c36528
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.29.3
