@@ -10,7 +10,8 @@
     "strict": true,
     "noUnusedLocals": true,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true
   },
   "include": ["src"],
   "exclude": ["node_modules"],
