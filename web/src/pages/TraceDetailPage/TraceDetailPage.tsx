@@ -28,6 +28,7 @@ import { MagicIcon } from '@patternfly/react-icons';
 import { dump as dumpYAML } from 'js-yaml';
 import { useResolvedExtensions } from '@openshift-console/dynamic-plugin-sdk';
 import { AttachmentTypes, isOpenOLSHandlerExtension, OpenOLSHandlerProps } from '../../hooks/ols';
+import { transformTrace } from './transformTrace';
 
 function TraceDetailPage() {
   return (
@@ -49,10 +50,6 @@ function TraceDetailPageBody() {
   const [tempo] = useTempoInstance();
   const location = useLocation();
   const [selectedSpanId] = useQueryParam('selectSpan', StringParam);
-  const [extensions, resolved] = useResolvedExtensions(isOpenOLSHandlerExtension);
-  const useOpenOLS = resolved
-    ? (extensions[0]?.properties?.provider as OpenOLSHandlerProps['provider'])
-    : undefined;
 
   return (
     <PersesTempoDatasourceWrapper
@@ -75,38 +72,80 @@ function TraceDetailPageBody() {
         className="mui-pf-theme"
         style={{ paddingTop: 0 }}
       >
-        <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
-          <PersesTracePanelWrapper
-            panelOptions={{
-              showIcons: 'always',
-              extra: useOpenOLS ? () => <LightspeedButton useOpenOLS={useOpenOLS} /> : undefined,
-            }}
-            definition={{
-              kind: 'Panel',
-              spec: {
-                display: { name: `Trace ${traceId}` },
-                plugin: {
-                  kind: 'TracingGanttChart',
-                  spec: {
-                    visual: {
-                      palette: {
-                        mode: 'categorical',
-                      },
-                    },
-                    links: {
-                      trace: linkToTrace(),
-                      span: linkToSpan(),
-                      attributes: spanAttributeLinks,
-                    },
-                    selectedSpanId,
-                  },
-                },
-              },
-            }}
-          />
-        </div>
+        <GanttChart traceId={traceId} selectedSpanId={selectedSpanId} />
       </PageSection>
     </PersesTempoDatasourceWrapper>
+  );
+}
+
+interface GanttChartProps {
+  traceId?: string;
+  selectedSpanId?: string | null;
+}
+
+function GanttChart({ traceId, selectedSpanId }: GanttChartProps) {
+  const traceName = useTraceName();
+  const { queryResults } = useDataQueries('TraceQuery');
+  const trace = queryResults[0]?.data?.trace;
+
+  const [extensions, resolved] = useResolvedExtensions(isOpenOLSHandlerExtension);
+  const useOpenOLS = resolved
+    ? (extensions[0]?.properties?.provider as OpenOLSHandlerProps['provider'])
+    : undefined;
+
+  // Due to some Perses <Panel> internals, useMemo() doesn't work reliably inside panelOptions.extra
+  // Therefore we'll perform the trace transformation in this component and pass it to <LightspeedButton> as a prop.
+  const lightspeedBtn = React.useMemo(() => {
+    if (!useOpenOLS) return null;
+    if (!trace) return null;
+
+    let traceYaml = '';
+    try {
+      const transformedTrace = transformTrace(trace);
+      if (!transformedTrace) {
+        return null;
+      }
+
+      traceYaml = dumpYAML(transformedTrace, { lineWidth: -1 });
+    } catch (e) {
+      console.error('Error while transforming trace', e);
+      return null;
+    }
+
+    return <LightspeedButton useOpenOLS={useOpenOLS} traceName={traceName} traceYaml={traceYaml} />;
+  }, [useOpenOLS, traceName, trace]);
+
+  return (
+    <div className="dt-plugin-perses-panel dt-plugin-gantt-chart">
+      <PersesTracePanelWrapper
+        panelOptions={{
+          showIcons: 'always',
+          extra: lightspeedBtn ? () => lightspeedBtn : undefined,
+        }}
+        definition={{
+          kind: 'Panel',
+          spec: {
+            display: { name: `Trace ${traceId}` },
+            plugin: {
+              kind: 'TracingGanttChart',
+              spec: {
+                visual: {
+                  palette: {
+                    mode: 'categorical',
+                  },
+                },
+                links: {
+                  trace: linkToTrace(),
+                  span: linkToSpan(),
+                  attributes: spanAttributeLinks,
+                },
+                selectedSpanId,
+              },
+            },
+          },
+        }}
+      />
+    </div>
   );
 }
 
@@ -150,20 +189,18 @@ function useTraceName(): string {
   return traceId ?? '';
 }
 
+const defaultPrompt =
+  'Analyze this distributed trace from my OpenShift cluster and summarize: errors, services needing investigation and performance bottlenecks.';
 const MAX_TRACE_SIZE_MB = 1;
 
 interface LightspeedButtonProps {
   useOpenOLS: OpenOLSHandlerProps['provider'];
+  traceName: string;
+  traceYaml: string;
 }
 
-function LightspeedButton({ useOpenOLS }: LightspeedButtonProps) {
+function LightspeedButton({ useOpenOLS, traceName, traceYaml }: LightspeedButtonProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
-  const { queryResults } = useDataQueries('TraceQuery');
-  const traceName = useTraceName();
-  const trace = queryResults[0]?.data?.trace ?? '';
-  const traceYaml = React.useMemo(() => {
-    return dumpYAML(trace, { lineWidth: -1 }).trim();
-  }, [trace]);
   const openOLS = useOpenOLS();
 
   const handleTraceAISummaryClick = () => {
@@ -174,9 +211,7 @@ function LightspeedButton({ useOpenOLS }: LightspeedButtonProps) {
       value: traceYaml,
       namespace: '',
     };
-    openOLS('Analyze this trace in my OpenShift cluster and highlight any errors and outliers.', [
-      traceAttachment,
-    ]);
+    openOLS(defaultPrompt, [traceAttachment]);
 
     // Workaround to trigger resizing of Lightspeed UI input field
     setTimeout(() => {
