@@ -26,7 +26,7 @@ import { useTimeRange } from '@perses-dev/plugin-system';
 import { getUnixTimeRange } from '@perses-dev/tempo-plugin';
 
 const k8sAttributesProcessorLink =
-  'https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/red_hat_build_of_opentelemetry/configuring-the-collector#kubernetes-attributes-processor_otel-collector-processors';
+  'https://docs.redhat.com/en/documentation/red_hat_build_of_opentelemetry/latest/html/configuring_the_collector/otel-collector-processors#otel-processors-kubernetes-attributes-processor_otel-collector-processors';
 
 const serviceNameFilter = { content: 'Service Name', value: 'serviceName' };
 const spanNameFilter = { content: 'Span Name', value: 'spanName' };
