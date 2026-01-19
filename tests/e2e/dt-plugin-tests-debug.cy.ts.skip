@@ -21,6 +21,12 @@ const TEMPO = {
   operatorName: 'Tempo Operator',
 };
 
+const LIGHTSPEED = {
+  namespace: 'openshift-lightspeed',
+  packageName: 'lightspeed-operator',
+  operatorName: 'Lightspeed Operator',
+};
+
 describe('OpenShift Distributed Tracing UI Plugin Debug Tests (NO SETUP/TEARDOWN)', () => {
 
   before(() => {
