@@ -42,7 +42,7 @@ describe('tracing-uiplugin', () => {
 
       cy.log('Delete Lightspeed secret if exists.');
       cy.executeAndDelete(
-        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        `oc delete secret openai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
       );
 
       cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
@@ -74,7 +74,7 @@ describe('tracing-uiplugin', () => {
 
       cy.log('Delete Lightspeed secret if exists.');
       cy.executeAndDelete(
-        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        `oc delete secret openai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
       );
 
       cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
@@ -387,7 +387,7 @@ EOF`,
 
       cy.log('Delete Lightspeed secret.');
       cy.executeAndDelete(
-        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        `oc delete secret openai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
       );
 
       cy.log('Delete Distributed Tracing UI Plugin instance.');
@@ -419,7 +419,7 @@ EOF`,
 
       cy.log('Delete Lightspeed secret.');
       cy.executeAndDelete(
-        `oc delete secret rhelai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        `oc delete secret openai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
       );
 
       cy.log('Delete Distributed Tracing UI Plugin instance.');
@@ -552,11 +552,11 @@ EOF`,
     // Verify trace ID and span ID have valid format for first link (they will be different each time)
     cy.contains('.MuiTypography-h5', 'trace ID').first().next('.MuiTypography-body1').invoke('text').then((traceId) => {
       cy.log(`First link trace ID: ${traceId.trim()}`);
-      expect(traceId.trim()).to.match(/^[A-F0-9]{32}$/);
+      expect(traceId.trim()).to.match(/^[A-Fa-f0-9]{32}$/);
     });
     cy.contains('.MuiTypography-h5', 'span ID').first().next('.MuiTypography-body1').invoke('text').then((spanId) => {
       cy.log(`First link span ID: ${spanId.trim()}`);
-      expect(spanId.trim()).to.match(/^[A-F0-9]{16}$/);
+      expect(spanId.trim()).to.match(/^[A-Fa-f0-9]{16}$/);
     });
     cy.log('Click on the first trace ID link to navigate to that trace');
     cy.contains('.MuiTypography-h5', 'trace ID').first().next('.MuiTypography-body1').invoke('text').then((traceId) => {
@@ -811,7 +811,7 @@ EOF`,
     cy.log('Verify the prompt input textarea has the expected text');
     cy.get(OLS_SELECTORS.promptInput)
       .should('be.visible')
-      .and('have.value', 'Analyze this trace in my OpenShift cluster and highlight any errors and outliers.');
+      .and('have.value', 'Analyze this distributed trace from my OpenShift cluster and summarize: errors, services needing investigation and performance bottlenecks.');
 
     cy.log('Verify the trace context attachment is present');
     cy.get('.ols-plugin__context-label-text')
