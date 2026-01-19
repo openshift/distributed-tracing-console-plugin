@@ -7,14 +7,14 @@ spec:
   llm:
     providers:
       - name: tracing_ai
-        type: rhelai_vllm
+        type: openai
         url: ($LIGHTSPEED_PROVIDER_URL)
         credentialsSecretRef:
-          name: rhelai-token
+          name: openai-token
         models:
-          - name: "meta-llama/Llama-3.3-70B-Instruct"
+          - name: "gpt-4o"
   ols:
-    defaultModel: meta-llama/Llama-3.3-70B-Instruct
+    defaultModel: gpt-4o
     defaultProvider: tracing_ai
     deployment:
       replicas: 1
