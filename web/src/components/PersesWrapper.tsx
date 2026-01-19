@@ -101,7 +101,7 @@ interface PersesWrapperProps {
 }
 
 /**
- * PersesWrapper initializes the MaterialUI theme, Perses plugin registry, and query client.
+ * PersesWrapper initializes the MUI theme, Perses router provider and Perses plugin registry.
  */
 export function PersesWrapper({ children }: PersesWrapperProps) {
   const { theme } = usePatternFlyTheme();
