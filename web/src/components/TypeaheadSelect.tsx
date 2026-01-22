@@ -1,14 +1,26 @@
-import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  FunctionComponent,
+  Ref,
+  MouseEvent as ReactMouseEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  FormEvent as ReactFormEvent,
+  CSSProperties,
+} from 'react';
 import {
-  Select,
   Button,
+  MenuToggle,
+  MenuToggleElement,
+  MenuToggleProps,
+  Select,
   SelectList,
   SelectOption,
   SelectOptionProps,
   SelectProps,
-  MenuToggle,
-  MenuToggleElement,
-  MenuToggleProps,
   TextInputGroup,
   TextInputGroupMain,
   TextInputGroupUtilities,
@@ -17,11 +29,12 @@ import {
 import { TimesIcon } from '@patternfly/react-icons';
 
 /**
- * based on https://github.com/patternfly/patternfly-react/blob/b9815886da3adc7a96bc2d48adacf86e8a752e61/packages/react-templates/src/components/Select/TypeaheadSelect.tsx
+ * based on https://github.com/patternfly/patternfly-react/blob/38727b625e70363c36b749541736ea46bf5970dc/packages/react-templates/src/components/Select/TypeaheadSelect.tsx
  * MIT License, Copyright (c) Red Hat, Inc.
  *
  * Custom modifications:
- * - in useEffect(..., [initialOptions]): always run setInputValue()
+ * - in useEffect(..., [initialOptions]): always run setInputValue(), otherwise the display value is wrong if the selection in initialOptions changes
+ * - move openMenu() to top, wrap in useCallback(), and declare it as dependency of useEffect(..., [])
  * - add allowClear prop
  * - add loading prop
  */
@@ -47,7 +60,7 @@ export interface TypeaheadSelectProps extends Omit<
       | React.MouseEvent<Element, MouseEvent>
       | React.KeyboardEvent<HTMLInputElement>
       | undefined,
-    selection: string | number,
+    selection: TypeaheadSelectOption['value'],
   ) => void;
   /** Callback triggered when the select opens or closes. */
   onToggle?: (nextIsOpen: boolean) => void;
@@ -86,7 +99,7 @@ export interface TypeaheadSelectProps extends Omit<
 const defaultNoOptionsFoundMessage = (filter: string) => `No results found for "${filter}"`;
 const defaultCreateOptionMessage = (newValue: string) => `Create "${newValue}"`;
 
-export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> = ({
+export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
   innerRef,
   initialOptions,
   onSelect,
@@ -198,7 +211,9 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
   useEffect(() => {
     // If the selected option changed and the current input value is the previously selected item, update the displayed value.
     const selectedOption = initialOptions.find((o) => o.selected);
+    // if (inputValue === selected && selectedOption?.value !== selected) {
     setInputValue(String(selectedOption?.content ?? ''));
+    // }
     // Only update when options change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOptions]);
@@ -233,10 +248,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
   };
 
   const selectOption = (
-    _event:
-      | React.MouseEvent<Element, MouseEvent>
-      | React.KeyboardEvent<HTMLInputElement>
-      | undefined,
+    _event: ReactMouseEvent<Element, MouseEvent> | ReactKeyboardEvent<HTMLInputElement> | undefined,
     option: TypeaheadSelectOption,
   ) => {
     if (onSelect) onSelect(_event, option.value);
@@ -249,7 +261,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
   };
 
   const _onSelect = (
-    _event: React.MouseEvent<Element, MouseEvent> | undefined,
+    _event: ReactMouseEvent<Element, MouseEvent> | undefined,
     value: string | number | undefined,
   ) => {
     if (value && value !== NO_RESULTS) {
@@ -260,7 +272,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
     }
   };
 
-  const onTextInputChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
+  const onTextInputChange = (_event: ReactFormEvent<HTMLInputElement>, value: string) => {
     setInputValue(value);
     if (onInputChange) onInputChange(value);
     setFilterValue(value);
@@ -314,7 +326,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
     setActiveAndFocusedItem(indexToFocus);
   };
 
-  const defaultOnInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const defaultOnInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     const focusedItem = focusedItemIndex !== null ? selectOptions[focusedItemIndex] : null;
 
     switch (event.key) {
@@ -340,7 +352,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
     }
   };
 
-  const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const onInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (onInputKeyDownProp) {
       onInputKeyDownProp(event);
     } else {
@@ -364,7 +376,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
     if (onClearSelection) onClearSelection();
   };
 
-  const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
+  const toggle = (toggleRef: Ref<MenuToggleElement>) => (
     <MenuToggle
       ref={toggleRef}
       variant="typeahead"
@@ -376,7 +388,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
       style={
         {
           width: toggleWidth,
-        } as React.CSSProperties
+        } as CSSProperties
       }
       {...toggleProps}
     >
@@ -450,7 +462,7 @@ export const TypeaheadSelectBase: React.FunctionComponent<TypeaheadSelectProps> 
 TypeaheadSelectBase.displayName = 'TypeaheadSelectBase';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const TypeaheadSelect = forwardRef((props: TypeaheadSelectProps, ref: React.Ref<any>) => (
+export const TypeaheadSelect = forwardRef((props: TypeaheadSelectProps, ref: Ref<any>) => (
   <TypeaheadSelectBase {...props} innerRef={ref} />
 ));
 
