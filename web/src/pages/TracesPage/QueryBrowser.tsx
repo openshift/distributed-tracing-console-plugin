@@ -11,9 +11,10 @@ import {
 } from '../../components/PersesWrapper';
 import { NumberParam, StringParam, useQueryParam, withDefault } from 'use-query-params';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
-import { useTimeRange } from '@perses-dev/plugin-system';
+import { useDataQueries, useTimeRange } from '@perses-dev/plugin-system';
 import { FilterToolbar } from './Toolbar/FilterToolbar';
 import { DEFAULT_LIMIT, LimitSelect } from './LimitSelect';
+import { ClosableAlert } from '../../components/ClosableAlert';
 
 export function QueryBrowser() {
   return (
@@ -73,11 +74,37 @@ export function QueryBrowserBody() {
             tempo={tempo}
             queries={[{ kind: 'TempoTraceQuery', spec: { query, limit } }]}
           >
-            <ScatterPlot />
-            <TraceTable setQuery={setQuery} />
+            <TraceSearchResults setQuery={setQuery} />
           </PersesTempoDatasourceWrapper>
         </Stack>
       </PageSection>
+    </>
+  );
+}
+
+interface TraceSearchResultsProps {
+  setQuery: (query: string) => void;
+}
+
+function TraceSearchResults({ setQuery }: TraceSearchResultsProps) {
+  const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
+  const { queryResults } = useDataQueries('TraceQuery');
+  const hasMoreResults = queryResults.some((traceData) => traceData.data?.metadata?.hasMoreResults);
+
+  return (
+    <>
+      {hasMoreResults && (
+        <ClosableAlert
+          variant="warning"
+          ouiaId="WarningAlert"
+          isInline
+          title={t(
+            'Not all matching traces are currently visible. Increase the display limit to view more.',
+          )}
+        />
+      )}
+      <ScatterPlot />
+      <TraceTable setQuery={setQuery} />
     </>
   );
 }

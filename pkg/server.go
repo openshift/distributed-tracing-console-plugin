@@ -18,6 +18,7 @@ import (
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/openshift/distributed-tracing-console-plugin/pkg/api"
 	"github.com/openshift/distributed-tracing-console-plugin/pkg/proxy"
@@ -51,12 +52,16 @@ func (pluginConfig *PluginConfig) MarshalJSON() ([]byte, error) {
 }
 
 func Start(cfg *Config) {
-	// Uncomment the following line for local development:
-	// k8sconfig, err := clientcmd.BuildConfigFromFlags("", "/home/<username>/.kube/config")
-
-	k8sconfig, err := rest.InClusterConfig()
-	if err != nil {
-		panic(fmt.Errorf("cannot get in cluster config: %w", err))
+	k8sconfig, errInCluster := rest.InClusterConfig()
+	if errInCluster != nil {
+		// Try local kubeconfig file
+		var errKubeconfig error
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{}
+		k8sconfig, errKubeconfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides).ClientConfig()
+		if errKubeconfig != nil {
+			panic(fmt.Errorf("cannot get in-cluster config: %w or kubeconfig: %w", errInCluster, errKubeconfig))
+		}
 	}
 
 	k8sclient, err := dynamic.NewForConfig(k8sconfig)
