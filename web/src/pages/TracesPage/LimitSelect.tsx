@@ -23,7 +23,7 @@ export function LimitSelect({ limit, setLimit }: LimitSelectProps) {
 
   return (
     <Form>
-      <FormGroup fieldId="limit-select" label={t('Limit traces')}>
+      <FormGroup fieldId="limit-select" label={t('Max traces')}>
         <ControlledSimpleSelect
           id="limit-select"
           toggleWidth="8em"

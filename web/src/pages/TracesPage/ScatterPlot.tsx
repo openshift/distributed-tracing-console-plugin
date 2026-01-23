@@ -19,7 +19,7 @@ export function ScatterPlot() {
   }
 
   return (
-    <div>
+    <div style={{ marginTop: '-0.5rem' }}>
       <Flex>
         <FlexItem align={{ default: 'alignRight' }}>
           <Button variant="link" onClick={() => setVisible(!isVisible)}>

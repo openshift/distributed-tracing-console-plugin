@@ -1,3 +1,8 @@
+VERSION     ?= latest
+PLATFORMS   ?= linux/arm64,linux/amd64
+ORG         ?= openshift-observability-ui
+IMAGE       ?= quay.io/${ORG}/distributed-tracing-console-plugin:${VERSION}
+
 .PHONY: install-frontend
 install-frontend:
 	cd web && npm install
@@ -56,3 +61,9 @@ build-dev-image:
 
 .PHONY: install
 install: install-frontend install-backend
+
+.PHONY: podman-cross-build
+podman-cross-build:
+	podman manifest create -a ${IMAGE}
+	podman build --platform=${PLATFORMS} --manifest ${IMAGE} -f Dockerfile.dev
+	podman manifest push ${IMAGE}
