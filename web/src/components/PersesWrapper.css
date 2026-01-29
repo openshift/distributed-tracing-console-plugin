@@ -34,3 +34,27 @@
 .MuiMenu-root .MuiMenuItem-root:hover {
     background-color: light-dark(var(--pf-v5-global--BackgroundColor--200), var(--pf-v5-global--BackgroundColor--400, transparent));
 }
+
+.mui-pf-theme .MuiSvgIcon-root {
+    color: var(--pf-v5-global--Color--200);
+}
+
+/* When the MUI Tooltip is open, it is attached directly to <body> */
+.MuiTooltip-tooltip {
+    background-color: light-dark(var(--pf-v5-global--BackgroundColor--dark-100), var(--pf-v5-global--BackgroundColor--dark-300)) !important;
+    color: var(--pf-v5-global--Color--light-100);
+    font-size: var(--pf-v5-global--FontSize--sm);
+    padding: var(--pf-v5-global--spacer--sm) !important;
+}
+
+/* <InfoTooltip> of Perses adds a nested <Typography> to the content */
+.MuiTooltip-tooltip span {
+    color: var(--pf-v5-global--Color--light-100);
+    font-size: var(--pf-v5-global--FontSize--sm);
+    font-weight: var(--pf-v5-global--FontWeight--normal);
+}
+
+/* required because of <InfoTooltip> styling */
+.MuiTooltip-tooltip .MuiTooltip-arrow {
+    color: light-dark(var(--pf-v5-global--BackgroundColor--dark-100), var(--pf-v5-global--BackgroundColor--dark-300)) !important;
+}

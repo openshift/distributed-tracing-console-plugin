@@ -17,6 +17,7 @@ import { TempoInstanceDropdown } from '../../../components/TempoInstanceDropdown
 import { filterToTraceQL } from './Filter/traceql_from_filter';
 import { TraceQLFilter } from './TraceQLFilter';
 import { traceQLToFilter } from './Filter/traceql_to_filter';
+import './FilterToolbar.css';
 
 interface FilterToolbarProps {
   tempo: TempoInstance | undefined;
@@ -32,7 +33,10 @@ export function FilterToolbar(props: FilterToolbarProps) {
   const [showAttributeFilters, setShowAttributeFilters] = useState(isSimpleTraceQLQuery(query));
 
   return (
-    <Toolbar customChipGroupContent={<></>} className="co-toolbar-no-padding">
+    <Toolbar
+      customChipGroupContent={<div className="df-filter-toolbar-clearallfilters" />}
+      className="df-filter-toolbar co-toolbar-no-padding"
+    >
       <ToolbarContent>
         <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
         <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">

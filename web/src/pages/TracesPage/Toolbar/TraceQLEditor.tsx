@@ -36,14 +36,14 @@ export const codemirrorTheme = EditorView.theme({
 export function TraceQLEditor({ id, tempo, query, setQuery, runQuery }: TraceQLEditorProps) {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
   const { theme } = usePatternFlyTheme();
-  const { timeRange } = useTimeRange();
+  const { absoluteTimeRange } = useTimeRange();
 
   const traceQLExtension = useMemo(() => {
     const client = tempo
       ? TempoDatasource.createClient({ directUrl: getProxyURLFor(tempo) }, {})
       : undefined;
-    return TraceQLExtension({ client, timeRange });
-  }, [tempo, timeRange]);
+    return TraceQLExtension({ client, timeRange: absoluteTimeRange });
+  }, [tempo, absoluteTimeRange]);
 
   const keyBindings = useMemo(
     () =>
