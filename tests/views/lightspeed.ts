@@ -32,6 +32,70 @@ export const olsHelpers = {
   },
 
   /**
+   * Submit a prompt in Lightspeed popover
+   * Supports both old and new Lightspeed versions
+   */
+  submitPrompt: () => {
+    cy.log('Submit the query (support both old and new Lightspeed versions)');
+
+    // Try button click for older versions, fallback to Enter key for newer versions
+    cy.get('body').then(($body) => {
+      if ($body.find('button.ols-plugin__chat-prompt-button').length > 0) {
+        cy.log('Using button click (older Lightspeed version)');
+        cy.get('button.ols-plugin__chat-prompt-button')
+          .should('be.visible')
+          .click();
+      } else {
+        cy.log('Using Enter key (newer Lightspeed version)');
+        cy.get(OLS_SELECTORS.promptInput)
+          .should('be.visible')
+          .type('{enter}');
+      }
+    });
+  },
+
+  /**
+   * Wait for AI response to be visible
+   * Supports both old (.pf-chatbot__message--bot) and new (.ols-plugin__chat-entry--ai) Lightspeed versions
+   * @param timeout - Maximum time to wait for response in milliseconds (default: 30000)
+   */
+  waitForAIResponse: (timeout = 30000) => {
+    cy.log('Wait for AI response (support both old and new Lightspeed versions)');
+
+    // Check for both old and new selectors
+    cy.get('body', { timeout }).then(($body) => {
+      if ($body.find('.ols-plugin__chat-entry--ai').length > 0) {
+        cy.log('Found AI response using new selector (.ols-plugin__chat-entry--ai)');
+        return cy.get('.ols-plugin__chat-entry--ai', { timeout }).should('be.visible');
+      } else if ($body.find('.pf-chatbot__message--bot').length > 0) {
+        cy.log('Found AI response using old selector (.pf-chatbot__message--bot)');
+        return cy.get('.pf-chatbot__message--bot', { timeout }).should('be.visible');
+      } else {
+        // Fallback: wait for either selector with a combined selector
+        cy.log('Waiting for AI response with combined selector');
+        return cy.get('.ols-plugin__chat-entry--ai, .pf-chatbot__message--bot', { timeout }).should('be.visible');
+      }
+    });
+  },
+
+  /**
+   * Get the AI response message element
+   * Supports both old and new Lightspeed versions
+   */
+  getAIResponse: () => {
+    cy.log('Get AI response (support both old and new Lightspeed versions)');
+
+    // Return the appropriate selector based on what's in the DOM
+    return cy.get('body').then(($body) => {
+      if ($body.find('.ols-plugin__chat-entry--ai').length > 0) {
+        return cy.get('.ols-plugin__chat-entry--ai');
+      } else {
+        return cy.get('.pf-chatbot__message--bot');
+      }
+    });
+  },
+
+  /**
    * Wait for Lightspeed popover to appear and close it
    * Useful after Lightspeed operator installation when popover opens by default
    * Does not fail if popover is not found within the timeout period
