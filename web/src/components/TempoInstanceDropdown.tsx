@@ -5,7 +5,7 @@ import { TempoResource, useTempoResources } from '../hooks/useTempoResources';
 import { TempoInstance } from '../hooks/useTempoInstance';
 import { ResourceIcon } from '@openshift-console/dynamic-plugin-sdk';
 import { ControlledTypeaheadSelect } from './ControlledSelects';
-import { TypeaheadSelectOption } from '@patternfly/react-templates';
+import { TypeaheadSelectOption } from './TypeaheadSelect';
 import { HelpIcon } from '@patternfly/react-icons';
 
 interface TempoInstanceDropdownProps {
