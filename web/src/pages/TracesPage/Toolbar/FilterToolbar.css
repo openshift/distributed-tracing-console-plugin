@@ -1,4 +1,13 @@
-/* In the PatternFly toolbar, remove whitespace created by an empty <div> which usually shows the "Clear all filters" button (but is hidden in the UI). */
-.df-filter-toolbar div:has(> .df-filter-toolbar-clearallfilters) {
+/*
+ * Hide the placeholder div used for customChipGroupContent.
+ *
+ * In PatternFly 5, customChipGroupContent is rendered as a sibling to chip groups
+ * inside the toolbar content area. We must hide only this specific element,
+ * NOT its parent (which would also hide the chips).
+ *
+ * Note: PatternFly 6 uses customLabelGroupContent with a different DOM structure
+ * where the parent can be safely hidden. See main branch for PF6 approach.
+ */
+.df-filter-toolbar-clearallfilters {
     display: none;
 }
