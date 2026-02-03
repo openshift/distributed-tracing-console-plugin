@@ -16,5 +16,3 @@ spec:
   ols:
     defaultModel: gpt-4o
     defaultProvider: tracing_ai
-    deployment:
-      replicas: 1

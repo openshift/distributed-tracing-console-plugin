@@ -531,15 +531,17 @@ EOF`,
     cy.pfCheckMenuItem('grpc-rbac-2');
     cy.muiFirstTraceLink().click();
     cy.findByTestId('span-duration-bar').eq(1).click();
+    // Wait for attributes panel to load
+    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
       'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
-      'k8s.namespace.name': { 
+      'k8s.namespace.name': {
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
-        optional: true 
+        optional: true
       },
-      'service.name': { 
+      'service.name': {
         value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
     }, 'TempoStack');
@@ -569,15 +571,17 @@ EOF`,
     });
     cy.log('Verify navigation by checking trace attributes');
     cy.findByTestId('span-duration-bar').eq(1).click();
+    // Wait for attributes panel to load
+    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
       'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
-      'k8s.namespace.name': { 
+      'k8s.namespace.name': {
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
-        optional: true 
+        optional: true
       },
-      'service.name': { 
+      'service.name': {
         value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
     }, 'TempoStack');
@@ -616,15 +620,17 @@ EOF`,
     });
     cy.log('Verify navigation by checking trace attributes');
     cy.findByTestId('span-duration-bar').eq(1).click();
+    // Wait for attributes panel to load
+    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
       'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
-      'k8s.namespace.name': { 
+      'k8s.namespace.name': {
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
-        optional: true 
+        optional: true
       },
-      'service.name': { 
+      'service.name': {
         value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
     }, 'TempoStack');
@@ -647,15 +653,17 @@ EOF`,
     cy.muiFirstTraceLink().click();
     cy.get('[data-testid="LaunchIcon"]').first().click();
     cy.get('a[role="menuitem"]').contains('Open linked span').first().click();
+    // Wait for attributes panel to load
+    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
       'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
-      'k8s.namespace.name': { 
+      'k8s.namespace.name': {
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
-        optional: true 
+        optional: true
       },
-      'service.name': { 
+      'service.name': {
         value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
     }, 'TempoMonolithic');
@@ -677,15 +685,17 @@ EOF`,
     cy.pfCheckMenuItem('grpc-rbac-2');
     cy.muiFirstTraceLink().click();
     cy.findByTestId('span-duration-bar').eq(1).click();
+    // Wait for attributes panel to load
+    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
       'network.peer.address': { value: '1.2.3.4' },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
-      'k8s.namespace.name': { 
+      'k8s.namespace.name': {
         value: (text) => ['chainsaw-test-rbac-1', 'chainsaw-test-rbac-2', 'chainsaw-mono-rbac-1', 'chainsaw-mono-rbac-2'].includes(text),
-        optional: true 
+        optional: true
       },
-      'service.name': { 
+      'service.name': {
         value: (text) => ['http-rbac-1', 'http-rbac-2', 'grpc-rbac-1', 'grpc-rbac-2'].includes(text)
       }
     }, 'TempoMonolithic');
@@ -796,7 +806,7 @@ EOF`,
     cy.muiFirstTraceLink().click();
 
     cy.log('Wait for trace details to load and click Ask OpenShift Lightspeed button');
-    cy.get('button.pf-v6-c-button.pf-m-plain[aria-label="Ask OpenShift Lightspeed"]', { timeout: 10000 })
+    cy.get('button.pf-c-button.pf-m-plain[aria-label="Ask OpenShift Lightspeed"], button.pf-v5-c-button.pf-m-plain[aria-label="Ask OpenShift Lightspeed"], button.pf-v6-c-button.pf-m-plain[aria-label="Ask OpenShift Lightspeed"]', { timeout: 10000 })
       .filter(':visible')
       .first()
       .click();
@@ -818,18 +828,15 @@ EOF`,
       .should('be.visible')
       .and('have.text', 'frontend: /dispatch');
 
-    cy.log('Click the Send button to submit the query');
-    cy.get('.pf-chatbot__message-bar-actions button[aria-label="Send"]')
-      .should('be.visible')
-      .click();
+    olsHelpers.submitPrompt();
 
     cy.log('Wait for AI response and verify trace analysis content');
-    cy.get('.pf-chatbot__message--bot', { timeout: 30000 })
-      .should('be.visible')
-      .and('contain.text', 'trace');
+    olsHelpers.waitForAIResponse();
+    olsHelpers.getAIResponse()
+      .should('contain.text', 'trace');
 
     cy.log('Verify AI response contains analysis of trace services');
-    cy.get('.pf-chatbot__message--bot')
+    olsHelpers.getAIResponse()
       .should(($message) => {
         const text = $message.text().toLowerCase();
         // Verify at least 2 of the key services are mentioned
@@ -843,7 +850,7 @@ EOF`,
       });
 
     cy.log('Verify AI response mentions Redis or database interactions');
-    cy.get('.pf-chatbot__message--bot')
+    olsHelpers.getAIResponse()
       .should(($message) => {
         const text = $message.text().toLowerCase();
         expect(text).to.match(/redis|database|mysql/);
