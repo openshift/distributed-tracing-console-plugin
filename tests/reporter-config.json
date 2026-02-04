@@ -2,7 +2,9 @@
   "reporterEnabled": "mocha-junit-reporter, mochawesome",
   "mochaJunitReporterReporterOptions": {
     "mochaFile": "./gui_test_screenshots/junit_cypress-[hash].xml",
-    "toConsole": false
+    "toConsole": false,
+    "testsuitesTitle": "tracing-uiplugin",
+    "rootSuiteTitle": "tracing-uiplugin"
   },
   "mochawesomeReporterOptions": {
     "reportDir": "./gui_test_screenshots/",
