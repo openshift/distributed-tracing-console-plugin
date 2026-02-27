@@ -511,11 +511,12 @@ EOF`,
     });
 
     cy.log('Navigate to the /observe/traces page');
+    // Force a clean navigation after the long chainsaw exec to handle any console auto-reloads
+    cy.reload();
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
-    cy.get('body').should('be.visible');
-    // Wait for the page to fully render
-    cy.wait(3000);
+    // Wait for the Tempo instance typeahead to confirm the page is fully loaded
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
     cy.log('Assert traces in TempoStack instance.');
     cy.pfTypeahead('Select a Tempo instance').click();
     cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
@@ -530,6 +531,8 @@ EOF`,
     cy.pfCheckMenuItem('grpc-rbac-1');
     cy.pfCheckMenuItem('grpc-rbac-2');
     cy.muiFirstTraceLink().click();
+    // Wait for trace detail page to fully render span bars before clicking
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
@@ -570,6 +573,8 @@ EOF`,
       cy.log(`✓ Successfully navigated to trace: ${cleanTraceId}`);
     });
     cy.log('Verify navigation by checking trace attributes');
+    // Wait for trace detail page to fully render span bars after navigation
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
@@ -602,6 +607,8 @@ EOF`,
     cy.pfCheckMenuItem('grpc-rbac-1');
     cy.pfCheckMenuItem('grpc-rbac-2');
     cy.muiFirstTraceLink().click();
+    // Wait for trace detail page to fully render span bars before clicking
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
     cy.log('Click on the Links tab again');
     cy.get('button.MuiTab-root').contains('Links').click();
@@ -619,6 +626,8 @@ EOF`,
       });
     });
     cy.log('Verify navigation by checking trace attributes');
+    // Wait for trace detail page to fully render span bars after navigation
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
@@ -684,6 +693,8 @@ EOF`,
     cy.pfCheckMenuItem('grpc-rbac-1');
     cy.pfCheckMenuItem('grpc-rbac-2');
     cy.muiFirstTraceLink().click();
+    // Wait for trace detail page to fully render span bars before clicking
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
@@ -858,6 +869,71 @@ EOF`,
 
     cy.log('✓ AI Traces summary with OpenShift Lightspeed verified');
     olsHelpers.waitForPopoverAndClose();
+  });
+
+  it('[Capability:UIPlugin][Capability:TraceQLQuery][Capability:EmptyState] Test TraceQL query with no results and clear filters functionality', () => {
+    cy.log('Navigate to the /observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.get('body').should('be.visible');
+    cy.wait(3000);
+
+    cy.log('Select chainsaw-rbac/simplst Tempo instance');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+    cy.log('Select tenant: dev');
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    cy.log('Click Show query button');
+    cy.pfButton('Show query').should('be.visible').click();
+    cy.wait(1000);
+
+    cy.log('Clear existing query and enter new TraceQL query: { name = "/test" }');
+    // CodeMirror is a React-controlled component (value={query}, onChange={setQuery}).
+    // DOM mutations like execCommand have no effect. We must use CodeMirror's EditorView
+    // dispatch API which triggers the onChange callback and updates React state.
+    // The EditorView is accessed via: .cm-content -> cmView -> rootView -> view
+    cy.get('.cm-content[contenteditable="true"]', { timeout: 10000 }).then(($content) => {
+      const contentView = ($content[0] as any).cmView;
+      expect(contentView, 'CodeMirror ContentView should be accessible').to.not.be.undefined;
+      const editorView = contentView.rootView?.view;
+      expect(editorView, 'CodeMirror EditorView should be accessible').to.not.be.undefined;
+      editorView.dispatch({
+        changes: { from: 0, to: editorView.state.doc.length, insert: '{ name = "/test" }' }
+      });
+    });
+    cy.wait(500);
+
+    cy.log('Verify query text was entered correctly');
+    cy.get('.cm-line', { timeout: 10000 })
+      .should('contain.text', 'name');
+
+    cy.log('Click Run query button');
+    cy.pfButton('Run query').should('be.visible').click();
+    cy.wait(3000);
+
+    cy.log('Verify empty state message appears');
+    cy.pfEmptyState().within(() => {
+      cy.get('.pf-v6-c-empty-state__body, .pf-v5-c-empty-state__body, .pf-c-empty-state__body')
+        .should('be.visible')
+        .and('contain.text', 'No results match this query criteria. Clear all filters and try again.');
+    });
+
+    cy.log('Click Clear all filters button');
+    cy.pfButton('Clear all filters').should('be.visible').click();
+    cy.wait(2000);
+
+    cy.log('Verify query text box has been reset to {}');
+    cy.get('.cm-content[contenteditable="true"]')
+      .should('be.visible')
+      .invoke('text')
+      .should('match', /^\s*\{\s*\}\s*$/);
+
+    cy.log('Verify trace details page is now visible with traces');
+    cy.get('a.MuiLink-root', { timeout: 10000 }).should('be.visible');
+    cy.log('✓ TraceQL query with no results and clear filters functionality verified');
   });
 
   it('[Capability:OperatorLifecycle][Capability:Installation] Test "Install Tempo operator" if operator is not installed', () => {
