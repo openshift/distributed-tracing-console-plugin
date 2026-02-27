@@ -712,11 +712,14 @@ Cypress.Commands.add(
   'setupTracePage',
   (tempoInstance: string, tenant: string, timeframe?: string, serviceFilter?: string) => {
     cy.log(`Setting up trace page: ${tempoInstance} / ${tenant}`);
-    
+
     // Navigate to traces page
+    cy.reload();
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
-    
+    // Wait for the Tempo instance typeahead to confirm the page is fully loaded
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
+
     // Select Tempo instance
     cy.pfTypeahead('Select a Tempo instance').click();
     cy.pfSelectMenuItem(tempoInstance).click();
@@ -747,6 +750,8 @@ Cypress.Commands.add(
   () => {
     cy.log('Navigating to trace details');
     cy.muiFirstTraceLink().click();
+    // Wait for trace detail page to fully render span bars before clicking
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
     cy.log('✓ In trace details view');
   },
