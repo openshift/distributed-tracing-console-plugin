@@ -26,9 +26,9 @@ import {
   GlobalDatasourceResource,
   TraceData,
   UnknownSpec,
+  DatasourceApi,
 } from '@perses-dev/core';
 import {
-  DatasourceApi,
   DatasourceStoreProvider,
   Panel,
   PanelProps as DashboardPanelProps,
