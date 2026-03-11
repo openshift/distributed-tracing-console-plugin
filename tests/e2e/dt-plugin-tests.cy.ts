@@ -576,6 +576,8 @@ EOF`,
     // Wait for trace detail page to fully render span bars after navigation
     cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
+    // Switch to the Attributes tab (the Links tab may still be selected from the previous trace)
+    cy.get('button.MuiTab-root').contains('Attributes').click();
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
@@ -629,6 +631,8 @@ EOF`,
     // Wait for trace detail page to fully render span bars after navigation
     cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
+    // Switch to the Attributes tab (the Links tab may still be selected from the previous trace)
+    cy.get('button.MuiTab-root').contains('Attributes').click();
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
