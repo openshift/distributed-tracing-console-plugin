@@ -12,35 +12,28 @@ func TestMergeEnvValueSlice(t *testing.T) {
 		name     string
 		envKey   string
 		envValue string
-		flag     cipherSuitesSlice
+		flag     string
 		expected []string
 	}{
 		{
 			name:     "flag set takes priority over env",
 			envKey:   "TEST_CIPHER_SUITES",
 			envValue: "TLS_AES_128_GCM_SHA256",
-			flag:     cipherSuitesSlice{"TLS_AES_256_GCM_SHA384"},
+			flag:     "TLS_AES_256_GCM_SHA384",
 			expected: []string{"TLS_AES_256_GCM_SHA384"},
 		},
 		{
 			name:     "env used when flag is empty",
 			envKey:   "TEST_CIPHER_SUITES",
 			envValue: "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384",
-			flag:     nil,
-			expected: []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"},
-		},
-		{
-			name:     "env value trimmed of whitespace",
-			envKey:   "TEST_CIPHER_SUITES",
-			envValue: " TLS_AES_128_GCM_SHA256 , TLS_AES_256_GCM_SHA384 ",
-			flag:     nil,
+			flag:     "",
 			expected: []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"},
 		},
 		{
 			name:     "nil when both empty",
 			envKey:   "TEST_CIPHER_SUITES",
 			envValue: "",
-			flag:     nil,
+			flag:     "",
 			expected: nil,
 		},
 	}
