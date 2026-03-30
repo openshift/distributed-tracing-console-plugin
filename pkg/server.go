@@ -155,7 +155,15 @@ func setupRoutes(cfg *Config, k8sclient *dynamic.DynamicClient) (*mux.Router, *P
 	r.Path("/api/v1/list-tempo-resources").HandlerFunc(api.ListTempoResourcesHandler(k8sclient))
 
 	// uses the namespace and name to forward requests to a particular Tempo instance
-	r.PathPrefix("/proxy/{namespace}/{name}/{tenant}").Handler(proxy.NewProxyHandler(k8sclient, cfg.CertFile))
+	var proxyTLSMinVersion uint16
+	if cfg.TLSMinVersion != "" {
+		proxyTLSMinVersion, _ = k8sapiflag.TLSVersion(cfg.TLSMinVersion)
+	}
+	var proxyTLSCipherSuites []uint16
+	if len(cfg.TLSCipherSuites) > 0 {
+		proxyTLSCipherSuites, _ = k8sapiflag.TLSCipherSuites(cfg.TLSCipherSuites)
+	}
+	r.PathPrefix("/proxy/{namespace}/{name}/{tenant}").Handler(proxy.NewProxyHandler(k8sclient, cfg.CertFile, proxyTLSMinVersion, proxyTLSCipherSuites))
 
 	// serve plugin manifest according to enabled features
 	r.Path("/plugin-manifest.json").Handler(manifestHandler(cfg))

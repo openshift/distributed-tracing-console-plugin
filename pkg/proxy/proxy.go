@@ -24,12 +24,14 @@ import (
 var log = logrus.WithField("module", "proxy")
 
 type ProxyHandler struct {
-	k8sclient     *dynamic.DynamicClient
-	serviceCAfile string
-	proxyCache    *lru.Cache[string, *httputil.ReverseProxy]
+	k8sclient       *dynamic.DynamicClient
+	serviceCAfile   string
+	tlsMinVersion   uint16
+	tlsCipherSuites []uint16
+	proxyCache      *lru.Cache[string, *httputil.ReverseProxy]
 }
 
-func NewProxyHandler(k8sclient *dynamic.DynamicClient, serviceCAfile string) *ProxyHandler {
+func NewProxyHandler(k8sclient *dynamic.DynamicClient, serviceCAfile string, tlsMinVersion uint16, tlsCipherSuites []uint16) *ProxyHandler {
 	proxyCache, err := lru.New[string, *httputil.ReverseProxy](128)
 	if err != nil {
 		// the only error path of lru.New is size <= 0
@@ -37,9 +39,11 @@ func NewProxyHandler(k8sclient *dynamic.DynamicClient, serviceCAfile string) *Pr
 	}
 
 	return &ProxyHandler{
-		k8sclient:     k8sclient,
-		serviceCAfile: serviceCAfile,
-		proxyCache:    proxyCache,
+		k8sclient:       k8sclient,
+		serviceCAfile:   serviceCAfile,
+		tlsMinVersion:   tlsMinVersion,
+		tlsCipherSuites: tlsCipherSuites,
+		proxyCache:      proxyCache,
 	}
 }
 
@@ -63,23 +67,40 @@ func FilterHeaders(r *http.Response) error {
 	return nil
 }
 
+func (h *ProxyHandler) buildTLSConfig() (*tls.Config, error) {
+	if h.serviceCAfile == "" {
+		return nil, nil
+	}
+
+	serviceCertPEM, err := os.ReadFile(h.serviceCAfile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read certificate file: tried '%s' and got %v", h.serviceCAfile, err)
+	}
+
+	serviceProxyRootCAs := x509.NewCertPool()
+	if !serviceProxyRootCAs.AppendCertsFromPEM(serviceCertPEM) {
+		return nil, fmt.Errorf("no CA found for Kubernetes services, proxy to datasources will fail")
+	}
+
+	tlsConfig := oscrypto.SecureTLSConfig(&tls.Config{
+		RootCAs: serviceProxyRootCAs,
+	})
+
+	if h.tlsMinVersion != 0 {
+		tlsConfig.MinVersion = h.tlsMinVersion
+	}
+	if len(h.tlsCipherSuites) > 0 {
+		tlsConfig.CipherSuites = h.tlsCipherSuites
+	}
+
+	return tlsConfig, nil
+}
+
 func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*httputil.ReverseProxy, error) {
 	// TODO: allow custom CA per datasource
-	var serviceProxyTLSConfig *tls.Config
-	if h.serviceCAfile != "" {
-		serviceCertPEM, err := os.ReadFile(h.serviceCAfile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read certificate file: tried '%s' and got %v", h.serviceCAfile, err)
-		}
-
-		serviceProxyRootCAs := x509.NewCertPool()
-		if !serviceProxyRootCAs.AppendCertsFromPEM(serviceCertPEM) {
-			return nil, fmt.Errorf("no CA found for Kubernetes services, proxy to datasources will fail")
-		}
-
-		serviceProxyTLSConfig = oscrypto.SecureTLSConfig(&tls.Config{
-			RootCAs: serviceProxyRootCAs,
-		})
+	serviceProxyTLSConfig, err := h.buildTLSConfig()
+	if err != nil {
+		return nil, err
 	}
 
 	const (
