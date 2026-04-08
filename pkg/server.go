@@ -157,11 +157,19 @@ func setupRoutes(cfg *Config, k8sclient *dynamic.DynamicClient) (*mux.Router, *P
 	// uses the namespace and name to forward requests to a particular Tempo instance
 	var proxyTLSMinVersion uint16
 	if cfg.TLSMinVersion != "" {
-		proxyTLSMinVersion, _ = k8sapiflag.TLSVersion(cfg.TLSMinVersion)
+		var err error
+		proxyTLSMinVersion, err = k8sapiflag.TLSVersion(cfg.TLSMinVersion)
+		if err != nil {
+			logrus.WithError(err).Fatal("invalid TLS min version")
+		}
 	}
 	var proxyTLSCipherSuites []uint16
 	if len(cfg.TLSCipherSuites) > 0 {
-		proxyTLSCipherSuites, _ = k8sapiflag.TLSCipherSuites(cfg.TLSCipherSuites)
+		var err error
+		proxyTLSCipherSuites, err = k8sapiflag.TLSCipherSuites(cfg.TLSCipherSuites)
+		if err != nil {
+			logrus.WithError(err).Fatal("invalid TLS cipher suites")
+		}
 	}
 	r.PathPrefix("/proxy/{namespace}/{name}/{tenant}").Handler(proxy.NewProxyHandler(k8sclient, cfg.CertFile, proxyTLSMinVersion, proxyTLSCipherSuites))
 
