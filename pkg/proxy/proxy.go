@@ -68,23 +68,20 @@ func FilterHeaders(r *http.Response) error {
 }
 
 func (h *ProxyHandler) buildTLSConfig() (*tls.Config, error) {
-	if h.serviceCAfile == "" {
-		return nil, nil
-	}
+	tlsConfig := oscrypto.SecureTLSConfig(&tls.Config{})
 
-	serviceCertPEM, err := os.ReadFile(h.serviceCAfile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read certificate file: tried '%s' and got %v", h.serviceCAfile, err)
-	}
+	if h.serviceCAfile != "" {
+		serviceCertPEM, err := os.ReadFile(h.serviceCAfile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read certificate file: tried '%s' and got %v", h.serviceCAfile, err)
+		}
 
-	serviceProxyRootCAs := x509.NewCertPool()
-	if !serviceProxyRootCAs.AppendCertsFromPEM(serviceCertPEM) {
-		return nil, fmt.Errorf("no CA found for Kubernetes services, proxy to datasources will fail")
+		serviceProxyRootCAs := x509.NewCertPool()
+		if !serviceProxyRootCAs.AppendCertsFromPEM(serviceCertPEM) {
+			return nil, fmt.Errorf("no CA found for Kubernetes services, proxy to datasources will fail")
+		}
+		tlsConfig.RootCAs = serviceProxyRootCAs
 	}
-
-	tlsConfig := oscrypto.SecureTLSConfig(&tls.Config{
-		RootCAs: serviceProxyRootCAs,
-	})
 
 	if h.tlsMinVersion != 0 {
 		tlsConfig.MinVersion = h.tlsMinVersion

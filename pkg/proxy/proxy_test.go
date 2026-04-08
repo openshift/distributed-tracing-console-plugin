@@ -128,9 +128,13 @@ func TestProxyCipherSuites(t *testing.T) {
 }
 
 func TestProxyTLSConfigNoCert(t *testing.T) {
-	// When no CA file is provided, buildTLSConfig should return nil
+	// When no CA file is provided, buildTLSConfig should still return a valid TLS config
+	// with the min version and cipher suites applied
 	handler := NewProxyHandler(nil, "", tls.VersionTLS13, []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256})
 	tlsConfig, err := handler.buildTLSConfig()
 	require.NoError(t, err)
-	require.Nil(t, tlsConfig, "TLS config should be nil when no CA file is provided")
+	require.NotNil(t, tlsConfig, "TLS config should not be nil even when no CA file is provided")
+	require.Nil(t, tlsConfig.RootCAs, "RootCAs should be nil when no CA file is provided")
+	require.Equal(t, uint16(tls.VersionTLS13), tlsConfig.MinVersion, "TLS min version should be set")
+	require.Equal(t, []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}, tlsConfig.CipherSuites, "TLS cipher suites should be set")
 }
