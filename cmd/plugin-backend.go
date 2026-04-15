@@ -6,27 +6,29 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/distributed-tracing-console-plugin/pkg"
+	server "github.com/openshift/distributed-tracing-console-plugin/pkg"
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	portArg         = flag.Int("port", 0, "server port to listen on (default: 9443)")
-	certArg         = flag.String("cert", "", "cert file path to enable TLS (disabled by default)")
-	keyArg          = flag.String("key", "", "private key file path to enable TLS (disabled by default)")
-	featuresArg     = flag.String("features", "", "enabled features, comma separated")
-	staticPathArg   = flag.String("static-path", "", "static files path to serve frontend (default: './web/dist')")
-	configPathArg   = flag.String("config-path", "", "config files path (default: './web/dist')")
-	pluginConfigArg = flag.String("plugin-config-path", "", "plugin yaml configuration")
-	log             = logrus.WithField("module", "main")
-)
-
 func main() {
+	portArg := flag.Int("port", 0, "server port to listen on (default: 9443)")
+	certArg := flag.String("cert", "", "cert file path to enable TLS (disabled by default)")
+	keyArg := flag.String("key", "", "private key file path to enable TLS (disabled by default)")
+	tlsMinVersionArg := flag.String("tls-min-version", "", "Minimum TLS version supported. Value must match version names from https://golang.org/pkg/crypto/tls/#pkg-constants (default: VersionTLS12).")
+	tlsCipherSuitesArg := flag.String("tls-cipher-suites", "", "Comma-separated list of cipher suites for the server. Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants). If omitted, the default Go cipher suites will be used")
+	featuresArg := flag.String("features", "", "enabled features, comma separated")
+	staticPathArg := flag.String("static-path", "", "static files path to serve frontend (default: './web/dist')")
+	configPathArg := flag.String("config-path", "", "config files path (default: './web/dist')")
+	pluginConfigArg := flag.String("plugin-config-path", "", "plugin yaml configuration")
 	flag.Parse()
+
+	var log = logrus.WithField("module", "main")
 
 	port := mergeEnvValueInt("PORT", *portArg, 9443)
 	cert := mergeEnvValue("CERT_FILE_PATH", *certArg, "")
 	key := mergeEnvValue("PRIVATE_KEY_FILE_PATH", *keyArg, "")
+	tlsMinVersion := mergeEnvValue("TLS_MIN_VERSION", *tlsMinVersionArg, "")
+	tlsCipherSuites := mergeEnvValueSlice("TLS_CIPHER_SUITES", *tlsCipherSuitesArg)
 	features := mergeEnvValue("DISTRIBUTED_TRACING_CONSOLE_PLUGIN_FEATURES", *featuresArg, "")
 	staticPath := mergeEnvValue("DISTRIBUTED_TRACING_CONSOLE_PLUGIN_STATIC_PATH", *staticPathArg, "./web/dist")
 	configPath := mergeEnvValue("DISTRIBUTED_TRACING_CONSOLE_PLUGIN_MANIFEST_CONFIG_PATH", *configPathArg, "./web/dist")
@@ -45,6 +47,8 @@ func main() {
 		Port:             port,
 		CertFile:         cert,
 		PrivateKeyFile:   key,
+		TLSMinVersion:    tlsMinVersion,
+		TLSCipherSuites:  tlsCipherSuites,
 		Features:         featuresSet,
 		StaticPath:       staticPath,
 		ConfigPath:       configPath,
@@ -64,6 +68,14 @@ func mergeEnvValue(key string, arg string, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+func mergeEnvValueSlice(key string, arg string) []string {
+	value := mergeEnvValue(key, arg, "")
+	if value != "" {
+		return strings.Split(value, ",")
+	}
+	return nil
 }
 
 func mergeEnvValueInt(key string, arg int, defaultValue int) int {

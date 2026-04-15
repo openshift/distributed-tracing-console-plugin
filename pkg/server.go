@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apiserver/pkg/server/dynamiccertificates"
+	k8sapiflag "k8s.io/component-base/cli/flag"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -30,6 +31,8 @@ type Config struct {
 	Port             int
 	CertFile         string
 	PrivateKeyFile   string
+	TLSMinVersion    string
+	TLSCipherSuites  []string
 	Features         map[string]bool
 	StaticPath       string
 	ConfigPath       string
@@ -74,9 +77,24 @@ func Start(cfg *Config) {
 
 	loggedRouter := handlers.LoggingHandler(log.Logger.Out, router)
 
-	// clients must use TLS 1.2 or higher
 	tlsConfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
+	}
+
+	if cfg.TLSMinVersion != "" {
+		tlsVersion, err := k8sapiflag.TLSVersion(cfg.TLSMinVersion)
+		if err != nil {
+			logrus.WithError(err).Fatal("invalid TLS min version")
+		}
+		tlsConfig.MinVersion = tlsVersion
+	}
+
+	if len(cfg.TLSCipherSuites) > 0 {
+		cipherSuiteIDs, err := k8sapiflag.TLSCipherSuites(cfg.TLSCipherSuites)
+		if err != nil {
+			logrus.WithError(err).Fatal("invalid TLS cipher suites")
+		}
+		tlsConfig.CipherSuites = cipherSuiteIDs
 	}
 
 	timeout := 30 * time.Second
@@ -137,7 +155,23 @@ func setupRoutes(cfg *Config, k8sclient *dynamic.DynamicClient) (*mux.Router, *P
 	r.Path("/api/v1/list-tempo-resources").HandlerFunc(api.ListTempoResourcesHandler(k8sclient))
 
 	// uses the namespace and name to forward requests to a particular Tempo instance
-	r.PathPrefix("/proxy/{namespace}/{name}/{tenant}").Handler(proxy.NewProxyHandler(k8sclient, cfg.CertFile))
+	var proxyTLSMinVersion uint16
+	if cfg.TLSMinVersion != "" {
+		var err error
+		proxyTLSMinVersion, err = k8sapiflag.TLSVersion(cfg.TLSMinVersion)
+		if err != nil {
+			logrus.WithError(err).Fatal("invalid TLS min version")
+		}
+	}
+	var proxyTLSCipherSuites []uint16
+	if len(cfg.TLSCipherSuites) > 0 {
+		var err error
+		proxyTLSCipherSuites, err = k8sapiflag.TLSCipherSuites(cfg.TLSCipherSuites)
+		if err != nil {
+			logrus.WithError(err).Fatal("invalid TLS cipher suites")
+		}
+	}
+	r.PathPrefix("/proxy/{namespace}/{name}/{tenant}").Handler(proxy.NewProxyHandler(k8sclient, cfg.CertFile, proxyTLSMinVersion, proxyTLSCipherSuites))
 
 	// serve plugin manifest according to enabled features
 	r.Path("/plugin-manifest.json").Handler(manifestHandler(cfg))

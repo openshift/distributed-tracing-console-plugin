@@ -348,6 +348,123 @@ func generateCertificate(t *testing.T, certPath string, keyPath string, host str
 	return nil
 }
 
+func TestSecureServerTLS13MinVersion(t *testing.T) {
+	testPort, err := getFreePort(testHostname)
+	require.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "server-test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	testServerCertFile := tmpDir + "/server-test-server.cert"
+	testServerKeyFile := tmpDir + "/server-test-server.key"
+	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
+	err = generateCertificate(t, testServerCertFile, testServerKeyFile, testServerHostPort)
+	require.NoError(t, err)
+
+	tmpDirAssets := prepareServerAssets(t)
+	defer os.RemoveAll(tmpDirAssets)
+
+	go func() {
+		Start(&Config{
+			CertFile:       testServerCertFile,
+			PrivateKeyFile: testServerKeyFile,
+			Port:           testPort,
+			TLSMinVersion:  "VersionTLS13",
+		})
+	}()
+
+	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
+
+	// TLS 1.3 client should succeed
+	httpConfigTLS13 := httpClientConfig{
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS13,
+		},
+	}
+	httpClientTLS13, err := httpConfigTLS13.buildHTTPClient()
+	require.NoError(t, err)
+	checkHTTPReady(httpClientTLS13, serverURL+"/health")
+
+	_, err = getRequestResults(t, httpClientTLS13, serverURL+"/health")
+	require.NoError(t, err, "TLS 1.3 client should be able to connect")
+
+	// TLS 1.2 client should be rejected
+	httpConfigTLS12 := httpClientConfig{
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS10,
+			MaxVersion:         tls.VersionTLS12,
+		},
+	}
+	httpClientTLS12, err := httpConfigTLS12.buildHTTPClient()
+	require.NoError(t, err)
+
+	_, err = getRequestResults(t, httpClientTLS12, serverURL+"/health")
+	require.Error(t, err, "TLS 1.2 client should be rejected when server requires TLS 1.3")
+}
+
+func TestSecureServerCipherSuites(t *testing.T) {
+	testPort, err := getFreePort(testHostname)
+	require.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "server-test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	testServerCertFile := tmpDir + "/server-test-server.cert"
+	testServerKeyFile := tmpDir + "/server-test-server.key"
+	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
+	err = generateCertificate(t, testServerCertFile, testServerKeyFile, testServerHostPort)
+	require.NoError(t, err)
+
+	tmpDirAssets := prepareServerAssets(t)
+	defer os.RemoveAll(tmpDirAssets)
+
+	serverCipherSuite := "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+
+	go func() {
+		Start(&Config{
+			CertFile:        testServerCertFile,
+			PrivateKeyFile:  testServerKeyFile,
+			Port:            testPort,
+			TLSCipherSuites: []string{serverCipherSuite},
+		})
+	}()
+
+	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
+
+	// Client offering the matching cipher suite should succeed
+	httpConfigMatch := httpClientConfig{
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			MaxVersion:         tls.VersionTLS12,
+			CipherSuites:       []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+		},
+	}
+	httpClientMatch, err := httpConfigMatch.buildHTTPClient()
+	require.NoError(t, err)
+	checkHTTPReady(httpClientMatch, serverURL+"/health")
+
+	_, err = getRequestResults(t, httpClientMatch, serverURL+"/health")
+	require.NoError(t, err, "Client with matching cipher suite should connect")
+
+	// Client offering only a different cipher suite should be rejected
+	httpConfigMismatch := httpClientConfig{
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			MaxVersion:         tls.VersionTLS12,
+			CipherSuites:       []uint16{tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384},
+		},
+	}
+	httpClientMismatch, err := httpConfigMismatch.buildHTTPClient()
+	require.NoError(t, err)
+
+	_, err = getRequestResults(t, httpClientMismatch, serverURL+"/health")
+	require.Error(t, err, "Client with non-matching cipher suite should be rejected")
+}
+
 func TestFilesHandler(t *testing.T) {
 	fs := http.Dir("testdata")
 	handler := filesHandler(fs)
