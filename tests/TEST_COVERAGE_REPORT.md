@@ -1,5 +1,5 @@
 # Test Coverage Report - Distributed Tracing Console Plugin
-**Generated:** February 27, 2026
+**Generated:** April 15, 2026
 **Test Framework:** Cypress E2E
 **Test File:** `tests/e2e/dt-plugin-tests.cy.ts`
 
@@ -7,9 +7,9 @@
 
 This report provides a comprehensive analysis of the current Cypress E2E test coverage for the OpenShift Distributed Tracing Console Plugin. The test suite covers core functionality across plugin installation, trace visualization, RBAC, span links navigation, TraceQL queries, AI-powered trace analysis, and operator installation workflows.
 
-**Overall Coverage:** ~85% of core features
-**Total Tests:** 7 main test cases
-**Lines of Test Code:** 991 lines
+**Overall Coverage:** ~90% of core features
+**Total Tests:** 8 main test cases
+**Lines of Test Code:** ~1090 lines
 
 ---
 
@@ -177,7 +177,34 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 | - Cluster-admin role testing | Test 2, title line 497 | Full |
 | - TempoStack RBAC | Test 2, chainsaw RBAC tests | Full |
 | - TempoMonolithic RBAC | Test 2, chainsaw RBAC tests | Full |
-| - Chainsaw RBAC test execution | Test 2, lines 498-511 | Full |
+| - Chainsaw RBAC test execution | Test 2, via cy.runChainsawTest() | Full |
+
+---
+
+### 9. TLS Profile Configuration
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| **TLS Profile Verification** | | |
+| - Default Intermediate profile (TLS 1.2 + 1.3) | Test 7, tls-profile-intermediate chainsaw test | Full |
+| - Modern profile (TLS 1.3 only) | Test 7, tls-profile-modern chainsaw test | Full |
+| - Custom cipher suites | Test 7, tls-profile-custom-ciphers chainsaw test | Full |
+| - Old profile (TLS 1.0+) | Test 7, tls-profile-old chainsaw test | Full |
+| - Profile revert to default | Test 7, tls-profile-revert chainsaw test | Full |
+| **nmap Endpoint Scanning** | | |
+| - TLS version enumeration (ssl-enum-ciphers) | All TLS chainsaw tests | Full |
+| - Cipher suite verification | tls-profile-custom-ciphers | Full |
+| - TLS 1.2 rejection under Modern profile (openssl) | tls-profile-modern | Full |
+| **Functional Endpoint Checks** | | |
+| - /health endpoint under each profile | All TLS chainsaw tests | Full |
+| - /features endpoint under each profile | All TLS chainsaw tests | Full |
+| - /plugin-manifest.json under each profile | All TLS chainsaw tests | Full |
+| **UI Verification** | | |
+| - Traces visible after each profile change | Test 7, cy.verifyTracesVisible() | Full |
+| **Operator Management** | | |
+| - Operator scale-down for testing | tls-profile-setup | Full |
+| - Operator scale-up after testing | tls-profile-revert | Full |
+| - tls-scanner pod lifecycle | tls-profile-setup/revert | Full |
 
 ---
 
@@ -242,7 +269,8 @@ graph TD
     F --> J[Test 4: Cutoff Box]
     F --> K[Test 5: AI Analysis]
     F --> L[Test 6: TraceQL Query]
-    F --> P[Test 7: Install Operator]
+    F --> O[Test 7: TLS Profiles]
+    F --> P[Test 8: Install Operator]
     P --> M[after hook]
     M --> N[Cleanup Resources]
 ```
@@ -255,6 +283,7 @@ graph TD
 | **Material-UI** | muiSelect, muiSelectOption, muiFirstTraceLink, muiTraceAttribute, muiTraceAttributes | Excellent |
 | **Tracing-specific** | setupTracePage, navigateToTraceDetails, dragCutoffResizer, verifyCutoffPosition, verifyTraceCount, menuToggleContains | Good |
 | **Lightspeed** | olsHelpers.waitForPopoverAndClose, olsHelpers.verifyPopoverVisible, olsHelpers.submitPrompt, olsHelpers.waitForAIResponse, olsHelpers.getAIResponse | Good |
+| **Chainsaw & Verification** | runChainsawTest, verifyTracesVisible | Good |
 | **System** | cy.exec, cy.adminCLI, cy.login, cy.executeAndDelete | Excellent |
 
 ---
@@ -294,6 +323,8 @@ graph TD
 - **OperatorHub integration:** Test 7 validates the end-to-end flow from empty state through to the OperatorHub catalog page and operator install button.
 - **TraceQL query and empty results:** Test 6 covers TraceQL query editor interaction, custom query execution (`{ name = "/test" }`), "No results found" empty state verification, "Clear all filters" button functionality, query reset to default `{}`, and trace list recovery after clearing filters (lines 874-937).
 - **Headless mode stability:** Added deterministic waits for span bar rendering across all trace detail interactions, and page reload guards for navigation after long-running commands, reducing intermittent failures in headless Chrome.
+- **TLS profile testing:** Test 7 validates plugin backend TLS configuration (min version, cipher suites) across Intermediate, Modern, Custom cipher, and Old profiles using nmap/openssl scanning via chainsaw tests, with UI trace verification after each profile change.
+- **Chainsaw integration command:** `cy.runChainsawTest()` provides a reusable command for invoking chainsaw tests from Cypress, supporting single/multiple test directories, custom timeouts, and extra arguments. `cy.verifyTracesVisible()` provides quick UI-level trace verification.
 
 ### Immediate Actions (Sprint 1)
 
@@ -330,29 +361,30 @@ graph TD
 
 ## Feature-to-Test Mapping Matrix
 
-| Feature | Test 1 | Test 2 | Test 3 | Test 4 | Test 5 | Test 6 | Test 7 | Coverage % |
-|---------|--------|--------|--------|--------|--------|--------|--------|-----------|
-| Empty State UI | Y | - | - | - | - | - | - | 100% |
-| Install Operator Flow | - | - | - | - | - | - | Y | 100% |
-| Tempo Instance Selection | - | Y | Y | Y | Y | Y | - | 100% |
-| Tenant Selection | - | Y | Y | Y | Y | Y | - | 100% |
-| Time Range Selection | - | Y | - | - | Y | - | - | 100% |
-| Service Filtering | - | Y | - | - | Y | - | - | 100% |
-| Namespace Filtering | - | - | Y | - | - | - | - | 100% |
-| Trace Limit Control | - | - | Y | - | - | - | - | 100% |
-| Trace Navigation | - | Y | - | - | Y | - | - | 100% |
-| Span Details | - | Y | - | Y | - | - | - | 100% |
-| Span Links | - | Y | - | - | - | - | - | 100% |
-| Breadcrumb Navigation | - | Y | - | - | - | - | - | 100% |
-| Timeline Cutoff | - | - | - | Y | - | - | - | 100% |
-| AI Analysis | - | - | - | - | Y | - | - | 100% |
-| TraceQL Queries | - | - | - | - | - | Y | - | 100% |
-| Empty Query Results | - | - | - | - | - | Y | - | 100% |
-| Clear Filters | - | - | - | - | - | Y | - | 100% |
-| Attribute Filters | - | - | - | - | - | - | - | 0% |
-| Error Handling | - | - | - | - | - | - | - | 0% |
-| Scatter Plot | - | - | - | - | - | - | - | 0% |
-| Documentation Links | Partial | - | - | - | - | - | - | 25% |
+| Feature | Test 1 | Test 2 | Test 3 | Test 4 | Test 5 | Test 6 | Test 7 | Test 8 | Coverage % |
+|---------|--------|--------|--------|--------|--------|--------|--------|--------|-----------|
+| Empty State UI | Y | - | - | - | - | - | - | - | 100% |
+| Install Operator Flow | - | - | - | - | - | - | - | Y | 100% |
+| Tempo Instance Selection | - | Y | Y | Y | Y | Y | - | - | 100% |
+| Tenant Selection | - | Y | Y | Y | Y | Y | - | - | 100% |
+| Time Range Selection | - | Y | - | - | Y | - | - | - | 100% |
+| Service Filtering | - | Y | - | - | Y | - | - | - | 100% |
+| Namespace Filtering | - | - | Y | - | - | - | - | - | 100% |
+| Trace Limit Control | - | - | Y | - | - | - | - | - | 100% |
+| Trace Navigation | - | Y | - | - | Y | - | - | - | 100% |
+| Span Details | - | Y | - | Y | - | - | - | - | 100% |
+| Span Links | - | Y | - | - | - | - | - | - | 100% |
+| Breadcrumb Navigation | - | Y | - | - | - | - | - | - | 100% |
+| Timeline Cutoff | - | - | - | Y | - | - | - | - | 100% |
+| AI Analysis | - | - | - | - | Y | - | - | - | 100% |
+| TraceQL Queries | - | - | - | - | - | Y | - | - | 100% |
+| Empty Query Results | - | - | - | - | - | Y | - | - | 100% |
+| Clear Filters | - | - | - | - | - | Y | - | - | 100% |
+| TLS Profile Config | - | - | - | - | - | - | Y | - | 100% |
+| Attribute Filters | - | - | - | - | - | - | - | - | 0% |
+| Error Handling | - | - | - | - | - | - | - | - | 0% |
+| Scatter Plot | - | - | - | - | - | - | - | - | 0% |
+| Documentation Links | Partial | - | - | - | - | - | - | - | 25% |
 
 ---
 
@@ -423,8 +455,22 @@ graph TD
 - Query reset to default `{}`
 - Trace list recovery after clearing filters
 
-### Test 7: Install Operator
-**File:** `dt-plugin-tests.cy.ts`, lines 939-991
+### Test 7: TLS Profile Configuration
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:TLSProfile]` test
+**Purpose:** Verify plugin backend TLS min version and cipher suite enforcement
+**Features Covered:**
+- tls-scanner pod deployment and cleanup
+- Operator scale-down/up to prevent reconciliation
+- Intermediate profile verification (TLS 1.2 + 1.3, nmap + endpoints)
+- Modern profile verification (TLS 1.3 only, TLS 1.2 rejection via openssl)
+- Custom cipher suite verification (restricted TLS 1.2 ciphers, nmap enumeration)
+- Old profile verification (TLS 1.0/1.1/1.2/1.3, nmap)
+- Revert to default and verify Intermediate restored
+- UI trace visibility after each profile change (cy.verifyTracesVisible)
+- Uses 6 individual chainsaw tests invoked via cy.runChainsawTest()
+
+### Test 8: Install Operator
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:OperatorLifecycle]` test
 **Purpose:** Test "Install Tempo operator" button workflow
 **Features Covered:**
 - Chainsaw namespace cleanup
@@ -439,7 +485,7 @@ graph TD
 
 ## Conclusion
 
-The current test suite provides **excellent coverage** of core tracing functionality, RBAC, TraceQL queries, AI integration, and operator installation workflows. Test 6 covers the TraceQL query editor interaction, empty query results handling, and clear filters functionality. Test 7 covers the complete "Install Tempo operator" empty state workflow. The main remaining gaps are in:
+The current test suite provides **excellent coverage** of core tracing functionality, RBAC, TraceQL queries, AI integration, TLS profile configuration, and operator installation workflows. Test 6 covers the TraceQL query editor interaction, empty query results handling, and clear filters functionality. Test 7 verifies TLS min version and cipher suite enforcement across four profiles (Intermediate, Modern, Custom, Old) using nmap/openssl scanning and UI trace verification. Test 8 covers the complete "Install Tempo operator" empty state workflow. The main remaining gaps are in:
 1. **Advanced filtering (attributes, errors)**
 2. **Error handling scenarios**
 3. **Scatter plot interaction**
@@ -456,4 +502,4 @@ The test suite demonstrates excellent use of custom commands, page object patter
 ---
 
 **Report prepared by:** Claude Code
-**Last updated:** February 27, 2026
+**Last updated:** April 15, 2026

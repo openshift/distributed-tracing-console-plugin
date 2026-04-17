@@ -67,6 +67,9 @@ declare global {
       navigateToTraceDetails(): Chainable<void>;
       dragCutoffResizer(position: number, resizerType?: 'left' | 'right'): Chainable<void>;
       verifyCutoffPosition(expectedWidthPercent: number, tolerance?: number): Chainable<void>;
+      // Chainsaw and TLS verification commands
+      runChainsawTest(testDirs: string | string[], description: string, options?: { timeout?: number; extraArgs?: string }): Chainable<void>;
+      verifyTracesVisible(tempoInstance: string, tenant: string): Chainable<void>;
     }
   }
 }
@@ -823,6 +826,49 @@ Cypress.Commands.add(
 
         cy.log(`✓ Cutoff box width is ${widthValue}% (within acceptable range of ${minWidth}-${maxWidth}%)`);
       });
+  },
+);
+
+// Chainsaw and TLS verification commands
+
+Cypress.Commands.add(
+  'runChainsawTest',
+  (testDirs: string | string[], description: string, options?: { timeout?: number; extraArgs?: string }) => {
+    const dirs = Array.isArray(testDirs) ? testDirs : [testDirs];
+    const paths = dirs.map((d) => d.startsWith('./') ? d : `./fixtures/chainsaw-tests/${d}`).join(' ');
+    const extraArgs = options?.extraArgs ? ` ${options.extraArgs}` : '';
+    const timeout = options?.timeout ?? 600000;
+
+    cy.log(`Run chainsaw test: ${description}`);
+    cy.exec(
+      `chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ${paths}${extraArgs}`,
+      {
+        env: { KUBECONFIG: Cypress.env('KUBECONFIG_PATH') },
+        timeout,
+        failOnNonZeroExit: true,
+      },
+    ).then((result) => {
+      expect(result.code).to.eq(0);
+      cy.log(`${description}: ${result.stdout}`);
+    });
+  },
+);
+
+Cypress.Commands.add(
+  'verifyTracesVisible',
+  (tempoInstance: string, tenant: string) => {
+    cy.log('Verify traces are visible in the UI');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem(tempoInstance).click();
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem(tenant).click();
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+    cy.log('PASS: Traces are visible in the UI');
   },
 );
 

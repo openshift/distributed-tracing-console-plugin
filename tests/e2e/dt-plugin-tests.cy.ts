@@ -295,22 +295,17 @@ describe('tracing-uiplugin', () => {
     }
 
     cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
-    cy.exec(
-      `chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/lightspeed --values - <<EOF
+    cy.runChainsawTest(
+      './fixtures/lightspeed',
+      'Lightspeed OLSConfig and credentials setup',
+      {
+        timeout: 1800000,
+        extraArgs: `--values - <<EOF
 LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}
 LIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}
 EOF`,
-      {
-        env: {
-          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-        },
-        timeout: 1800000,
-        failOnNonZeroExit: true
-      }
-    ) .then((result) => {
-      expect(result.code).to.eq(0);
-      cy.log(`Lightspeed Chainsaw test ran successfully: ${result.stdout}`);
-    });
+      },
+    );
 
     cy.log('Wait for Lightspeed popover to open by default and close it');
     cy.visit('/');
@@ -496,19 +491,11 @@ EOF`,
 
   it('[Capability:UIPlugin][Capability:TraceVisualization][Capability:SpanLinks][Capability:RBAC] Test Distributed Tracing UI plugin with Tempo instances and verify traces, span links using user having cluster-admin role', function () {
     cy.log('Create TempoStack and TempoMonolithic instances');
-    cy.exec(
-      'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/chainsaw-tests',
-      {
-        env: {
-          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-        },
-        timeout: 1200000,
-        failOnNonZeroExit: true
-      }
-    ) .then((result) => {
-      expect(result.code).to.eq(0);
-      cy.log(`Chainsaw test ran successfully: ${result.stdout}`);
-    });
+    cy.runChainsawTest(
+      ['multitenancy-rbac', 'monolithic-multitenancy-rbac'],
+      'Create TempoStack and TempoMonolithic instances',
+      { timeout: 1200000 },
+    );
 
     cy.log('Navigate to the /observe/traces page');
     // Force a clean navigation after the long chainsaw exec to handle any console auto-reloads
@@ -938,6 +925,31 @@ EOF`,
     cy.log('Verify trace details page is now visible with traces');
     cy.get('a.MuiLink-root', { timeout: 10000 }).should('be.visible');
     cy.log('✓ TraceQL query with no results and clear filters functionality verified');
+  });
+
+  it('[Capability:UIPlugin][Capability:TLSProfile] Test TLS profile configuration on plugin endpoints', function () {
+    // Setup: install tls-scanner and scale down operator
+    cy.runChainsawTest('tls-profile-setup', 'TLS profile setup');
+
+    // Test default Intermediate profile (TLS 1.2 + TLS 1.3)
+    cy.runChainsawTest('tls-profile-intermediate', 'Intermediate TLS profile');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Test Modern profile (TLS 1.3 only)
+    cy.runChainsawTest('tls-profile-modern', 'Modern TLS profile');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Test Custom cipher suites
+    cy.runChainsawTest('tls-profile-custom-ciphers', 'Custom cipher suites');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Test Old profile (TLS 1.0+)
+    cy.runChainsawTest('tls-profile-old', 'Old TLS profile');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Revert to default, scale operator back up, cleanup tls-scanner
+    cy.runChainsawTest('tls-profile-revert', 'Revert to default');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
   });
 
   it('[Capability:OperatorLifecycle][Capability:Installation] Test "Install Tempo operator" if operator is not installed', () => {

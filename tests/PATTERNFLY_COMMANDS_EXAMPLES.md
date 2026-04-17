@@ -297,6 +297,33 @@ describe('AI Trace Summary', () => {
 });
 ```
 
+### Chainsaw & TLS Verification
+
+```typescript
+// Run a single chainsaw test directory (path relative to fixtures/chainsaw-tests/)
+cy.runChainsawTest('tls-profile-modern', 'Modern TLS profile');
+
+// Run multiple chainsaw test directories
+cy.runChainsawTest(
+  ['multitenancy-rbac', 'monolithic-multitenancy-rbac'],
+  'Create TempoStack and TempoMonolithic instances',
+  { timeout: 1200000 },
+);
+
+// Run a chainsaw test from a custom path (starts with ./)
+cy.runChainsawTest(
+  './fixtures/lightspeed',
+  'Lightspeed setup',
+  {
+    timeout: 1800000,
+    extraArgs: '--values - <<EOF\nKEY: value\nEOF',
+  },
+);
+
+// Verify traces are visible in the UI for a given Tempo instance and tenant
+cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+```
+
 ## 🔄 PatternFly 5 & 6 Compatibility
 
 Our commands seamlessly support both PatternFly 5 and PatternFly 6 components:

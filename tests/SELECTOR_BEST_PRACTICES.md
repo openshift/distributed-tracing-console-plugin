@@ -90,6 +90,12 @@ cy.get(OLS_SELECTORS.promptInput)           // Textarea for prompt input
 cy.interceptQuery('alias', 'query text', 'conversation-id', [{ attachment_type: 'trace', content_type: 'application/json' }])
 cy.interceptQueryWithError('alias', 'query', 'error message')
 cy.interceptFeedback('alias', 'conversation-id', sentiment, 'feedback', 'question starts with')
+
+// Chainsaw Integration & Trace Verification
+cy.runChainsawTest('tls-profile-modern', 'Modern TLS profile')          // Single test dir
+cy.runChainsawTest(['multitenancy-rbac', 'monolithic-multitenancy-rbac'], 'RBAC tests', { timeout: 1200000 })  // Multiple dirs
+cy.runChainsawTest('./fixtures/lightspeed', 'Lightspeed setup', { timeout: 1800000, extraArgs: '--values ...' }) // Custom path
+cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev')                // Assert traces visible in UI
 ```
 
 ### Accessibility-Based Selectors

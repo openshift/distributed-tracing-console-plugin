@@ -79,10 +79,12 @@ The test suite includes comprehensive PatternFly-aware custom commands:
 - **PatternFly selectors**: `cy.pfMenuToggle()`, `cy.pfMenuItem()`, `cy.pfButton()`
 - **Trace testing**: `cy.muiTraceLink()`, `cy.muiSpanBar()`, `cy.muiTraceAttributes()`
 - **Bulk validation**: Commands for validating multiple trace attributes efficiently
+- **Chainsaw integration**: `cy.runChainsawTest(testDirs, description, options?)` runs chainsaw tests from Cypress; accepts a single directory name, an array of directories, or full paths starting with `./`; supports optional `timeout` and `extraArgs`
+- **Trace UI verification**: `cy.verifyTracesVisible(tempoInstance, tenant)` navigates to traces page and asserts traces are visible for the given Tempo instance and tenant
 
 #### Test Types
 1. **Cypress E2E Tests**: Main UI automation testing the plugin functionality
-2. **Chainsaw Tests**: Kubernetes-native testing for RBAC and operator behavior
+2. **Chainsaw Tests**: Kubernetes-native testing for RBAC, TLS profiles, and operator behavior
 3. **Debug Tests**: Rapid iteration tests without full setup/teardown
 
 ### Operator Testing
@@ -113,6 +115,13 @@ mv e2e/dt-plugin-tests-debug.cy.ts.skip e2e/dt-plugin-tests-debug.cy.ts
 
 ### RBAC Testing
 Chainsaw tests in `fixtures/chainsaw-tests/` validate operator permissions and multi-tenancy scenarios.
+
+### TLS Profile Testing
+Chainsaw tests in `fixtures/chainsaw-tests/tls-profile-*` verify the plugin backend's TLS min version and cipher suite configuration. The tests use a `tls-scanner` pod (nmap/openssl) to scan the plugin's port 9443 and verify the advertised TLS versions and cipher suites match the configured profile. The operator is scaled down during testing to prevent reconciliation of manual deployment patches.
+
+Profiles tested: Intermediate (default), Modern (TLS 1.3 only), Custom cipher suites, Old (TLS 1.0+).
+
+Shared helpers live in `fixtures/chainsaw-tests/tls-profile/tls-helpers.sh`. Each profile is a separate chainsaw test directory invoked via `cy.runChainsawTest()` from the Cypress `[Capability:TLSProfile]` test, with `cy.verifyTracesVisible()` called after each to confirm the UI still works.
 
 ## Documentation
 - **SELECTOR_BEST_PRACTICES.md**: Comprehensive selector guidelines
