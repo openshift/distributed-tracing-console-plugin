@@ -1,4 +1,3 @@
-import React from 'react';
 import { Form, FormGroup, Popover, ToolbarGroup, ToolbarItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TempoResource, useTempoResources } from '../hooks/useTempoResources';

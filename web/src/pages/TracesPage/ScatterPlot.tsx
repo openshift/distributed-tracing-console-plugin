@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button, Flex, FlexItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { PersesPanelPluginWrapper, usePersesTraceData } from '../../components/PersesWrapper';

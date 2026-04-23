@@ -107,7 +107,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
       ];
     }
 
-    setSelectOptions(newSelectOptions);
+    setSelectOptions(newSelectOptions); // eslint-disable-line react-hooks/set-state-in-effect
   }, [inputValue, initialSelectOptions, isOpen, props.isCreatable, props.noResultsFoundText]);
 
   const createItemId = (value: string) => `select-multi-typeahead-${value.replace(' ', '-')}`;

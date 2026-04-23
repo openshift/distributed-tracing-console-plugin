@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { ToolbarGroup, ToolbarItem, Button, Form, FormGroup } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TempoInstance } from '../../../hooks/useTempoInstance';
@@ -39,7 +39,7 @@ export function TraceQLFilter({ tempo, query, runQuery }: TraceQLFilterProps) {
               <TraceQLEditor
                 id="traceql-input"
                 tempo={tempo}
-                query={draftQuery.current}
+                query={draftQuery.current} // eslint-disable-line react-hooks/refs
                 setQuery={setDraftQuery}
                 runQuery={runDraftQuery}
               />

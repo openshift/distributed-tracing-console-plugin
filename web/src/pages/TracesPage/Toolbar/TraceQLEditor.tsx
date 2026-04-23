@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import CodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { keymap } from '@codemirror/view';

@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import { memo, useState } from 'react';
 import { useTempoResources } from '../../hooks/useTempoResources';
 import { QueryBrowser } from './QueryBrowser';
 import {
@@ -17,8 +17,8 @@ import {
 import { PlusCircleIcon, WrenchIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useTranslation, Trans } from 'react-i18next';
 import { ErrorAlert } from '../../components/ErrorAlert';
-import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom-v5-compat';
+import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
+import { Link } from 'react-router';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { LoadingState } from '../../components/LoadingState';
 import { TracingApp } from '../../TracingApp';
@@ -47,9 +47,7 @@ function TracesPage() {
 
   return (
     <TracingApp>
-      <Helmet>
-        <title>{t('Tracing')}</title>
-      </Helmet>
+      <DocumentTitle>{t('Tracing')}</DocumentTitle>
       <TracesPageBody />
     </TracingApp>
   );

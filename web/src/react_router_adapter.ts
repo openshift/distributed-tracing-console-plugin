@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom-v5-compat';
+import { useLocation, useNavigate } from 'react-router';
 import { QueryParamAdapterComponent } from 'use-query-params';
 
 export const ReactRouterAdapter: QueryParamAdapterComponent = ({ children }) => {

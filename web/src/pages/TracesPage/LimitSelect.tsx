@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Form, FormGroup } from '@patternfly/react-core';
 import { ControlledSimpleSelect } from '../../components/ControlledSelects';
 import { useTranslation } from 'react-i18next';

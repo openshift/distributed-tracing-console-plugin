@@ -1,4 +1,3 @@
-import React from 'react';
 import { PersesPanelPluginWrapper } from '../../components/PersesWrapper';
 import { TraceTable as PersesTraceTable } from '@perses-dev/trace-table-plugin';
 import {

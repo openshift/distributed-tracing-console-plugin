@@ -1,4 +1,4 @@
-import { Extension, ExtensionDeclaration } from '@openshift-console/dynamic-plugin-sdk/lib/types';
+import { Extension } from '@openshift-console/dynamic-plugin-sdk/lib/types';
 
 export type Attachment = {
   attachmentType: AttachmentTypes;
@@ -20,7 +20,7 @@ export type OpenOLSHandlerProps = {
   provider: () => (prompt?: string, attachments?: Attachment[]) => void;
 };
 
-type OpenOLSHandlerExtension = ExtensionDeclaration<'console.action/provider', OpenOLSHandlerProps>;
+type OpenOLSHandlerExtension = Extension<'console.action/provider', OpenOLSHandlerProps>;
 
 // Type guard for OpenShift Lightspeed open handler extensions
 export const isOpenOLSHandlerExtension = (e: Extension): e is OpenOLSHandlerExtension =>

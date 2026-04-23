@@ -2,10 +2,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "es2021",
     "sourceMap": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
     "allowJs": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -19,7 +19,8 @@
     "files": true,
     "transpileOnly": true,
     "compilerOptions": {
-      "module": "commonjs"
+      "module": "commonjs",
+      "moduleResolution": "node"
     }
   }
 }

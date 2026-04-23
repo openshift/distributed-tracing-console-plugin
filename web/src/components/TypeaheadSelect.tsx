@@ -182,7 +182,7 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
       }
 
       // Open the menu when the input value changes and the new value is not empty
-      openMenu();
+      openMenu(); // eslint-disable-line react-hooks/set-state-in-effect
     }
 
     // When no options are  available,  display 'No options available'
@@ -212,10 +212,9 @@ export const TypeaheadSelectBase: FunctionComponent<TypeaheadSelectProps> = ({
     // If the selected option changed and the current input value is the previously selected item, update the displayed value.
     const selectedOption = initialOptions.find((o) => o.selected);
     // if (inputValue === selected && selectedOption?.value !== selected) {
-    setInputValue(String(selectedOption?.content ?? ''));
+    setInputValue(String(selectedOption?.content ?? '')); // eslint-disable-line react-hooks/set-state-in-effect
     // }
     // Only update when options change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOptions]);
 
   const setActiveAndFocusedItem = (itemIndex: number) => {

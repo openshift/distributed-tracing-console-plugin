@@ -8,9 +8,9 @@ import {
   Title,
   Tooltip,
 } from '@patternfly/react-core';
-import { Helmet } from 'react-helmet';
+import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useParams } from 'react-router-dom-v5-compat';
+import { Link, useLocation, useParams } from 'react-router';
 import {
   PersesDashboardWrapper,
   PersesTempoDatasourceWrapper,
@@ -155,11 +155,7 @@ function PageTitle() {
 
   return (
     <>
-      <Helmet>
-        <title>
-          {t('Trace')} {traceName} · {t('Tracing')}
-        </title>
-      </Helmet>
+      <DocumentTitle>{`${t('Trace')} ${traceName} · ${t('Tracing')}`}</DocumentTitle>
       <Title headingLevel="h1">{traceName}</Title>
     </>
   );

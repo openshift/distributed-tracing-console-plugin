@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { ComponentProps, ReactElement, ReactNode, useMemo } from 'react';
 import {
   ChartsProvider,
   generateChartsTheme,
@@ -46,7 +46,7 @@ import { ErrorAlert } from './ErrorAlert';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
 import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
-import { Link as RouterLink, useNavigate } from 'react-router-dom-v5-compat';
+import { Link as RouterLink, useNavigate } from 'react-router';
 import './PersesWrapper.css';
 
 class DatasourceApiImpl implements DatasourceApi {
@@ -97,7 +97,7 @@ const pluginLoader = dynamicImportPluginLoader(
 );
 
 interface PersesWrapperProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 /**
@@ -139,7 +139,7 @@ export function PersesWrapper({ children }: PersesWrapperProps) {
 }
 
 interface PersesDashboardWrapperProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 /**
@@ -160,7 +160,7 @@ interface PersesTempoDatasourceWrapperProps {
   tempo: TempoInstance | undefined;
   queries: Definition<UnknownSpec>[];
   duration?: DurationString;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 /**
@@ -201,7 +201,7 @@ export function PersesTempoDatasourceWrapper({
 
 interface PersesPanelPluginWrapperProps<T> {
   plugin: T;
-  noResults?: React.ReactNode;
+  noResults?: ReactNode;
 }
 
 /**
@@ -212,7 +212,7 @@ export function PersesPanelPluginWrapper<
   Spec = any, // eslint-disable-line @typescript-eslint/no-explicit-any
 >(
   props: PersesPanelPluginWrapperProps<T> &
-    Omit<React.ComponentProps<T['PanelComponent']>, 'queryResults'>,
+    Omit<ComponentProps<T['PanelComponent']>, 'queryResults'>,
 ) {
   const { plugin, noResults, ...otherProps } = props;
   const { isFetching, isLoading, queryResults } = useDataQueriesContext();
@@ -247,7 +247,7 @@ export function PersesPanelPluginWrapper<
 }
 
 interface PersesTracePanelWrapperProps {
-  noResults?: React.ReactElement;
+  noResults?: ReactElement;
 }
 
 /**
