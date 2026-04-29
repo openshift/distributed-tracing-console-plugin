@@ -117,6 +117,7 @@ This project includes a comprehensive set of custom Cypress commands optimized f
 - **Component-aware interactions** for PatternFly elements
 - **Bulk validation** for trace attributes (75% code reduction)
 - **Debug-friendly** commands with built-in logging
+- **OCP version compatibility** with `cy.dismissWelcomeModal()` for OCP 4.22+ modal handling
 
 ### Key Command Categories
 
@@ -219,8 +220,19 @@ EOF
 
 Ensure the environment variables are set before running Cypress tests to properly configure Lightspeed.
 
+### Cypress MCP Server (AI-Assisted Testing)
+
+The project supports the [cypress-mcp](https://github.com/yashpreetbathla/cypress-mcp) MCP server, which gives Claude Code tools to run Cypress tests, manage spec files, and automate browsers. See the "Cypress MCP Setup" section in `CLAUDE.md` for setup instructions.
+
+With the MCP server configured, Claude Code can:
+- List and read spec files (`cypress_list_specs`, `cypress_read_spec`)
+- Run tests and get structured results (`cypress_run`)
+- Open the Cypress GUI (`cypress_open`)
+- Automate a browser for visual inspection (`cypress_navigate`, `cypress_screenshot`, `cypress_snapshot`)
+
 ### Documentation
 - **CLAUDE.md** - Guidance for Claude AI assistance with this codebase
 - **SELECTOR_BEST_PRACTICES.md** - Comprehensive selector guidelines and command usage
 - **PATTERNFLY_COMMANDS_EXAMPLES.md** - Complete command examples and workflows
+- **TEST_COVERAGE_REPORT.md** - Detailed test coverage analysis and gap report
 - **README.md** - This file with setup and architecture overview

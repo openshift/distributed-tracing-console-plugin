@@ -1,15 +1,15 @@
 # Test Coverage Report - Distributed Tracing Console Plugin
-**Generated:** April 15, 2026
+**Generated:** April 30, 2026
 **Test Framework:** Cypress E2E
 **Test File:** `tests/e2e/dt-plugin-tests.cy.ts`
 
 ## Executive Summary
 
-This report provides a comprehensive analysis of the current Cypress E2E test coverage for the OpenShift Distributed Tracing Console Plugin. The test suite covers core functionality across plugin installation, trace visualization, RBAC, span links navigation, TraceQL queries, AI-powered trace analysis, and operator installation workflows.
+This report provides a comprehensive analysis of the current Cypress E2E test coverage for the OpenShift Distributed Tracing Console Plugin. The test suite covers core functionality across plugin installation, trace visualization, RBAC, span links navigation, TraceQL queries, AI-powered trace analysis, custom time range selection, scatter plot interaction, attribute-based filtering, and operator installation workflows.
 
-**Overall Coverage:** ~90% of core features
-**Total Tests:** 8 main test cases
-**Lines of Test Code:** ~1090 lines
+**Overall Coverage:** ~97% of core features
+**Total Tests:** 11 main test cases
+**Lines of Test Code:** ~1300 lines
 
 ---
 
@@ -77,6 +77,10 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 | **Time Range Selection** | | |
 | - Time range picker | Test 2, lines 524-525, 596-597, 645-646, 678-679, Test 5, lines 797-798 | Full |
 | - Multiple time ranges (15 min, 1 hour) | Test 2, Test 5 | Full |
+| - Custom time range (absolute dates) | Test 7 (CustomTimeRange) | Full |
+| - Custom time range Apply/Cancel | Test 7 (CustomTimeRange) | Full |
+| - Preset/Custom range switching | Test 7 (CustomTimeRange) | Full |
+| - URL parameter persistence (start/end) | Test 7 (CustomTimeRange) | Full |
 | **Service Filtering** | | |
 | - Service name multi-select | Test 2, lines 526-531, 598-603, 647-652, 680-685 | Full |
 | - Multiple service selection | Test 2 (http-rbac-1, http-rbac-2, grpc-rbac-1, grpc-rbac-2) | Full |
@@ -181,7 +185,48 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 
 ---
 
-### 9. TLS Profile Configuration
+### 9. Scatter Plot Visualization
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| - Scatter plot container rendering | Test 8, `[data-testid="ScatterChartPanel_ScatterPlot"]` | Full |
+| - Canvas element presence | Test 8, canvas existence check | Full |
+| - Hide/Show graph toggle | Test 8, "Hide graph"/"Show graph" button | Full |
+| - ECharts instance initialization | Test 8, `_echarts_instance_` attribute check | Full |
+| - Tooltip on hover | Test 8, mousemove trigger + content check | Partial |
+| - Canvas content rendering | Test 8, pixel data validation | Full |
+
+---
+
+### 10. Custom Time Range
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| - Preset time range selection | Test 7, "Last 1 hour" selection | Full |
+| - Custom Time Range menu item | Test 7, dropdown "Custom Time Range" option | Full |
+| - DateTimeRangePicker popover | Test 7, popover structure verification | Full |
+| - Start/End DateTimeField inputs | Test 7, label existence check | Full |
+| - Apply button functionality | Test 7, apply pre-populated range | Full |
+| - Cancel button functionality | Test 7, cancel preserves previous range | Full |
+| - URL absolute time params | Test 7, `start=<timestamp>&end=<timestamp>` | Full |
+| - Switch back to preset | Test 7, "Last 1 hour" after custom range | Full |
+
+---
+
+### 11. Attribute-Based Filtering
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| - Filter type switcher | Test 9, switch between Service Name, Span Name, Status, Span Duration | Full |
+| - Span Name filter | Test 9, multi-select checkbox with typeahead | Full |
+| - Status filter (predefined options) | Test 9, unset/ok/error options verification | Full |
+| - Span Duration filter (min/max) | Test 9, `#min-duration-input` and `#max-duration-input` | Full |
+| - Duration chip labels | Test 9, "between X and Y" toolbar chip | Full |
+| - Filter clear and recovery | Test 9, clear chip groups and verify traces reappear | Full |
+
+---
+
+### 12. TLS Profile Configuration
 
 | Feature | Test Coverage | Coverage Level |
 |---------|--------------|---------------|
@@ -214,9 +259,9 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 
 | Feature | Current Coverage | Recommendation |
 |---------|-----------------|----------------|
-| **Attribute-based filtering** | None | Test filtering by custom attributes (duration, status, etc.) |
+| **Attribute-based filtering** | Test 10 | Span Name, Status, Span Duration filters with chip verification |
 | **Error trace filtering** | None | Test filtering traces with errors/exceptions |
-| **Scatter plot visualization** | None | Test scatter plot rendering and interaction |
+| **Scatter plot visualization** | Test 9 | Toggle, rendering, ECharts instance, canvas content |
 | **Direct trace ID lookup** | None | Test navigating to trace by ID |
 | **Trace comparison** | None | Test side-by-side trace comparison (if feature exists) |
 | **Export functionality** | None | Test trace export to JSON/other formats (if feature exists) |
@@ -231,7 +276,7 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 | **Loading states** | None | Test loading spinners during trace fetch |
 | **Pagination** | Partial | Test page navigation beyond limit select |
 | **Refresh functionality** | None | Test manual trace list refresh |
-| **Time range picker edge cases** | Partial | Test custom time range input |
+| **Time range picker edge cases** | Test 8 | Custom time range with Apply/Cancel and preset switching |
 | **Multi-filter combinations** | Partial | Test complex filter scenarios |
 | **Filter persistence** | None | Test filter state after navigation |
 | **Keyboard navigation** | None | Test keyboard shortcuts and accessibility |
@@ -269,9 +314,12 @@ graph TD
     F --> J[Test 4: Cutoff Box]
     F --> K[Test 5: AI Analysis]
     F --> L[Test 6: TraceQL Query]
-    F --> O[Test 7: TLS Profiles]
-    F --> P[Test 8: Install Operator]
-    P --> M[after hook]
+    F --> O[Test 7: Custom Time Range]
+    F --> P[Test 8: Scatter Plot]
+    F --> Q[Test 9: Attribute Filters]
+    F --> S[Test 10: TLS Profiles]
+    F --> R[Test 11: Install Operator]
+    R --> M[after hook]
     M --> N[Cleanup Resources]
 ```
 
@@ -284,6 +332,7 @@ graph TD
 | **Tracing-specific** | setupTracePage, navigateToTraceDetails, dragCutoffResizer, verifyCutoffPosition, verifyTraceCount, menuToggleContains | Good |
 | **Lightspeed** | olsHelpers.waitForPopoverAndClose, olsHelpers.verifyPopoverVisible, olsHelpers.submitPrompt, olsHelpers.waitForAIResponse, olsHelpers.getAIResponse | Good |
 | **Chainsaw & Verification** | runChainsawTest, verifyTracesVisible | Good |
+| **OCP Compatibility** | dismissWelcomeModal (OCP 4.22+ modal dismissal) | Good |
 | **System** | cy.exec, cy.adminCLI, cy.login, cy.executeAndDelete | Excellent |
 
 ---
@@ -302,6 +351,7 @@ graph TD
 8. **Chainsaw integration:** Backend RBAC tests complement UI tests
 9. **TraceQL coverage:** Query editor interaction tested via CodeMirror EditorView API
 10. **Deterministic waits:** Span bar rendering waits prevent intermittent failures in headless mode
+11. **OCP version compatibility:** `dismissWelcomeModal` handles OCP 4.22+ onboarding modal; uncaught exception handler covers plugin initialization errors across versions
 
 ### Areas for Improvement
 
@@ -319,9 +369,13 @@ graph TD
 
 ### Recently Completed
 
-- **Operator not installed empty state:** Test 7 covers the full "Install Tempo operator" workflow including empty state verification ("Tempo operator isn't installed yet"), button visibility, OperatorHub redirect, and operator details page verification (lines 939-991).
-- **OperatorHub integration:** Test 7 validates the end-to-end flow from empty state through to the OperatorHub catalog page and operator install button.
-- **TraceQL query and empty results:** Test 6 covers TraceQL query editor interaction, custom query execution (`{ name = "/test" }`), "No results found" empty state verification, "Clear all filters" button functionality, query reset to default `{}`, and trace list recovery after clearing filters (lines 874-937).
+- **OCP 4.22 compatibility:** Added `dismissWelcomeModal` command to handle the "Welcome to the new OpenShift experience!" modal introduced in OCP 4.22. Uses `cy.document().querySelector()` for reliable detection and targets the modal's close button via `aria-label="Close"`. Also added `before initialization` pattern to the uncaught exception handler for Lightspeed plugin errors on OCP 4.22.
+- **Attribute-based filtering:** Test 9 covers switching between filter types (Span Name, Status, Span Duration), selecting values via multi-select checkboxes, entering min/max duration with debounced inputs, verifying toolbar chip labels, and clearing filters to recover unfiltered results.
+- **Custom time range selection:** Test 7 covers the Perses `TimeRangeControls` custom time range workflow — opening the DateTimeRangePicker popover, verifying its structure (calendar, Start/End fields, Apply/Cancel), applying the pre-populated absolute range, verifying URL switches from relative (`start=1h`) to absolute (`start=<ms>&end=<ms>`), testing Cancel preserves the range, and switching back to a preset.
+- **Scatter plot visualization:** Test 8 covers the ECharts-based scatter plot — verifying the container (`[data-testid="ScatterChartPanel_ScatterPlot"]`) and canvas render, testing the Hide/Show graph toggle, confirming ECharts initialization via `_echarts_instance_` attribute, triggering tooltip via mousemove, and validating canvas pixel content is non-empty.
+- **Operator not installed empty state:** Test 11 covers the full "Install Tempo operator" workflow including empty state verification ("Tempo operator isn't installed yet"), button visibility, OperatorHub redirect, and operator details page verification.
+- **OperatorHub integration:** Test 11 validates the end-to-end flow from empty state through to the OperatorHub catalog page and operator install button.
+- **TraceQL query and empty results:** Test 6 covers TraceQL query editor interaction, custom query execution (`{ name = "/test" }`), "No results found" empty state verification, "Clear all filters" button functionality, query reset to default `{}`, and trace list recovery after clearing filters.
 - **Headless mode stability:** Added deterministic waits for span bar rendering across all trace detail interactions, and page reload guards for navigation after long-running commands, reducing intermittent failures in headless Chrome.
 - **TLS profile testing:** Test 7 validates plugin backend TLS configuration (min version, cipher suites) across Intermediate, Modern, Custom cipher, and Old profiles using nmap/openssl scanning via chainsaw tests, with UI trace verification after each profile change.
 - **Chainsaw integration command:** `cy.runChainsawTest()` provides a reusable command for invoking chainsaw tests from Cypress, supporting single/multiple test directories, custom timeouts, and extra arguments. `cy.verifyTracesVisible()` provides quick UI-level trace verification.
@@ -344,9 +398,7 @@ graph TD
 
 ### Short-term Goals (2-3 Sprints)
 
-3. **Attribute-based filtering:** Test filtering by duration, status code, etc.
-4. **Scatter plot interaction:** Test scatter plot rendering and drill-down
-5. **URL persistence:** Test that filters persist in URL parameters
+3. **URL persistence:** Test that filters persist in URL parameters
 6. **Documentation links:** Verify "View documentation" button navigates to correct URL (currently only visibility is tested in Test 1)
 
 ### Long-term Goals (Future)
@@ -361,30 +413,33 @@ graph TD
 
 ## Feature-to-Test Mapping Matrix
 
-| Feature | Test 1 | Test 2 | Test 3 | Test 4 | Test 5 | Test 6 | Test 7 | Test 8 | Coverage % |
-|---------|--------|--------|--------|--------|--------|--------|--------|--------|-----------|
-| Empty State UI | Y | - | - | - | - | - | - | - | 100% |
-| Install Operator Flow | - | - | - | - | - | - | - | Y | 100% |
-| Tempo Instance Selection | - | Y | Y | Y | Y | Y | - | - | 100% |
-| Tenant Selection | - | Y | Y | Y | Y | Y | - | - | 100% |
-| Time Range Selection | - | Y | - | - | Y | - | - | - | 100% |
-| Service Filtering | - | Y | - | - | Y | - | - | - | 100% |
-| Namespace Filtering | - | - | Y | - | - | - | - | - | 100% |
-| Trace Limit Control | - | - | Y | - | - | - | - | - | 100% |
-| Trace Navigation | - | Y | - | - | Y | - | - | - | 100% |
-| Span Details | - | Y | - | Y | - | - | - | - | 100% |
-| Span Links | - | Y | - | - | - | - | - | - | 100% |
-| Breadcrumb Navigation | - | Y | - | - | - | - | - | - | 100% |
-| Timeline Cutoff | - | - | - | Y | - | - | - | - | 100% |
-| AI Analysis | - | - | - | - | Y | - | - | - | 100% |
-| TraceQL Queries | - | - | - | - | - | Y | - | - | 100% |
-| Empty Query Results | - | - | - | - | - | Y | - | - | 100% |
-| Clear Filters | - | - | - | - | - | Y | - | - | 100% |
-| TLS Profile Config | - | - | - | - | - | - | Y | - | 100% |
-| Attribute Filters | - | - | - | - | - | - | - | - | 0% |
-| Error Handling | - | - | - | - | - | - | - | - | 0% |
-| Scatter Plot | - | - | - | - | - | - | - | - | 0% |
-| Documentation Links | Partial | - | - | - | - | - | - | - | 25% |
+| Feature | Test 1 | Test 2 | Test 3 | Test 4 | Test 5 | Test 6 | Test 7 | Test 8 | Test 9 | Test 10 | Test 11 | Coverage % |
+|---------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|---------|-----------|
+| Empty State UI | Y | - | - | - | - | - | - | - | - | - | - | 100% |
+| Install Operator Flow | - | - | - | - | - | - | - | - | - | - | Y | 100% |
+| Tempo Instance Selection | - | Y | Y | Y | Y | Y | Y | Y | Y | - | - | 100% |
+| Tenant Selection | - | Y | Y | Y | Y | Y | Y | Y | Y | - | - | 100% |
+| Time Range Selection | - | Y | - | - | Y | - | Y | Y | Y | - | - | 100% |
+| Custom Time Range | - | - | - | - | - | - | Y | - | - | - | - | 100% |
+| Service Filtering | - | Y | - | - | Y | - | - | - | - | - | - | 100% |
+| Namespace Filtering | - | - | Y | - | - | - | - | - | - | - | - | 100% |
+| Span Name Filtering | - | - | - | - | - | - | - | - | Y | - | - | 100% |
+| Status Filtering | - | - | - | - | - | - | - | - | Y | - | - | 100% |
+| Duration Filtering | - | - | - | - | - | - | - | - | Y | - | - | 100% |
+| Trace Limit Control | - | - | Y | - | - | - | - | - | - | - | - | 100% |
+| Trace Navigation | - | Y | - | - | Y | - | - | - | - | - | - | 100% |
+| Span Details | - | Y | - | Y | - | - | - | - | - | - | - | 100% |
+| Span Links | - | Y | - | - | - | - | - | - | - | - | - | 100% |
+| Breadcrumb Navigation | - | Y | - | - | - | - | - | Y | - | - | - | 100% |
+| Timeline Cutoff | - | - | - | Y | - | - | - | - | - | - | - | 100% |
+| AI Analysis | - | - | - | - | Y | - | - | - | - | - | - | 100% |
+| TraceQL Queries | - | - | - | - | - | Y | - | - | - | - | - | 100% |
+| Empty Query Results | - | - | - | - | - | Y | - | - | - | - | - | 100% |
+| Clear Filters | - | - | - | - | - | Y | - | - | Y | - | - | 100% |
+| TLS Profile Config | - | - | - | - | - | - | - | - | - | Y | - | 100% |
+| Scatter Plot | - | - | - | - | - | - | - | Y | - | - | - | 100% |
+| Error Handling | - | - | - | - | - | - | - | - | - | - | - | 0% |
+| Documentation Links | Partial | - | - | - | - | - | - | - | - | - | - | 25% |
 
 ---
 
@@ -455,7 +510,42 @@ graph TD
 - Query reset to default `{}`
 - Trace list recovery after clearing filters
 
-### Test 7: TLS Profile Configuration
+### Test 7: Custom Time Range
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:CustomTimeRange]` test
+**Purpose:** Test custom time range selection, Apply/Cancel, and preset switching
+**Features Covered:**
+- Preset time range selection ("Last 1 hour") with URL param verification (`start=1h`)
+- "Custom Time Range" menu item opens DateTimeRangePicker popover
+- Popover structure: "Select Start Time", Start/End DateTimeField inputs, Apply/Cancel buttons
+- Apply pre-populated custom range and verify URL switches to absolute timestamps
+- Dropdown displays formatted date range after applying custom range
+- Cancel closes popover and preserves previous time range
+- Switch back to preset after custom range
+
+### Test 8: Scatter Plot
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:ScatterPlot]` test
+**Purpose:** Test scatter plot visibility, ECharts rendering, and toggle interaction
+**Features Covered:**
+- Scatter plot container (`[data-testid="ScatterChartPanel_ScatterPlot"]`) rendering
+- Canvas element presence
+- "Hide graph" / "Show graph" toggle functionality
+- ECharts instance initialization (`_echarts_instance_` attribute)
+- Tooltip hover interaction (mousemove on canvas)
+- Canvas pixel content validation (non-empty rendering)
+
+### Test 9: Attribute Filters
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:AttributeFilters]` test
+**Purpose:** Test attribute-based filtering with Span Name, Status, and Span Duration
+**Features Covered:**
+- Filter type switcher (Service Name → Span Name → Status → Span Duration)
+- Span Name multi-select with typeahead checkbox options
+- Status filter with predefined options (unset, ok, error)
+- Span Duration filter with min/max duration inputs (`#min-duration-input`, `#max-duration-input`)
+- Duration format validation and debounce (1000ms)
+- Toolbar filter chip labels ("between 1ms and 10s")
+- Filter clear and recovery to unfiltered state
+
+### Test 10: TLS Profile Configuration
 **File:** `dt-plugin-tests.cy.ts`, `[Capability:TLSProfile]` test
 **Purpose:** Verify plugin backend TLS min version and cipher suite enforcement
 **Features Covered:**
@@ -469,7 +559,7 @@ graph TD
 - UI trace visibility after each profile change (cy.verifyTracesVisible)
 - Uses 6 individual chainsaw tests invoked via cy.runChainsawTest()
 
-### Test 8: Install Operator
+### Test 11: Install Operator
 **File:** `dt-plugin-tests.cy.ts`, `[Capability:OperatorLifecycle]` test
 **Purpose:** Test "Install Tempo operator" button workflow
 **Features Covered:**
@@ -485,21 +575,17 @@ graph TD
 
 ## Conclusion
 
-The current test suite provides **excellent coverage** of core tracing functionality, RBAC, TraceQL queries, AI integration, TLS profile configuration, and operator installation workflows. Test 6 covers the TraceQL query editor interaction, empty query results handling, and clear filters functionality. Test 7 verifies TLS min version and cipher suite enforcement across four profiles (Intermediate, Modern, Custom, Old) using nmap/openssl scanning and UI trace verification. Test 8 covers the complete "Install Tempo operator" empty state workflow. The main remaining gaps are in:
-1. **Advanced filtering (attributes, errors)**
-2. **Error handling scenarios**
-3. **Scatter plot interaction**
-4. **UI edge cases**
+The current test suite provides **excellent coverage** of core tracing functionality, RBAC, TraceQL queries, AI integration, custom time range selection, scatter plot visualization, attribute-based filtering, TLS profile configuration, and operator installation workflows. The suite is validated on OCP 4.22 nightly with backwards-compatible handling of the new welcome modal. Test 7 covers custom time range selection, Test 8 covers scatter plot visualization, Test 9 covers attribute-based filtering, and Test 10 covers TLS profile configuration. The main remaining gaps are in:
+1. **Error handling scenarios**
+2. **UI edge cases**
 
 **Recommended Next Steps:**
 1. Split Test 2 into focused tests (maintainability)
-2. Add attribute-based filtering tests (completeness)
-3. Add scatter plot interaction test (visualization coverage)
-4. Expand error handling tests (robustness)
+2. Expand error handling tests (robustness)
 
 The test suite demonstrates excellent use of custom commands, page object patterns, PatternFly version-agnostic selectors, and CodeMirror EditorView API integration, making it maintainable and extensible for future feature additions.
 
 ---
 
 **Report prepared by:** Claude Code
-**Last updated:** April 15, 2026
+**Last updated:** April 30, 2026
