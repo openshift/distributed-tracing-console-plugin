@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FormHelperText,
   HelperText,
@@ -6,7 +6,7 @@ import {
   TextInput,
   TextInputProps,
 } from '@patternfly/react-core';
-import { debounce } from 'lodash';
+import { debounce } from 'lodash-es';
 import { ExclamationCircleIcon } from '@patternfly/react-icons';
 
 export interface DebouncedTextInputProps extends TextInputProps {
@@ -48,7 +48,7 @@ export function DebouncedTextInput({
   }, [setValue, isValidInput, waitTime]);
 
   const handleChange = useCallback(
-    (_event: React.FormEvent<HTMLInputElement>, newValue: string) => {
+    (_event: FormEvent<HTMLInputElement>, newValue: string) => {
       setDraftValue(newValue);
       debouncedSetValue(newValue);
     },
@@ -60,7 +60,7 @@ export function DebouncedTextInput({
   }, [debouncedSetValue]);
 
   useEffect(() => {
-    setDraftValue(value);
+    setDraftValue(value); // eslint-disable-line react-hooks/set-state-in-effect
   }, [value, setDraftValue]);
 
   const validInput = isValidInput(draftValue);

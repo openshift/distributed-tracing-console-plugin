@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { ReactElement, ReactNode, useState } from 'react';
 import {
   ToolbarGroup,
   ToolbarItem,
@@ -21,7 +21,7 @@ import { traceQLToFilter } from './Filter/traceql_to_filter';
 import { TypeaheadCheckboxSelect } from '../../../components/TypeaheadCheckboxSelect';
 import { DurationField, Filter, splitByUnquotedWhitespace } from './Filter/filter';
 import { useTagValues } from '../../../hooks/useTagValues';
-import { Link } from 'react-router-dom-v5-compat';
+import { Link } from 'react-router';
 import { useTimeRange } from '@perses-dev/plugin-system';
 import { getUnixTimeRange } from '@perses-dev/tempo-plugin';
 
@@ -190,9 +190,9 @@ export function AttributeFilters(props: AttributeFiltersProps) {
 
 interface TypeaheadStringAttributeFilterProps {
   filterName: string;
-  label?: React.ReactNode;
-  labelHelp?: React.ReactElement;
-  noResultsFoundText?: React.ReactNode;
+  label?: ReactNode;
+  labelHelp?: ReactElement;
+  noResultsFoundText?: ReactNode;
   show?: boolean;
   options: TypeaheadSelectOption[];
   value: string[];

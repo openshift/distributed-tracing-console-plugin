@@ -1,10 +1,9 @@
-import React from 'react';
 import { EmptyState, EmptyStateBody } from '@patternfly/react-core';
 import { CubesIcon } from '@patternfly/react-icons';
 
 import { useTranslation } from 'react-i18next';
 
-export const NoTempoInstanceSelectedState: React.FunctionComponent = () => {
+export function NoTempoInstanceSelectedState() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
 
   return (
@@ -14,4 +13,4 @@ export const NoTempoInstanceSelectedState: React.FunctionComponent = () => {
       </EmptyStateBody>
     </EmptyState>
   );
-};
+}

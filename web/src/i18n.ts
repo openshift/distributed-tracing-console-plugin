@@ -17,7 +17,6 @@ i18n
     lng: 'en',
     load: 'languageOnly',
     missingKeyHandler: function (lng, ns, key) {
-      // eslint-disable-next-line no-console
       console.error(`Missing i18n key "${key}" in namespace "${ns}" and language "${lng}"`);
     },
     ns: ['plugin__distributed-tracing-console-plugin'],

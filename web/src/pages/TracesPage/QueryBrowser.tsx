@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Divider, PageSection, Split, SplitItem, Stack, Title } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { TimeRangeSelect } from '../../components/TimeRangeSelect';
