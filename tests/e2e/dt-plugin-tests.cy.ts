@@ -1113,7 +1113,8 @@ EOF`,
     cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
 
     cy.log('Switch filter type to Span Name');
-    cy.get('#active-filter-select').click();
+    cy.contains('label', 'Filter').parent()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
     cy.pfSelectMenuItem('Span Name').click();
 
     cy.log('Open Span Name multi-select and verify options appear');
@@ -1134,7 +1135,8 @@ EOF`,
     cy.pfCloseButtonIfExists('Close label group');
 
     cy.log('Switch filter type to Status');
-    cy.get('#active-filter-select').click();
+    cy.contains('label', 'Filter').parent()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
     cy.pfSelectMenuItem('Status').click();
 
     cy.log('Open Status multi-select and verify predefined options');
@@ -1155,7 +1157,8 @@ EOF`,
     cy.pfCloseButtonIfExists('Close label group');
 
     cy.log('Switch filter type to Span Duration');
-    cy.get('#active-filter-select').click();
+    cy.contains('label', 'Filter').parent()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
     cy.pfSelectMenuItem('Span Duration').click();
 
     cy.log('Enter min duration: 1ms');
@@ -1183,7 +1186,8 @@ EOF`,
     cy.pfCloseButtonIfExists('Close label group');
 
     cy.log('Switch filter type back to Service Name');
-    cy.get('#active-filter-select').click();
+    cy.contains('label', 'Filter').parent()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
     cy.pfSelectMenuItem('Service Name').click();
 
     cy.log('Verify traces are visible without any filters');
@@ -1264,9 +1268,17 @@ EOF`,
 
     cy.dismissWelcomeModal();
 
-    cy.log('Verify Tempo Operator details modal Install button exists');
-    // Support both old and new OpenShift versions
-    cy.get('[data-test="catalog-details-modal-cta"], [data-test-id="operator-install-btn"]', { timeout: 60000 }).should('exist');
+    cy.log('Verify Tempo Operator is shown on the catalog/OperatorHub page');
+    // OCP 4.22+ uses a "Software Catalog" page with tiles; older versions show an OperatorHub modal
+    cy.get('body', { timeout: 60000 }).should('contain.text', 'Tempo');
+    cy.get('body').then(($body) => {
+      if ($body.find('[data-test="catalog-details-modal-cta"], [data-test-id="operator-install-btn"]').length > 0) {
+        cy.log('Found OperatorHub install button (pre-4.22 flow)');
+      } else {
+        cy.log('Catalog page detected (4.22+ flow), verifying Tempo Operator tile is visible');
+        cy.contains('Tempo Operator').should('be.visible');
+      }
+    });
 
     cy.log('✓ "Install Tempo operator" button successfully redirects to OperatorHub');
   });
