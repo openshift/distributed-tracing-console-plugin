@@ -81,9 +81,10 @@ The test suite includes comprehensive PatternFly-aware custom commands:
 - **Bulk validation**: Commands for validating multiple trace attributes efficiently
 - **Chainsaw integration**: `cy.runChainsawTest(testDirs, description, options?)` runs chainsaw tests from Cypress; accepts a single directory name, an array of directories, or full paths starting with `./`; supports optional `timeout` and `extraArgs`
 - **Trace UI verification**: `cy.verifyTracesVisible(tempoInstance, tenant)` navigates to traces page and asserts traces are visible for the given Tempo instance and tenant
+- **OCP compatibility**: `cy.dismissWelcomeModal()` handles the OCP 4.22+ "Welcome to the new OpenShift experience!" modal overlay
 
 #### Test Types
-1. **Cypress E2E Tests**: Main UI automation testing the plugin functionality
+1. **Cypress E2E Tests**: Main UI automation testing the plugin functionality (11 tests covering empty state, trace visualization, RBAC, trace limits, cutoff box, AI analysis, TraceQL queries, custom time range, scatter plot, attribute-based filtering, TLS profiles, and operator installation). Validated on OCP 4.22 nightly.
 2. **Chainsaw Tests**: Kubernetes-native testing for RBAC, TLS profiles, and operator behavior
 3. **Debug Tests**: Rapid iteration tests without full setup/teardown
 
@@ -122,6 +123,55 @@ Chainsaw tests in `fixtures/chainsaw-tests/tls-profile-*` verify the plugin back
 Profiles tested: Intermediate (default), Modern (TLS 1.3 only), Custom cipher suites, Old (TLS 1.0+).
 
 Shared helpers live in `fixtures/chainsaw-tests/tls-profile/tls-helpers.sh`. Each profile is a separate chainsaw test directory invoked via `cy.runChainsawTest()` from the Cypress `[Capability:TLSProfile]` test, with `cy.verifyTracesVisible()` called after each to confirm the UI still works.
+
+## Cypress MCP Setup
+
+The Cypress MCP server provides Claude Code with tools to run Cypress tests, manage spec files, and automate browsers. To set it up:
+
+### 1. Clone the cypress-mcp repository
+```bash
+cd ~
+git clone git@github.com:yashpreetbathla/cypress-mcp.git
+```
+
+### 2. Install dependencies and build
+```bash
+cd ~/cypress-mcp
+npm install
+npm run build
+```
+
+### 3. Install Playwright Chromium (one-time, for browser automation tools)
+```bash
+npx playwright install chromium
+```
+
+### 4. Install Chromium for cypress-mcp's playwright-core version
+```bash
+cd ~/cypress-mcp
+node node_modules/playwright-core/cli.js install chromium
+```
+
+### 5. Configure MCP server
+Create `.mcp.json` in the project root (`distributed-tracing-console-plugin/.mcp.json`):
+```json
+{
+  "mcpServers": {
+    "cypress": {
+      "command": "node",
+      "args": ["<home>/cypress-mcp/dist/index.js", "--project", "<project-root>/tests"]
+    }
+  }
+}
+```
+Replace `<home>` with your home directory path and `<project-root>` with the absolute path to the distributed-tracing-console-plugin repository. The `--project` flag points to `tests/` where `cypress.config.ts` and the spec files live.
+
+### 6. Restart Claude Code
+Restart Claude Code to activate the MCP server. You will be prompted to approve the `cypress` server on first launch.
+
+### Notes
+- `.mcp.json` lives in the project root so it is picked up automatically without needing to change directories.
+- `.mcp.json` contains local absolute paths and is already listed in `.gitignore`.
 
 ## Documentation
 - **SELECTOR_BEST_PRACTICES.md**: Comprehensive selector guidelines

@@ -84,6 +84,7 @@ declare global {
       cliLogout(): Chainable<Element>;
       adminCLI(command: string, options?: any): Chainable<Element>;
       login(provider?: string, username?: string, password?: string): Chainable<Element>;
+      dismissWelcomeModal(): Chainable<void>;
       executeAndDelete(command: string): Chainable<Element>;
       // Lightspeed/OLS specific commands
       interceptFeedback(
@@ -353,6 +354,60 @@ Cypress.Commands.add('executeAndDelete', (command: string) => {
         cy.task('log', `Command "${command}" executed successfully`);
       }
     });
+});
+
+// Dismiss any modal overlay (e.g. OCP 4.22+ "Welcome" modal) if present.
+// Polls for up to 10 seconds on first call; subsequent calls do a single quick check.
+let welcomeModalSeen = false;
+let welcomeModalChecked = false;
+Cypress.Commands.add('dismissWelcomeModal', () => {
+  const dismissIfPresent = (doc: Document): boolean => {
+    const modalCloseBtn = doc.querySelector('.pf-v6-c-modal-box button[aria-label="Close"], .pf-v5-c-modal-box button[aria-label="Close"]');
+    if (modalCloseBtn) {
+      cy.log('Modal overlay detected, clicking close button');
+      cy.wrap(modalCloseBtn).click({ force: true });
+      cy.wait(1000);
+      welcomeModalSeen = true;
+      return true;
+    }
+    const modalBox = doc.querySelector('.pf-v6-c-modal-box, .pf-v5-c-modal-box');
+    if (modalBox) {
+      cy.log('Modal overlay detected, clicking first non-Learn button');
+      cy.get('.pf-v6-c-modal-box button, .pf-v5-c-modal-box button')
+        .not(':contains("Learn")')
+        .first()
+        .click({ force: true });
+      cy.wait(1000);
+      welcomeModalSeen = true;
+      return true;
+    }
+    return false;
+  };
+
+  if (!welcomeModalChecked) {
+    // First time: poll up to 5 times to catch modals that render with delay
+    const checkAndDismiss = (attemptsLeft = 5) => {
+      cy.wait(2000);
+      cy.document().then((doc) => {
+        if (dismissIfPresent(doc)) {
+          welcomeModalChecked = true;
+          return;
+        }
+        if (attemptsLeft > 0) {
+          checkAndDismiss(attemptsLeft - 1);
+        } else {
+          welcomeModalChecked = true;
+        }
+      });
+    };
+    checkAndDismiss();
+  } else if (welcomeModalSeen) {
+    // Modal was seen before — do a quick single check in case it reappears
+    cy.wait(1000);
+    cy.document().then((doc) => {
+      dismissIfPresent(doc);
+    });
+  }
 });
 
 // Best practice selector commands following accessibility and stability guidelines
@@ -720,6 +775,7 @@ Cypress.Commands.add(
     cy.reload();
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     // Wait for the Tempo instance typeahead to confirm the page is fully loaded
     cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
 
@@ -860,6 +916,7 @@ Cypress.Commands.add(
     cy.log('Verify traces are visible in the UI');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
     cy.pfTypeahead('Select a Tempo instance').click();
     cy.pfSelectMenuItem(tempoInstance).click();

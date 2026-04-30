@@ -7,6 +7,7 @@ export const operatorHubPage = {
       `/operatorhub/subscribe?pkg=${operatorName}&catalog=${csName}&catalogNamespace=openshift-marketplace`,
     );
     cy.get('body').should('be.visible');
+    cy.dismissWelcomeModal();
 
     // Wait for page to fully load - look for install button as a sign the page is ready
     cy.get('[data-test="install-operator"]').should('be.visible');
@@ -28,19 +29,19 @@ export const operatorHubPage = {
       // Step 1: Click "Select a Namespace" radio button (this shows the dropdown)
       cy.get('input[data-test="Select a Namespace-radio-input"]').should('be.visible');
       cy.get('input[data-test="Select a Namespace-radio-input"]').click();
-      
+
       // Step 2: Wait for "Select Project" dropdown to appear and click it
       cy.get('[data-test="dropdown-selectbox"]').should('be.visible').click();
-      
+
       // Step 3: Click "Create Project" button
       cy.get('button[data-test-dropdown-menu="Create_Project"]').click();
-      
+
       // Step 4: Fill in the project name in the modal
       cy.get('input[data-test="input-name"]').should('be.visible').clear().type(installNamespace);
-      
+
       // Step 5: Click Create button to create the project
       cy.get('[data-test="confirm-action"]').click();
-      
+
       // Step 6: Wait for Install button to be available after namespace creation
       cy.get('[data-test="install-operator"]', { timeout: 60000 }).should('be.visible');
     } else {
@@ -70,11 +71,11 @@ export const operatorHubPage = {
           cy.get('[data-test="Operator recommended Namespace:-radio-input"]').click();
         }
       });
-      
+
       // Enable monitoring checkbox if it exists (only for recommended namespace)
       helperfuncs.clickIfExist('[data-test="enable-monitoring"]');
     }
-    
+
     // Final step: Click Install button
     cy.get('[data-test="install-operator"]').should('be.visible').click();
   },

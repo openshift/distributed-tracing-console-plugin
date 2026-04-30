@@ -8,6 +8,19 @@ export const guidedTour = {
           .first()
           .click();
       }
+      // OCP 4.22+ modal overlays (e.g. "Welcome to the new OpenShift experience!")
+      if ($body.find('.pf-v6-c-modal-box, .pf-v5-c-modal-box').length > 0) {
+        if ($body.find('.pf-v6-c-modal-box button[aria-label="Close"], .pf-v5-c-modal-box button[aria-label="Close"]').length > 0) {
+          cy.get('.pf-v6-c-modal-box button[aria-label="Close"], .pf-v5-c-modal-box button[aria-label="Close"]')
+            .first()
+            .click({ force: true });
+        } else {
+          cy.get('.pf-v6-c-modal-box button, .pf-v5-c-modal-box button')
+            .not(':contains("Learn")')
+            .first()
+            .click({ force: true });
+        }
+      }
     });
   },
   isOpen: () => {

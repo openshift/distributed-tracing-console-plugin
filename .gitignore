@@ -7,3 +7,5 @@ integration-tests/.DS_Store
 .DS_Store
 .vscode
 plugin-backend
+.mcp.json
+tests/gui_test_screenshots/

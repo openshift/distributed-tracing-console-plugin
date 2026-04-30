@@ -153,6 +153,44 @@ cy.pfCloseButton('Close label group').click();     // PatternFly 6
 cy.pfCloseButton().click();                        // First close button found (any version)
 ```
 
+### Attribute Filter Interactions
+
+```typescript
+// Switch filter type (default is "Service Name")
+cy.pfMenuToggle('Service Name').click();
+cy.pfSelectMenuItem('Span Name').click();
+
+// Open multi-select checkbox dropdown and select first option
+cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]')
+  .first()
+  .check();
+
+// Switch to Status filter and verify predefined options
+cy.pfMenuToggle('Span Name').click();
+cy.pfSelectMenuItem('Status').click();
+cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+cy.pfCheckMenuItem('unset');
+cy.pfCheckMenuItem('error');
+
+// Switch to Span Duration filter with min/max inputs
+cy.pfMenuToggle('Status').click();
+cy.pfSelectMenuItem('Span Duration').click();
+cy.get('#min-duration-input').clear().type('1ms');
+cy.wait(1500); // Duration inputs have 1000ms debounce
+cy.get('#max-duration-input').clear().type('10s');
+cy.wait(1500);
+
+// Verify toolbar chip shows duration range
+cy.get('.pf-v6-c-label__content, .pf-v5-c-label__content')
+  .should('contain', '1ms')
+  .and('contain', '10s');
+
+// Clear filter chip groups
+cy.pfCloseButtonIfExists('Close chip group');
+cy.pfCloseButtonIfExists('Close label group');
+```
+
 ### Trace & Span Interactions
 
 ```typescript
@@ -297,6 +335,74 @@ describe('AI Trace Summary', () => {
 });
 ```
 
+### Custom Time Range Selection
+
+```typescript
+// Select a preset time range via MUI Select
+cy.muiSelect('Select time range').click();
+cy.muiSelectOption('Last 1 hour').click();
+
+// Open the custom time range picker
+cy.muiSelect('Select time range').click();
+cy.muiSelectOption('Custom Time Range').click();
+
+// Verify the DateTimeRangePicker popover opens
+cy.contains('.MuiPopover-paper', 'Apply', { timeout: 10000 }).should('be.visible');
+
+// Check popover structure
+cy.contains('.MuiPopover-paper', 'Apply').within(() => {
+  cy.contains('Select Start Time').should('be.visible');
+  cy.get('label').contains('Start Time').should('exist');
+  cy.get('label').contains('End Time').should('exist');
+});
+
+// Apply the pre-populated custom time range
+cy.contains('.MuiPopover-paper', 'Apply').within(() => {
+  cy.get('button.MuiButton-contained').contains('Apply').click();
+});
+
+// Cancel the custom time range
+cy.contains('.MuiPopover-paper', 'Apply').within(() => {
+  cy.get('button.MuiButton-outlined').contains('Cancel').click();
+});
+
+// Verify URL params after custom range apply
+cy.url().should('match', /start=\d+/);   // Absolute timestamp
+cy.url().should('match', /end=\d+/);
+
+// Verify URL params after preset selection
+cy.url().should('include', 'start=1h');   // Relative duration
+```
+
+### Scatter Plot Interactions
+
+```typescript
+// Verify scatter plot is rendered with ECharts
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"]').should('be.visible');
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').should('exist');
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] > div')
+  .should('have.attr', '_echarts_instance_');
+
+// Toggle scatter plot visibility
+cy.contains('button', 'Hide graph').click();
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"]').should('not.exist');
+cy.contains('button', 'Show graph').click();
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"]').should('be.visible');
+
+// Trigger tooltip via mousemove on canvas
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').first()
+  .trigger('mousemove', 'center', { force: true });
+
+// Validate canvas has rendered content (non-empty pixels)
+cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').first().then(($canvas) => {
+  const canvas = $canvas[0] as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const hasContent = imageData.data.some((val, idx) => idx % 4 !== 3 && val !== 0);
+  expect(hasContent).to.be.true;
+});
+```
+
 ### Chainsaw & TLS Verification
 
 ```typescript
@@ -411,6 +517,20 @@ cy.pfMenuItem('TempoStack', { timeout: 10000 }).click();
 4. **Break complex operations** into smaller, testable steps
 5. **Handle uncaught exceptions** gracefully in support files
 6. **Use timeouts** for components that load asynchronously
+
+### OCP Version Compatibility
+
+```typescript
+// Dismiss the OCP 4.22+ "Welcome to the new OpenShift experience!" modal
+// Call after cy.visit() to any page — no-op on older OCP versions
+cy.dismissWelcomeModal();
+
+// Typical usage pattern after navigating to a page
+cy.visit('/observe/traces');
+cy.url().should('include', '/observe/traces');
+cy.dismissWelcomeModal();
+cy.get('body').should('be.visible');
+```
 
 ## 🔧 Troubleshooting
 
