@@ -123,8 +123,16 @@ func Start(cfg *Config) {
 			logrus.WithError(err).Fatal("invalid certificate/key files")
 		}
 
+		// Wire GetConfigForClient so every TLS handshake uses the dynamically
+		// reloaded cert instead of the static cert loaded by ListenAndServeTLS.
+		tlsConfig.GetConfigForClient = ctrl.GetConfigForClient
+		// Notify the controller whenever the cert/key files change on disk.
+		certKeyPair.AddListener(ctrl)
+
 		ctx := context.Background()
 		go ctrl.Run(1, ctx.Done())
+		// Start the file watcher that detects cert rotation and notifies the controller.
+		go certKeyPair.Run(ctx, 1)
 	}
 
 	httpServer := &http.Server{

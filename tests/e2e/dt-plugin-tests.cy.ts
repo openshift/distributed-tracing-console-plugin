@@ -1202,6 +1202,10 @@ EOF`,
     cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
   });
 
+  it('[Capability:UIPlugin][Capability:TLSCertRotation] Test dynamic TLS certificate rotation without pod restart', function () {
+    cy.runChainsawTest('cert-rotation', 'TLS certificate rotation', { timeout: 600000 });
+  });
+
   it('[Capability:UIPlugin][Capability:TLSProfile] Test TLS profile configuration on plugin endpoints', function () {
     // Setup: install tls-scanner and scale down operator
     cy.runChainsawTest('tls-profile-setup', 'TLS profile setup');

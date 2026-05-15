@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -16,6 +17,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -465,8 +467,112 @@ func TestSecureServerCipherSuites(t *testing.T) {
 	require.Error(t, err, "Client with non-matching cipher suite should be rejected")
 }
 
+// TestSecureServerCertRotation verifies that the server dynamically reloads its
+// TLS certificate when the cert/key files are replaced on disk, without a pod
+// restart. This is the regression test for the cert-rotation bug where
+// GetConfigForClient, AddListener, and certKeyPair.Run were not wired up,
+// causing the server to serve the initial static cert forever.
+//
+// The test intentionally connects by IP (no SNI) to exercise the non-SNI code
+// path in GetConfigForClient — exactly the path the original bug exposed.
+func TestSecureServerCertRotation(t *testing.T) {
+	testPort, err := getFreePort(testHostname)
+	require.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "server-test-cert-rotation")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	certFile := filepath.Join(tmpDir, "server.cert")
+	keyFile := filepath.Join(tmpDir, "server.key")
+	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
+
+	err = generateCertificate(t, certFile, keyFile, testServerHostPort)
+	require.NoError(t, err)
+
+	// Save the working directory so we can restore it after the test.
+	// prepareServerAssets calls os.Chdir; without restoring, subsequent tests
+	// that use relative paths (e.g. TestFilesHandler → http.Dir("testdata"))
+	// would run from the deleted tmpDir and fail.
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+
+	tmpDirAssets := prepareServerAssets(t)
+	defer func() {
+		os.RemoveAll(tmpDirAssets)
+		os.Chdir(originalDir) //nolint:errcheck
+	}()
+
+	go func() {
+		Start(&Config{
+			CertFile:       certFile,
+			PrivateKeyFile: keyFile,
+			Port:           testPort,
+		})
+	}()
+
+	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
+	httpClient, err := (&httpClientConfig{
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
+	}).buildHTTPClient()
+	require.NoError(t, err)
+
+	checkHTTPReady(httpClient, serverURL+"/health")
+
+	initialSerial, err := getServedCertSerial(testHostname, testPort)
+	require.NoError(t, err)
+	t.Logf("Initial cert serial: %X", initialSerial)
+
+	// Replace the cert/key files on disk to simulate certificate rotation.
+	err = generateCertificate(t, certFile, keyFile, testServerHostPort)
+	require.NoError(t, err)
+	t.Logf("Cert/key files replaced on disk")
+
+	// Poll until the server begins serving the new cert. The dynamic controller
+	// detects the file change via fsnotify and reloads within a few seconds.
+	var rotatedSerial *big.Int
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		serial, dialErr := getServedCertSerial(testHostname, testPort)
+		if dialErr == nil && serial.Cmp(initialSerial) != 0 {
+			rotatedSerial = serial
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.NotNil(t, rotatedSerial, "server must serve the new cert within 30s of file replacement")
+	t.Logf("Rotated cert serial: %X", rotatedSerial)
+
+	_, err = getRequestResults(t, httpClient, serverURL+"/health")
+	require.NoError(t, err, "server must remain healthy after cert rotation")
+}
+
+// getServedCertSerial dials the TLS server at host:port and returns the serial
+// number of the presented leaf certificate. Connecting by IP without a
+// server-name hint (no SNI) is intentional — this exercises the code path in
+// DynamicServingCertificateController.GetConfigForClient that selects the cert
+// for clients that omit SNI, which is exactly how in-cluster scanners connect
+// to a pod IP directly.
+func getServedCertSerial(host string, port int) (*big.Int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	dialer := tls.Dialer{Config: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec
+	conn, err := dialer.DialContext(ctx, "tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	certs := conn.(*tls.Conn).ConnectionState().PeerCertificates
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no peer certificates presented")
+	}
+	return certs[0].SerialNumber, nil
+}
+
 func TestFilesHandler(t *testing.T) {
-	fs := http.Dir("testdata")
+	_, thisFile, _, _ := runtime.Caller(0)
+	fs := http.Dir(filepath.Join(filepath.Dir(thisFile), "testdata"))
 	handler := filesHandler(fs)
 
 	req := httptest.NewRequest("GET", "/index.html", nil)
