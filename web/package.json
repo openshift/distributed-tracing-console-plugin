@@ -82,14 +82,14 @@
     "@patternfly/react-core": "^6.4.1",
     "@patternfly/react-icons": "^6.4.0",
     "@patternfly/react-templates": "^6.4.1",
-    "@perses-dev/components": "^0.53.0",
+    "@perses-dev/components": "0.54.0-beta.1",
     "@perses-dev/core": "0.53.0",
-    "@perses-dev/dashboards": "^0.53.0",
-    "@perses-dev/plugin-system": "^0.53.0",
-    "@perses-dev/scatter-chart-plugin": "^0.10.0",
-    "@perses-dev/tempo-plugin": "^0.57.0",
-    "@perses-dev/trace-table-plugin": "^0.10.0",
-    "@perses-dev/tracing-gantt-chart-plugin": "^0.12.0",
+    "@perses-dev/dashboards": "0.54.0-beta.1",
+    "@perses-dev/plugin-system": "0.54.0-beta.1",
+    "@perses-dev/scatter-chart-plugin": "0.11.0-beta.0",
+    "@perses-dev/tempo-plugin": "0.58.0-beta.0",
+    "@perses-dev/trace-table-plugin": "0.11.0-beta.0",
+    "@perses-dev/tracing-gantt-chart-plugin": "0.13.0-beta.0",
     "copy-webpack-plugin": "^14.0.0",
     "i18next": "^25.10.5",
     "i18next-http-backend": "^3.0.2",
@@ -102,7 +102,6 @@
     "react-router-dom": "^7"
   },
   "overrides": {
-    "@perses-dev/core": "0.53.0",
     "echarts": "^5.6.0"
   }
 }
