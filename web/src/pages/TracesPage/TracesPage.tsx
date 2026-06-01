@@ -173,6 +173,8 @@ function NoTempoInstance() {
                 variant="link"
                 component="a"
                 href={viewInstallationDocsLink}
+                target="_blank"
+                rel="noopener noreferrer"
                 icon={<ExternalLinkAltIcon />}
                 iconPosition="right"
               >
