@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/opt/app-root/src/.npm \
 COPY web/ web/
 RUN make build-frontend
 
-FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.25 as go-builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.26 AS go-builder
 
 WORKDIR /opt/app-root
 
@@ -32,7 +32,7 @@ ENV CGO_ENABLED=1
 
 RUN make build-backend BUILD_OPTS="-tags strictfipsruntime"
 
-FROM registry.redhat.io/rhel9-4-els/rhel:9.4
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 RUN mkdir /licenses
 COPY LICENSE /licenses/.
