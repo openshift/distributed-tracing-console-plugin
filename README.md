@@ -1,4 +1,5 @@
 # Tracing Console Plugin
+test
 
 This is an OpenShift Console dynamic plugin that adds UI for tracing. This can be found in the OpenShift UI in the navigation bar under `Observe > Traces`.
 
