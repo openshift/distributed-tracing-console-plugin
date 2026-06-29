@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@cypress/webpack-preprocessor": "^6.0.2",
-    "@openshift-console/dynamic-plugin-sdk": "^4.22.0-prerelease.2",
-    "@openshift-console/dynamic-plugin-sdk-webpack": "^4.22.0-prerelease.2",
+    "@openshift-console/dynamic-plugin-sdk": "4.22.0",
+    "@openshift-console/dynamic-plugin-sdk-webpack": "4.22.0",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash-es": "^4.17.12",
@@ -102,6 +102,7 @@
     "react-router-dom": "^7"
   },
   "overrides": {
-    "echarts": "^5.6.0"
+    "echarts": "^5.6.0",
+    "qs": "^6.15.2"
   }
 }
