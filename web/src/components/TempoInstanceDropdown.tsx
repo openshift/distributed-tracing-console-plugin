@@ -71,6 +71,11 @@ export const TempoInstanceDropdown = ({ tempo, setTempo }: TempoInstanceDropdown
     }
   };
 
+  // Preselect the first instance if there is only one instance available.
+  if (!selected && options.length === 1) {
+    onSelect(options[0].value);
+  }
+
   return (
     <ToolbarGroup variant="filter-group">
       <ToolbarItem>
