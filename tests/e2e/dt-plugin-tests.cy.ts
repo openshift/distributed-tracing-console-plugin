@@ -347,15 +347,14 @@ describe('tracing-uiplugin', () => {
     }
 
     cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
+    const valuesContent = `LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}\nLIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}`;
+    cy.exec(`printf '%b' "${valuesContent}" > /tmp/chainsaw-lightspeed-values.yaml`);
     cy.runChainsawTest(
       './fixtures/lightspeed',
       'Lightspeed OLSConfig and credentials setup',
       {
         timeout: 1800000,
-        extraArgs: `--values - <<EOF
-LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}
-LIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}
-EOF`,
+        extraArgs: '--values /tmp/chainsaw-lightspeed-values.yaml',
       },
     );
 
@@ -795,12 +794,11 @@ EOF`,
 
   it('[Capability:UIPlugin][Capability:TraceLimits] Test trace limit functionality', () => {
     cy.log('Navigate to the observe/traces page');
+    cy.reload();
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
     cy.dismissWelcomeModal();
-    cy.get('body').should('be.visible');
-    // Wait for the page to fully render
-    cy.wait(3000);
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
 
     cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
     cy.pfTypeahead('Select a Tempo instance').click();
@@ -1202,15 +1200,12 @@ EOF`,
       .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
     cy.pfSelectMenuItem('Span Name').click();
 
-    cy.log('Open Span Name multi-select and verify options appear');
-    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
-    cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]', { timeout: 10000 })
-      .should('have.length.greaterThan', 0);
-
-    cy.log('Select the first span name option');
-    cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]')
-      .first()
-      .check();
+    cy.log('Open Span Name typeahead and type a known span name to filter');
+    cy.get('#multi-typeahead-select-checkbox-input', { timeout: 10000 }).should('be.visible').click();
+    cy.get('#multi-typeahead-select-checkbox-input').type('GET /dispatch');
+    cy.get('.pf-v6-c-menu__item, .pf-v5-c-menu__item', { timeout: 10000 })
+      .contains('GET /dispatch')
+      .click();
 
     cy.log('Verify traces are still visible after Span Name filter');
     cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
