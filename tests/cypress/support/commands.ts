@@ -177,7 +177,7 @@ Cypress.Commands.add(
           `oc get node --selector=hypershift.openshift.io/managed --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
           { failOnNonZeroExit: false }
         ).then((result) => {
-          const isHypershift = result.code === 0 && result.stdout.trim() !== '' && result.stdout.includes('Ready');
+          const isHypershift = result.exitCode === 0 && result.stdout.trim() !== '' && result.stdout.includes('Ready');
           cy.task('log', `Hypershift cluster detected: ${isHypershift}`);
           
           cy.visit(Cypress.config('baseUrl'));
@@ -197,7 +197,7 @@ Cypress.Commands.add(
                 `oc get oauthclient openshift-browser-client -o go-template --template="{{index .redirectURIs 0}}" --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
                 { failOnNonZeroExit: false }
               ).then((oauthResult) => {
-                if (oauthResult.code === 0 && oauthResult.stdout.trim()) {
+                if (oauthResult.exitCode === 0 && oauthResult.stdout.trim()) {
                   // Trim /oauth/token/display from the end to get the base OAuth URL
                   const oauthOrigin = oauthResult.stdout.trim().replace('/oauth/token/display', '');
                   cy.task('log', `Hypershift OAuth URL: ${oauthOrigin}`);
@@ -348,7 +348,7 @@ Cypress.Commands.add('adminCLI', (command: string) => {
 Cypress.Commands.add('executeAndDelete', (command: string) => {
   cy.exec(command, { failOnNonZeroExit: false })
     .then(result => {
-      if (result.code !== 0) {
+      if (result.exitCode !== 0) {
         cy.task('logError', `Command "${command}" failed: ${result.stderr || result.stdout}`);
       } else {
         cy.task('log', `Command "${command}" executed successfully`);
@@ -904,7 +904,7 @@ Cypress.Commands.add(
         failOnNonZeroExit: true,
       },
     ).then((result) => {
-      expect(result.code).to.eq(0);
+      expect(result.exitCode).to.eq(0);
       cy.log(`${description}: ${result.stdout}`);
     });
   },

@@ -148,14 +148,6 @@ break console styles!
 
 This project includes comprehensive end-to-end testing using Cypress and Chainsaw. Tests validate the plugin functionality, RBAC scenarios, and multi-tenancy configurations. For detailed testing instructions, see [tests/README.md](tests/README.md).
 
-## Reporting
-
-Steps to generate reports
-
-1. In command prompt, navigate to root folder and execute the command `yarn run cypress-merge`
-2. Then execute command `yarn run cypress-generate`
-   The cypress-report.html file is generated and should be in (/integration-tests/screenshots) directory
-
 ## More about Dynamic Plugins on OpenShift
 
 This plugin was forked from [OpenShift Console Plugin Template](https://github.com/openshift/console-plugin-template).

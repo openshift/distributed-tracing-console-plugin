@@ -109,7 +109,10 @@ spec:
         headers:
           X-Scope-OrgID: dev  # tenantName
       prometheus:
+        # add_metric_suffixes (deprecated) is not honored by collector 0.158; translation_strategy keeps
+        # the unsuffixed traces_span_metrics_* names checked by check_metrics.sh.
         add_metric_suffixes: false
+        translation_strategy: UnderscoreEscapingWithoutSuffixes
         endpoint: 0.0.0.0:8889
         resource_to_telemetry_conversion:
           enabled: true

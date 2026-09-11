@@ -30,6 +30,10 @@ const LIGHTSPEED = {
   operatorName: 'Lightspeed Operator',
 };
 
+// Lightspeed is not available on every OCP version. When the Lightspeed test is excluded
+// with --env grep=-Lightspeed (CYPRESS_SKIP_TESTS in CI), also skip its operator install and setup.
+const SKIP_LIGHTSPEED = String(Cypress.env('grep') || '').includes('-Lightspeed');
+
 describe('tracing-uiplugin', () => {
   before(() => {
     // Always clean up TLS profile test leftovers first, in case a previous run was interrupted
@@ -210,14 +214,18 @@ describe('tracing-uiplugin', () => {
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
-      cy.log('Install Lightspeed Operator');
-      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
-      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-        const text = $el.text();
-        expect(text).to.satisfy((t) =>
-          t.includes('ready for use') || t.includes('Operator installed successfully')
-        );
-      });
+      if (SKIP_LIGHTSPEED) {
+        cy.log('Lightspeed tests are excluded. Skipping Lightspeed Operator installation.');
+      } else {
+        cy.log('Install Lightspeed Operator');
+        operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+        cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+          const text = $el.text();
+          expect(text).to.satisfy((t) =>
+            t.includes('ready for use') || t.includes('Operator installed successfully')
+          );
+        });
+      }
     } else if (Cypress.env('KONFLUX_COO_BUNDLE_IMAGE')) {
       cy.log('KONFLUX_COO_BUNDLE_IMAGE is set. COO operator will be installed from Konflux bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
@@ -250,14 +258,18 @@ describe('tracing-uiplugin', () => {
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
-      cy.log('Install Lightspeed Operator');
-      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
-      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-        const text = $el.text();
-        expect(text).to.satisfy((t) =>
-          t.includes('ready for use') || t.includes('Operator installed successfully')
-        );
-      });
+      if (SKIP_LIGHTSPEED) {
+        cy.log('Lightspeed tests are excluded. Skipping Lightspeed Operator installation.');
+      } else {
+        cy.log('Install Lightspeed Operator');
+        operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+        cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+          const text = $el.text();
+          expect(text).to.satisfy((t) =>
+            t.includes('ready for use') || t.includes('Operator installed successfully')
+          );
+        });
+      }
     } else if (Cypress.env('CUSTOM_COO_BUNDLE_IMAGE')) {
       cy.log('CUSTOM_COO_BUNDLE_IMAGE is set. COO operator will be installed from custom built bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
@@ -290,14 +302,18 @@ describe('tracing-uiplugin', () => {
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
-      cy.log('Install Lightspeed Operator');
-      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
-      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-        const text = $el.text();
-        expect(text).to.satisfy((t) =>
-          t.includes('ready for use') || t.includes('Operator installed successfully')
-        );
-      });
+      if (SKIP_LIGHTSPEED) {
+        cy.log('Lightspeed tests are excluded. Skipping Lightspeed Operator installation.');
+      } else {
+        cy.log('Install Lightspeed Operator');
+        operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+        cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+          const text = $el.text();
+          expect(text).to.satisfy((t) =>
+            t.includes('ready for use') || t.includes('Operator installed successfully')
+          );
+        });
+      }
     } else {
       throw new Error('No CYPRESS env set for operator installation, check the README for more details.');
     }
@@ -317,51 +333,59 @@ describe('tracing-uiplugin', () => {
           failOnNonZeroExit: true
         }
       ) .then((result) => {
-        expect(result.code).to.eq(0);
+        expect(result.exitCode).to.eq(0);
         cy.log(`COO CSV updated successfully with Distributed Tracing Console Plugin image: ${result.stdout}`);
       });
     } else {
       cy.log('DT_CONSOLE_IMAGE is NOT set. Skipping patching the image in COO operator CSV.');
     }
 
-    cy.log('Set Lightspeed Console Plugin image in operator CSV');
-    if (Cypress.env('LIGHTSPEED_CONSOLE_IMAGE')) {
-      cy.log('LIGHTSPEED_CONSOLE_IMAGE is set. the image will be patched in Lightspeed operator CSV');
-      cy.exec(
-        './fixtures/update-lightspeed-plugin-image.sh',
-        {
-          env: {
-            LIGHTSPEED_CONSOLE_IMAGE: Cypress.env('LIGHTSPEED_CONSOLE_IMAGE'),
-            KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-            LIGHTSPEED_NAMESPACE: `${LIGHTSPEED.namespace}`
-          },
-          timeout: 240000,
-          failOnNonZeroExit: true
-        }
-      ) .then((result) => {
-        expect(result.code).to.eq(0);
-        cy.log(`Lightspeed CSV updated successfully with Lightspeed Console Plugin image: ${result.stdout}`);
-      });
+    if (SKIP_LIGHTSPEED) {
+      cy.log('Lightspeed tests are excluded. Skipping Lightspeed setup.');
     } else {
-      cy.log('LIGHTSPEED_CONSOLE_IMAGE is NOT set. Skipping patching the image in Lightspeed operator CSV.');
+      cy.log('Set Lightspeed Console Plugin image in operator CSV');
+      if (Cypress.env('LIGHTSPEED_CONSOLE_IMAGE')) {
+        cy.log('LIGHTSPEED_CONSOLE_IMAGE is set. the image will be patched in Lightspeed operator CSV');
+        cy.exec(
+          './fixtures/update-lightspeed-plugin-image.sh',
+          {
+            env: {
+              LIGHTSPEED_CONSOLE_IMAGE: Cypress.env('LIGHTSPEED_CONSOLE_IMAGE'),
+              KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+              LIGHTSPEED_NAMESPACE: `${LIGHTSPEED.namespace}`
+            },
+            timeout: 240000,
+            failOnNonZeroExit: true
+          }
+        ) .then((result) => {
+          expect(result.exitCode).to.eq(0);
+          cy.log(`Lightspeed CSV updated successfully with Lightspeed Console Plugin image: ${result.stdout}`);
+        });
+      } else {
+        cy.log('LIGHTSPEED_CONSOLE_IMAGE is NOT set. Skipping patching the image in Lightspeed operator CSV.');
+      }
+
+      cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
+      // Written as JSON (valid YAML) without a shell and with logging off, so the token
+      // never reaches the Cypress command log, videos or screenshots.
+      cy.writeFile('/tmp/chainsaw-lightspeed-values.yaml', {
+        LIGHTSPEED_PROVIDER_URL: Cypress.env('LIGHTSPEED_PROVIDER_URL'),
+        LIGHTSPEED_PROVIDER_TOKEN: Cypress.env('LIGHTSPEED_PROVIDER_TOKEN'),
+      }, { log: false });
+      cy.runChainsawTest(
+        './fixtures/lightspeed',
+        'Lightspeed OLSConfig and credentials setup',
+        {
+          timeout: 1800000,
+          extraArgs: '--values /tmp/chainsaw-lightspeed-values.yaml',
+        },
+      );
+
+      cy.log('Wait for Lightspeed popover to open by default and close it');
+      cy.visit('/');
+      cy.dismissWelcomeModal();
+      olsHelpers.waitForPopoverAndClose();
     }
-
-    cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
-    const valuesContent = `LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}\nLIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}`;
-    cy.exec(`printf '%b' "${valuesContent}" > /tmp/chainsaw-lightspeed-values.yaml`);
-    cy.runChainsawTest(
-      './fixtures/lightspeed',
-      'Lightspeed OLSConfig and credentials setup',
-      {
-        timeout: 1800000,
-        extraArgs: '--values /tmp/chainsaw-lightspeed-values.yaml',
-      },
-    );
-
-    cy.log('Wait for Lightspeed popover to open by default and close it');
-    cy.visit('/');
-    cy.dismissWelcomeModal();
-    olsHelpers.waitForPopoverAndClose();
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
     cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
@@ -372,7 +396,7 @@ describe('tracing-uiplugin', () => {
         failOnNonZeroExit: true
       }
     ).then((result) => {
-      expect(result.code).to.eq(0);
+      expect(result.exitCode).to.eq(0);
       cy.log(`Distributed Tracing Console plugin pod is now running in namespace: ${DTP.namespace}`);
     });    
     // Check for web console update alert for up to 2 minutes (especially important for Hypershift clusters)
@@ -423,7 +447,7 @@ describe('tracing-uiplugin', () => {
         `oc get namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
         { failOnNonZeroExit: false },
       ).then((result) => {
-        if (result.code !== 0) {
+        if (result.exitCode !== 0) {
           cy.log('Tempo Operator namespace not found, reinstalling via CLI...');
           cy.exec(
             `oc create namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true`,
@@ -1487,12 +1511,14 @@ describe('tracing-uiplugin', () => {
       cy.visit('/observe/traces');
       cy.url().should('include', '/observe/traces');
       cy.dismissWelcomeModal();
+      // Give the console time to load plugins and render the page before checking it;
+      // checking right after the visit can run before the plugin page has rendered.
+      cy.wait(retryIntervalInstallMs);
       cy.get('body').then(($body) => {
         if ($body.text().includes('Tempo operator isn\'t installed yet')) {
           cy.log('Plugin shows correct "Tempo operator isn\'t installed yet" state');
         } else if (retriesLeft > 0) {
-          cy.log(`Plugin not ready yet (body: "${$body.text().substring(0, 100)}..."), retrying in ${retryIntervalInstallMs / 1000}s (${retriesLeft} left)...`);
-          cy.wait(retryIntervalInstallMs);
+          cy.log(`Plugin not ready yet (body: "${$body.text().substring(0, 100)}..."), retrying (${retriesLeft} left)...`);
           waitForInstallationPage(retriesLeft - 1);
         } else {
           cy.log('WARNING: Plugin did not show expected state after maximum retries');

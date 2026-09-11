@@ -102,6 +102,5 @@ export default defineConfig({
     experimentalModifyObstructiveThirdPartyCode: true,
     experimentalOriginDependencies: true,
     experimentalMemoryManagement: true,
-    experimentalStudio: true,
   },
 });

@@ -1,20 +1,42 @@
 # This Dockerfile is used by OpenShift CI for running the Distributed Tracing UI plugin tests
-FROM cypress/browsers:22.15.0
+# cypress/browsers:24.20.0 (Node 24.20.0, Chrome 152, Firefox 155, Edge 152)
+FROM cypress/browsers:24.20.0@sha256:4e487953a62c66c9b0ba84e07ecc84089612e213718b2a76c13c98ca66f97bae
 
-# Install kubectl and oc
-RUN wget -O oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz \
-    && tar -xvzf oc.tar.gz \
+# Install apache2-utils for htpasswd required by OCP CI, jq and curl for metrics validation,
+# gnupg to verify the Claude Code apt signing key
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends apache2-utils jq curl ca-certificates gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install kubectl and oc (OCP 4.22.12)
+# SHA256 from https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.22.12/sha256sum.txt
+RUN curl -fL -o oc.tar.gz \
+      https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.22.12/openshift-client-linux.tar.gz \
+    && echo "0234aed5f4f13fbd0ff693c9eb8011bbfd97f1829296157c39810494b98cf84c  oc.tar.gz" | sha256sum -c - \
+    && tar -xzf oc.tar.gz kubectl oc \
     && chmod +x kubectl oc \
     && mv oc kubectl /usr/local/bin/ \
-    && rm -rf oc.tar.gz
+    && rm oc.tar.gz
 
 # Install chainsaw
-RUN wget -O chainsaw.tar.gz https://github.com/kyverno/chainsaw/releases/download/v0.2.13/chainsaw_linux_amd64.tar.gz \
-    && tar -xvzf chainsaw.tar.gz \
+# SHA256 from https://github.com/kyverno/chainsaw/releases/download/v0.2.15/checksums.txt
+RUN curl -fL -o chainsaw.tar.gz \
+      https://github.com/kyverno/chainsaw/releases/download/v0.2.15/chainsaw_linux_amd64.tar.gz \
+    && echo "295d226c89f126c0a97775d364be149f47a810c8a3f9829ee410583d0c1abe3c  chainsaw.tar.gz" | sha256sum -c - \
+    && tar -xzf chainsaw.tar.gz chainsaw \
     && chmod +x chainsaw \
     && mv chainsaw /usr/local/bin/ \
-    && rm -rf chainsaw.tar.gz
+    && rm chainsaw.tar.gz
 
-# Install apache2-utils for htpasswd required by OCP CI, jq and curl for metrics validation
-RUN apt update && apt install -y apache2-utils jq curl \
+# Install Claude Code CLI via signed apt repository
+# Key fingerprint from https://code.claude.com/docs/en/setup#install-with-linux-package-managers
+RUN install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://downloads.claude.ai/keys/claude-code.asc \
+         -o /etc/apt/keyrings/claude-code.asc \
+    && test "$(GNUPGHOME=$(mktemp -d) gpg --show-keys --with-colons /etc/apt/keyrings/claude-code.asc \
+         | awk -F: '$1 == "fpr" { print $10; exit }')" = "31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE" \
+    && echo "deb [signed-by=/etc/apt/keyrings/claude-code.asc] https://downloads.claude.ai/claude-code/apt/stable stable main" \
+         > /etc/apt/sources.list.d/claude-code.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends claude-code \
     && rm -rf /var/lib/apt/lists/*
