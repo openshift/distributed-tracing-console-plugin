@@ -1,5 +1,5 @@
 import './commands';
-import registerCypressGrep from '@cypress/grep';
+import { register as registerCypressGrep } from '@cypress/grep';
 
 registerCypressGrep();
 

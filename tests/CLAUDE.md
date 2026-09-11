@@ -24,12 +24,6 @@ npx cypress run --spec "e2e/dt-plugin-tests.cy.ts"
 
 # Skip debug files during CI runs
 npx cypress run --ignore-pattern "**/*debug*.cy.ts"
-
-# Lint tests
-npm run lint
-
-# Fix linting issues
-npm run lint-fix
 ```
 
 ### Environment Setup
