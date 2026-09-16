@@ -9,7 +9,7 @@ export const guidedTour = {
           .click();
       }
       // OCP 4.22+ modal overlays (e.g. "Welcome to the new OpenShift experience!")
-      if ($body.find('.pf-v6-c-modal-box, .pf-v5-c-modal-box').length > 0) {
+      else if ($body.find('.pf-v6-c-modal-box, .pf-v5-c-modal-box').length > 0) {
         if ($body.find('.pf-v6-c-modal-box button[aria-label="Close"], .pf-v5-c-modal-box button[aria-label="Close"]').length > 0) {
           cy.get('.pf-v6-c-modal-box button[aria-label="Close"], .pf-v5-c-modal-box button[aria-label="Close"]')
             .first()
