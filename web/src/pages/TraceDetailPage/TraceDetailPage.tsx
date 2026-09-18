@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -41,7 +41,7 @@ function TraceDetailPage() {
   );
 }
 
-export default memo(TraceDetailPage);
+export default TraceDetailPage;
 
 function TraceDetailPageBody() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -53,7 +53,12 @@ function TraceDetailPageBody() {
   return (
     <PersesTempoDatasourceWrapper
       tempo={tempo}
-      queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+      definitions={[
+        {
+          kind: 'TraceQuery',
+          spec: { plugin: { kind: 'TempoTraceQuery', spec: { query: traceId } } },
+        },
+      ]}
     >
       <PageSection>
         <Breadcrumb>
