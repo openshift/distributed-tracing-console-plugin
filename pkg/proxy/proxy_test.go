@@ -209,6 +209,14 @@ func TestAddEmptyTracesFieldIgnoresNonOKStatus(t *testing.T) {
 	require.Equal(t, original, readBody(t, resp))
 }
 
+func TestAddEmptyTracesFieldHandlesMissingContentType(t *testing.T) {
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "", `{"metrics":{}}`)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"metrics":{},"traces":[]}`, readBody(t, resp))
+}
+
 func TestAddEmptyTracesFieldIgnoresNonJSONContentType(t *testing.T) {
 	original := `not json`
 	resp := newSearchResponse(t, "/api/search", http.StatusOK, "text/plain", original)

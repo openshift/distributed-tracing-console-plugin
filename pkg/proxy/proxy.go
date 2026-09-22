@@ -72,15 +72,14 @@ func FilterHeaders(r *http.Response) error {
 	return nil
 }
 
-// tempoSearchPath is Tempo's TraceQL search endpoint. Tempo omits the
-// "traces" field from the response entirely when a search matches zero
-// traces, instead of returning an empty array. The @perses-dev/tempo-plugin
-// version used by the frontend does not handle this and crashes with
-// "Cannot read properties of undefined (reading 'map')" when rendering a
-// query that legitimately has no results:
+// tempoSearchPath is Tempo's TraceQL search endpoint. With query RBAC enabled,
+// the Tempo gateway used to drop the "traces" field from zero-result responses
+// instead of returning an empty array (TRACING-6841), and the
+// @perses-dev/tempo-plugin used by the frontend crashes on a missing field with
+// "Cannot read properties of undefined (reading 'map')":
 // https://github.com/perses/plugins/blob/main/tempo/src/plugins/tempo-trace-query/get-trace-data.ts
-// Work around it here, until it's fixed upstream, by ensuring "traces" is
-// always present in the response.
+// Ensure "traces" is always present so the empty state renders regardless of
+// the gateway version.
 const tempoSearchPath = "/api/search"
 
 // maxSearchResponseBytes bounds how much of a Tempo /api/search response
@@ -97,9 +96,14 @@ func addEmptyTracesField(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK || !strings.HasSuffix(resp.Request.URL.Path, tempoSearchPath) {
 		return nil
 	}
-	mediaType, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-	if err != nil || !strings.EqualFold(mediaType, "application/json") {
-		return nil
+	// Tempo has shipped /api/search responses with no Content-Type header at
+	// all (https://github.com/grafana/tempo/issues/4121); treat those as JSON
+	// too rather than skipping the rewrite.
+	if contentType := resp.Header.Get("Content-Type"); contentType != "" {
+		mediaType, _, err := mime.ParseMediaType(contentType)
+		if err != nil || !strings.EqualFold(mediaType, "application/json") {
+			return nil
+		}
 	}
 
 	prefix, err := io.ReadAll(io.LimitReader(resp.Body, maxSearchResponseBytes+1))
