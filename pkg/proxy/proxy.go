@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -82,6 +83,13 @@ func FilterHeaders(r *http.Response) error {
 // always present in the response.
 const tempoSearchPath = "/api/search"
 
+// maxSearchResponseBytes bounds how much of a Tempo /api/search response
+// addEmptyTracesField will buffer in memory to inspect and rewrite. Tempo
+// limits the number of traces returned, not the response size, so a search
+// response can be arbitrarily large; anything over this limit is passed
+// through unmodified rather than being fully buffered.
+const maxSearchResponseBytes = 5 * 1024 * 1024 // 5 MiB
+
 // addEmptyTracesField rewrites a Tempo search response that omits the
 // "traces" field to include an empty one, so the frontend's TraceQL query
 // plugin can render the empty-results state instead of crashing.
@@ -89,19 +97,40 @@ func addEmptyTracesField(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK || !strings.HasSuffix(resp.Request.URL.Path, tempoSearchPath) {
 		return nil
 	}
-	if !strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+	mediaType, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
+	if err != nil || !strings.EqualFold(mediaType, "application/json") {
 		return nil
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	prefix, err := io.ReadAll(io.LimitReader(resp.Body, maxSearchResponseBytes+1))
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
-	resp.Body = io.NopCloser(bytes.NewReader(body))
+
+	if int64(len(prefix)) > maxSearchResponseBytes {
+		// Too large to safely buffer and rewrite; pass the response through
+		// unmodified by restoring the body from the bytes already consumed
+		// plus whatever remains unread on the original reader. Close still
+		// delegates to the original body so its underlying connection is
+		// released once the proxy is done writing the response.
+		original := resp.Body
+		resp.Body = struct {
+			io.Reader
+			io.Closer
+		}{
+			Reader: io.MultiReader(bytes.NewReader(prefix), original),
+			Closer: original,
+		}
+		return nil
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return err
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(prefix))
 
 	var payload map[string]json.RawMessage
-	if err := json.Unmarshal(body, &payload); err != nil || payload == nil {
+	if err := json.Unmarshal(prefix, &payload); err != nil || payload == nil {
 		// Not a JSON object we understand; pass through unmodified.
 		return nil
 	}
@@ -208,17 +237,16 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 		return nil, err
 	}
 
-	reverseProxy := httputil.NewSingleHostReverseProxy(proxyURL)
+	reverseProxy := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.SetURL(proxyURL)
+			// Request an uncompressed response so ModifyResponse can safely
+			// inspect and rewrite the JSON body below.
+			pr.Out.Header.Del("Accept-Encoding")
+		},
+	}
 	reverseProxy.FlushInterval = time.Millisecond * 100
 	reverseProxy.Transport = transport
-
-	director := reverseProxy.Director
-	reverseProxy.Director = func(r *http.Request) {
-		director(r)
-		// Request an uncompressed response so ModifyResponse can safely
-		// inspect and rewrite the JSON body below.
-		r.Header.Del("Accept-Encoding")
-	}
 
 	reverseProxy.ModifyResponse = func(resp *http.Response) error {
 		if err := FilterHeaders(resp); err != nil {

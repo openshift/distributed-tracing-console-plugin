@@ -217,3 +217,50 @@ func TestAddEmptyTracesFieldIgnoresNonJSONContentType(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, original, readBody(t, resp))
 }
+
+func TestAddEmptyTracesFieldHandlesContentTypeCaseAndParameters(t *testing.T) {
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "Application/JSON; charset=utf-8", `{"metrics":{}}`)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"metrics":{},"traces":[]}`, readBody(t, resp))
+}
+
+func TestAddEmptyTracesFieldPassesThroughOversizedResponse(t *testing.T) {
+	// Build a valid JSON body (missing "traces") that exceeds maxSearchResponseBytes,
+	// so it must not be buffered and rewritten, only passed through unmodified.
+	padding := strings.Repeat("a", maxSearchResponseBytes+1)
+	original := fmt.Sprintf(`{"metrics":{"padding":"%s"}}`, padding)
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "application/json", original)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.Equal(t, original, readBody(t, resp))
+}
+
+// closeTrackingReader wraps a reader and records whether Close was called on it.
+type closeTrackingReader struct {
+	io.Reader
+	closed bool
+}
+
+func (c *closeTrackingReader) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestAddEmptyTracesFieldOversizedResponseStillClosesOriginalBody(t *testing.T) {
+	padding := strings.Repeat("a", maxSearchResponseBytes+1)
+	original := fmt.Sprintf(`{"metrics":{"padding":"%s"}}`, padding)
+
+	tracker := &closeTrackingReader{Reader: strings.NewReader(original)}
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "application/json", "")
+	resp.Body = tracker
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.Equal(t, original, readBody(t, resp))
+
+	require.NoError(t, resp.Body.Close())
+	require.True(t, tracker.closed, "closing the replacement body should close the original underlying body")
+}
