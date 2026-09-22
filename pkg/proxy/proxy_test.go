@@ -3,9 +3,13 @@ package proxy
 import (
 	"crypto/tls"
 	"encoding/pem"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -137,4 +141,79 @@ func TestProxyTLSConfigNoCert(t *testing.T) {
 	require.Nil(t, tlsConfig.RootCAs, "RootCAs should be nil when no CA file is provided")
 	require.Equal(t, uint16(tls.VersionTLS13), tlsConfig.MinVersion, "TLS min version should be set")
 	require.Equal(t, []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}, tlsConfig.CipherSuites, "TLS cipher suites should be set")
+}
+
+// newSearchResponse builds a fake response as returned by the reverse proxy's
+// transport, i.e. with Request populated (ModifyResponse reads resp.Request).
+func newSearchResponse(t *testing.T, path string, statusCode int, contentType string, body string) *http.Response {
+	t.Helper()
+
+	req, err := http.NewRequest(http.MethodGet, "http://tempo"+path, nil)
+	require.NoError(t, err)
+	req.URL, err = url.Parse("http://tempo" + path)
+	require.NoError(t, err)
+
+	resp := &http.Response{
+		Request:    req,
+		StatusCode: statusCode,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+	if contentType != "" {
+		resp.Header.Set("Content-Type", contentType)
+	}
+	return resp
+}
+
+func readBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return string(body)
+}
+
+func TestAddEmptyTracesFieldAddsMissingTraces(t *testing.T) {
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "application/json", `{"metrics":{"inspectedTraces":5}}`)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	newBody := readBody(t, resp)
+	require.JSONEq(t, `{"metrics":{"inspectedTraces":5},"traces":[]}`, newBody)
+	require.Equal(t, fmt.Sprintf("%d", len(newBody)), resp.Header.Get("Content-Length"))
+}
+
+func TestAddEmptyTracesFieldLeavesExistingTraces(t *testing.T) {
+	original := `{"traces":[{"traceID":"abc"}]}`
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "application/json", original)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.JSONEq(t, original, readBody(t, resp))
+}
+
+func TestAddEmptyTracesFieldIgnoresOtherPaths(t *testing.T) {
+	original := `{"metrics":{}}`
+	resp := newSearchResponse(t, "/api/v2/traces/abc", http.StatusOK, "application/json", original)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.Equal(t, original, readBody(t, resp))
+}
+
+func TestAddEmptyTracesFieldIgnoresNonOKStatus(t *testing.T) {
+	original := `{"metrics":{}}`
+	resp := newSearchResponse(t, "/api/search", http.StatusInternalServerError, "application/json", original)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.Equal(t, original, readBody(t, resp))
+}
+
+func TestAddEmptyTracesFieldIgnoresNonJSONContentType(t *testing.T) {
+	original := `not json`
+	resp := newSearchResponse(t, "/api/search", http.StatusOK, "text/plain", original)
+
+	err := addEmptyTracesField(resp)
+	require.NoError(t, err)
+	require.Equal(t, original, readBody(t, resp))
 }

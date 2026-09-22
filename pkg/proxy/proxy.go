@@ -1,16 +1,20 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -64,6 +68,56 @@ func FilterHeaders(r *http.Response) error {
 	for _, h := range badHeaders {
 		r.Header.Del(h)
 	}
+	return nil
+}
+
+// tempoSearchPath is Tempo's TraceQL search endpoint. Tempo omits the
+// "traces" field from the response entirely when a search matches zero
+// traces, instead of returning an empty array. The @perses-dev/tempo-plugin
+// version used by the frontend does not handle this and crashes with
+// "Cannot read properties of undefined (reading 'map')" when rendering a
+// query that legitimately has no results:
+// https://github.com/perses/plugins/blob/main/tempo/src/plugins/tempo-trace-query/get-trace-data.ts
+// Work around it here, until it's fixed upstream, by ensuring "traces" is
+// always present in the response.
+const tempoSearchPath = "/api/search"
+
+// addEmptyTracesField rewrites a Tempo search response that omits the
+// "traces" field to include an empty one, so the frontend's TraceQL query
+// plugin can render the empty-results state instead of crashing.
+func addEmptyTracesField(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK || !strings.HasSuffix(resp.Request.URL.Path, tempoSearchPath) {
+		return nil
+	}
+	if !strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+		return nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(body, &payload); err != nil || payload == nil {
+		// Not a JSON object we understand; pass through unmodified.
+		return nil
+	}
+	if _, ok := payload["traces"]; ok {
+		return nil
+	}
+
+	payload["traces"] = json.RawMessage("[]")
+	newBody, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	resp.Body = io.NopCloser(bytes.NewReader(newBody))
+	resp.ContentLength = int64(len(newBody))
+	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(newBody)))
 	return nil
 }
 
@@ -157,7 +211,21 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 	reverseProxy := httputil.NewSingleHostReverseProxy(proxyURL)
 	reverseProxy.FlushInterval = time.Millisecond * 100
 	reverseProxy.Transport = transport
-	reverseProxy.ModifyResponse = FilterHeaders
+
+	director := reverseProxy.Director
+	reverseProxy.Director = func(r *http.Request) {
+		director(r)
+		// Request an uncompressed response so ModifyResponse can safely
+		// inspect and rewrite the JSON body below.
+		r.Header.Del("Accept-Encoding")
+	}
+
+	reverseProxy.ModifyResponse = func(resp *http.Response) error {
+		if err := FilterHeaders(resp); err != nil {
+			return err
+		}
+		return addEmptyTracesField(resp)
+	}
 	reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("http: proxy error: %v", err)
 		w.WriteHeader(http.StatusBadGateway)
