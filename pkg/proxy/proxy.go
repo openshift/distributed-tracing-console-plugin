@@ -1,16 +1,21 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -64,6 +69,88 @@ func FilterHeaders(r *http.Response) error {
 	for _, h := range badHeaders {
 		r.Header.Del(h)
 	}
+	return nil
+}
+
+// tempoSearchPath is Tempo's TraceQL search endpoint. With query RBAC enabled,
+// the Tempo gateway used to drop the "traces" field from zero-result responses
+// instead of returning an empty array (TRACING-6841), and the
+// @perses-dev/tempo-plugin used by the frontend crashes on a missing field with
+// "Cannot read properties of undefined (reading 'map')":
+// https://github.com/perses/plugins/blob/main/tempo/src/plugins/tempo-trace-query/get-trace-data.ts
+// Ensure "traces" is always present so the empty state renders regardless of
+// the gateway version.
+const tempoSearchPath = "/api/search"
+
+// maxSearchResponseBytes bounds how much of a Tempo /api/search response
+// addEmptyTracesField will buffer in memory to inspect and rewrite. Tempo
+// limits the number of traces returned, not the response size, so a search
+// response can be arbitrarily large; anything over this limit is passed
+// through unmodified rather than being fully buffered.
+const maxSearchResponseBytes = 5 * 1024 * 1024 // 5 MiB
+
+// addEmptyTracesField rewrites a Tempo search response that omits the
+// "traces" field to include an empty one, so the frontend's TraceQL query
+// plugin can render the empty-results state instead of crashing.
+func addEmptyTracesField(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK || !strings.HasSuffix(resp.Request.URL.Path, tempoSearchPath) {
+		return nil
+	}
+	// Tempo has shipped /api/search responses with no Content-Type header at
+	// all (https://github.com/grafana/tempo/issues/4121); treat those as JSON
+	// too rather than skipping the rewrite.
+	if contentType := resp.Header.Get("Content-Type"); contentType != "" {
+		mediaType, _, err := mime.ParseMediaType(contentType)
+		if err != nil || !strings.EqualFold(mediaType, "application/json") {
+			return nil
+		}
+	}
+
+	prefix, err := io.ReadAll(io.LimitReader(resp.Body, maxSearchResponseBytes+1))
+	if err != nil {
+		return err
+	}
+
+	if int64(len(prefix)) > maxSearchResponseBytes {
+		// Too large to safely buffer and rewrite; pass the response through
+		// unmodified by restoring the body from the bytes already consumed
+		// plus whatever remains unread on the original reader. Close still
+		// delegates to the original body so its underlying connection is
+		// released once the proxy is done writing the response.
+		original := resp.Body
+		resp.Body = struct {
+			io.Reader
+			io.Closer
+		}{
+			Reader: io.MultiReader(bytes.NewReader(prefix), original),
+			Closer: original,
+		}
+		return nil
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return err
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(prefix))
+
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(prefix, &payload); err != nil || payload == nil {
+		// Not a JSON object we understand; pass through unmodified.
+		return nil
+	}
+	if _, ok := payload["traces"]; ok {
+		return nil
+	}
+
+	payload["traces"] = json.RawMessage("[]")
+	newBody, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	resp.Body = io.NopCloser(bytes.NewReader(newBody))
+	resp.ContentLength = int64(len(newBody))
+	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(newBody)))
 	return nil
 }
 
@@ -154,10 +241,23 @@ func (h *ProxyHandler) createProxy(tempo api.TempoResource, tenant string) (*htt
 		return nil, err
 	}
 
-	reverseProxy := httputil.NewSingleHostReverseProxy(proxyURL)
+	reverseProxy := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.SetURL(proxyURL)
+			// Request an uncompressed response so ModifyResponse can safely
+			// inspect and rewrite the JSON body below.
+			pr.Out.Header.Del("Accept-Encoding")
+		},
+	}
 	reverseProxy.FlushInterval = time.Millisecond * 100
 	reverseProxy.Transport = transport
-	reverseProxy.ModifyResponse = FilterHeaders
+
+	reverseProxy.ModifyResponse = func(resp *http.Response) error {
+		if err := FilterHeaders(resp); err != nil {
+			return err
+		}
+		return addEmptyTracesField(resp)
+	}
 	reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("http: proxy error: %v", err)
 		w.WriteHeader(http.StatusBadGateway)
