@@ -71,6 +71,11 @@ func ListTempoResourcesHandler(k8sclient *dynamic.DynamicClient) http.HandlerFun
 }
 
 func ListTempoResources(ctx context.Context, k8sclient *dynamic.DynamicClient) ([]TempoResource, error) {
+	// For local development, return a list of mock Tempo instances
+	// return []TempoResource{
+	// 	{"TempoStack", "namespace1", "instance1", []string{"tenant1", "tenant2"}},
+	// 	{"TempoStack", "namespace1", "instance2", []string{"prod", "dev"}},
+	// }, nil
 	tempostacks, err := listTempos(ctx, k8sclient, tempostackGVR)
 	if err != nil {
 		return nil, err

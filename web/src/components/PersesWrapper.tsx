@@ -10,24 +10,18 @@ import { ThemeProvider } from '@mui/material';
 import {
   DataQueriesProvider,
   dynamicImportPluginLoader,
+  getPluginModuleCompoundKey,
   PanelData,
   PanelPlugin,
   PanelProps,
+  PluginModuleResource,
   PluginRegistry,
   RouterProvider,
   TimeRangeProviderWithQueryParams,
   useDataQueriesContext,
   useInitialTimeRange,
 } from '@perses-dev/plugin-system';
-import {
-  DatasourceResource,
-  Definition,
-  DurationString,
-  GlobalDatasourceResource,
-  TraceData,
-  UnknownSpec,
-  DatasourceApi,
-} from '@perses-dev/core';
+import { DatasourceResource, GlobalDatasourceResource, DatasourceApi } from '@perses-dev/client';
 import {
   DatasourceStoreProvider,
   Panel,
@@ -48,6 +42,7 @@ import { LoadingState } from './LoadingState';
 import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
 import { Link as RouterLink, useNavigate } from 'react-router';
 import './PersesWrapper.css';
+import { DurationString, QueryDefinition, TraceData, UnknownSpec } from '@perses-dev/spec';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -86,13 +81,31 @@ const patternflyChartsMultiUnorderedPalette = Array.isArray(chartColorScale)
     })
   : [];
 
+type PersesPluginModule = { getPluginModule: () => PluginModuleResource } & Record<string, unknown>;
+
+// This workaround can be dropped once https://github.com/perses/shared/pull/211 is released
+function toPluginRegistryModule(module: PersesPluginModule): Record<string, unknown> {
+  const { metadata, spec } = module.getPluginModule();
+  return Object.fromEntries(
+    spec.plugins.map((plugin) => [
+      getPluginModuleCompoundKey({
+        kind: plugin.kind,
+        name: plugin.spec.name,
+        registry: metadata.registry,
+        version: metadata.version,
+      }),
+      module[plugin.spec.name],
+    ]),
+  );
+}
+
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
 // and data handlers for tempo (@perses-dev/tempo-plugin).
 const pluginLoader = dynamicImportPluginLoader(
   [tempoPlugin, scatterChartPlugin, traceTablePlugin, tracingGanttChartPlugin].map((x) => ({
     resource: x.getPluginModule(),
-    importPlugin: () => Promise.resolve(x),
+    importPlugin: () => Promise.resolve(toPluginRegistryModule(x)),
   })),
 );
 
@@ -158,7 +171,7 @@ export function PersesDashboardWrapper({ children }: PersesDashboardWrapperProps
 
 interface PersesTempoDatasourceWrapperProps {
   tempo: TempoInstance | undefined;
-  queries: Definition<UnknownSpec>[];
+  definitions: QueryDefinition<unknown, UnknownSpec>[];
   duration?: DurationString;
   children?: ReactNode;
 }
@@ -168,7 +181,7 @@ interface PersesTempoDatasourceWrapperProps {
  */
 export function PersesTempoDatasourceWrapper({
   tempo,
-  queries,
+  definitions,
   children,
 }: PersesTempoDatasourceWrapperProps) {
   const datasourceApi = useMemo(() => {
@@ -194,7 +207,7 @@ export function PersesTempoDatasourceWrapper({
 
   return (
     <DatasourceStoreProvider datasourceApi={datasourceApi}>
-      <DataQueriesProvider definitions={queries}>{children}</DataQueriesProvider>
+      <DataQueriesProvider definitions={definitions}>{children}</DataQueriesProvider>
     </DatasourceStoreProvider>
   );
 }

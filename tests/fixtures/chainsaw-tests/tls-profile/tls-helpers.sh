@@ -14,12 +14,40 @@ LABEL_SELECTOR="app.kubernetes.io/instance=distributed-tracing"
 fail() { echo "FAIL: $1"; exit 1; }
 
 # Scale down the observability-operator to prevent it from reconciling the
-# plugin deployment while we patch TLS env vars for testing.
+# plugin deployment while we patch TLS CLI args for testing.
 scale_down_operator() {
   echo "=== Scaling down $OPERATOR_DEPLOYMENT to prevent reconciliation ==="
   kubectl scale deployment "$OPERATOR_DEPLOYMENT" -n "$NAMESPACE" --replicas=0
   kubectl rollout status deployment/"$OPERATOR_DEPLOYMENT" -n "$NAMESPACE" --timeout=60s
   echo "PASS: $OPERATOR_DEPLOYMENT scaled to 0"
+
+  # Brief pause to let any in-flight shutdown reconciliation complete before
+  # we inspect and repair console registration.
+  sleep 5
+
+  # COO's graceful shutdown may deregister the plugin from
+  # consoles.operator.openshift.io/cluster spec.plugins, making the tracing UI
+  # disappear from the OpenShift console even though the plugin pod is still running.
+  # Re-add the plugin to spec.plugins if it is missing.
+  echo "Verifying console plugin registration after operator scale-down..."
+  CURRENT_PLUGINS=$(kubectl get consoles.operator.openshift.io cluster \
+    -o json 2>/dev/null | jq -c '.spec.plugins // []')
+  if ! echo "$CURRENT_PLUGINS" | grep -q "distributed-tracing-console-plugin"; then
+    echo "Plugin missing from consoles/cluster spec.plugins — re-registering..."
+    NEW_PLUGINS=$(echo "$CURRENT_PLUGINS" | jq -c '. + ["distributed-tracing-console-plugin"]')
+    kubectl patch consoles.operator.openshift.io cluster --type=merge \
+      -p "{\"spec\":{\"plugins\":$NEW_PLUGINS}}" 2>/dev/null || \
+      echo "NOTE: Console spec.plugins patch skipped (non-fatal)"
+  else
+    echo "Plugin already present in consoles/cluster spec.plugins"
+  fi
+
+  # Annotate the ConsolePlugin CR so the OpenShift console bridge immediately
+  # re-checks the plugin health instead of waiting for its backoff timer.
+  echo "Triggering console plugin re-detection via ConsolePlugin annotation..."
+  kubectl annotate consoleplugin distributed-tracing-console-plugin \
+    "reload-timestamp=$(date +%s)" --overwrite 2>/dev/null || \
+    echo "NOTE: ConsolePlugin annotation skipped (non-fatal)"
 }
 
 # Scale the observability-operator back up.
@@ -58,36 +86,68 @@ wait_for_rollout() {
   # Wait for old pods to terminate before checking readiness
   sleep 10
   kubectl wait --for=condition=Ready pods -l "$LABEL_SELECTOR" -n "$NAMESPACE" --timeout=120s
+  # Annotate the ConsolePlugin CR so the OpenShift console bridge immediately
+  # re-checks the plugin health instead of waiting for its backoff timer.
+  # Without this, the console can take 10+ minutes to rediscover the plugin after
+  # a pod restart, causing verifyTracesVisible to time out.
+  echo "Triggering console plugin re-detection via ConsolePlugin annotation..."
+  kubectl annotate consoleplugin distributed-tracing-console-plugin \
+    "reload-timestamp=$(date +%s)" --overwrite 2>/dev/null || \
+    echo "NOTE: ConsolePlugin annotation skipped (non-fatal)"
 }
 
-# Patch the deployment with TLS environment variables.
-# Args: $1=TLS_MIN_VERSION value (optional), $2=TLS_CIPHER_SUITES value (optional)
-patch_tls_env() {
+# Patch the deployment CLI args with TLS settings, mirroring what COO does when it reads
+# the cluster TLS profile from apiservers.config.openshift.io/cluster.
+# Args: $1=-tls-min-version value (optional), $2=-tls-cipher-suites value (optional, comma-separated)
+patch_tls_args() {
   local min_version="${1:-}"
   local cipher_suites="${2:-}"
 
-  local env_patch='[]'
+  local current_args
+  current_args=$(kubectl get deployment "$DEPLOYMENT" -n "$NAMESPACE" \
+    -o jsonpath='{.spec.template.spec.containers[0].args}')
+  # Default to empty array when COO does not set any args
+  current_args="${current_args:-[]}"
+
+  local new_args="$current_args"
 
   if [ -n "$min_version" ]; then
-    env_patch=$(echo "$env_patch" | jq --arg v "$min_version" '. + [{"name": "TLS_MIN_VERSION", "value": $v}]')
+    new_args=$(echo "$new_args" | jq --arg v "-tls-min-version=$min_version" \
+      '[.[] | select(startswith("-tls-min-version=") | not)] + [$v]')
   fi
 
   if [ -n "$cipher_suites" ]; then
-    env_patch=$(echo "$env_patch" | jq --arg v "$cipher_suites" '. + [{"name": "TLS_CIPHER_SUITES", "value": $v}]')
+    new_args=$(echo "$new_args" | jq --arg v "-tls-cipher-suites=$cipher_suites" \
+      '[.[] | select(startswith("-tls-cipher-suites=") | not)] + [$v]')
+  else
+    new_args=$(echo "$new_args" | jq \
+      '[.[] | select(startswith("-tls-cipher-suites=") | not)]')
   fi
 
-  echo "Patching deployment with env: $env_patch"
+  echo "Patching deployment args: $new_args"
+  # Use "add" so the patch works whether or not the args field already exists.
   kubectl patch deployment "$DEPLOYMENT" -n "$NAMESPACE" --type=json \
-    -p "[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/env\", \"value\": $env_patch}]"
+    -p "[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/args\", \"value\": $new_args}]"
 
   wait_for_rollout
 }
 
-# Remove all TLS environment variables from the deployment (revert to default).
-remove_tls_env() {
-  echo "Removing TLS environment variables from deployment..."
+# Remove TLS CLI args added for testing. The plugin defaults to the Intermediate profile
+# (TLS 1.2+) when no -tls-min-version arg is present, so we strip rather than restore a
+# specific value — this works regardless of whether COO passes the arg in CI or not.
+remove_tls_args() {
+  echo "Removing test TLS CLI args from deployment..."
+  local current_args
+  current_args=$(kubectl get deployment "$DEPLOYMENT" -n "$NAMESPACE" \
+    -o jsonpath='{.spec.template.spec.containers[0].args}')
+  current_args="${current_args:-[]}"
+
+  local new_args
+  new_args=$(echo "$current_args" | jq \
+    '[.[] | select(startswith("-tls-min-version=") or startswith("-tls-cipher-suites=") | not)]')
+
   kubectl patch deployment "$DEPLOYMENT" -n "$NAMESPACE" --type=json \
-    -p '[{"op": "remove", "path": "/spec/template/spec/containers/0/env"}]' 2>/dev/null || true
+    -p "[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/args\", \"value\": $new_args}]"
 
   wait_for_rollout
 }

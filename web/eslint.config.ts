@@ -21,6 +21,20 @@ export default defineConfig(
     rules: {
       'prettier/prettier': ['error'],
       'no-console': ['error', { allow: ['error'] }],
+      // Prevent directly importing react as a lint rule
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[source.value="react"] ImportDefaultSpecifier',
+          message:
+            'Do not directly import React. Add specific named imports instead (`import { useState, FC } from "react"`).',
+        },
+        {
+          selector: 'ImportDeclaration[source.value="react"] ImportNamespaceSpecifier',
+          message:
+            'Do not directly namespace import React (`import * as React`). Add specific named imports instead (`import { useState, FC } from "react"`).',
+        },
+      ],
     },
   },
 );

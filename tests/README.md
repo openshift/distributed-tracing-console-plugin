@@ -104,8 +104,11 @@ npx cypress run
 # Run specific test files
 npx cypress run --spec "e2e/dt-plugin-tests.cy.ts"
 
-# Skip debug files during CI runs
-npx cypress run --ignore-pattern "**/*debug*.cy.ts"
+# Run with Chrome browser (required for OCP 4.22+ plugin compatibility)
+npx cypress run --browser chrome --spec "e2e/dt-plugin-tests.cy.ts"
+
+# Skip debug files during CI runs (use --spec to exclude debug files)
+npx cypress run --spec "e2e/dt-plugin-tests.cy.ts"
 ```
 
 ## Test Architecture & Best Practices
@@ -177,22 +180,25 @@ Chainsaw tests in `fixtures/chainsaw-tests/` validate operator permissions and m
 These tests ensure that the distributed tracing plugin works correctly with different RBAC configurations and deployment models, supporting both upstream and downstream environments.
 
 ### Chainsaw TLS Profile Testing
-Chainsaw tests in `fixtures/chainsaw-tests/tls-profile-*` verify that the plugin backend correctly enforces TLS minimum version and cipher suite configuration. Since the Cluster Observability Operator does not yet propagate TLS profile settings, the tests scale down the operator to prevent reconciliation, then patch the plugin deployment directly with `TLS_MIN_VERSION` and `TLS_CIPHER_SUITES` environment variables.
+Chainsaw tests in `fixtures/chainsaw-tests/tls-profile-*` verify that the plugin backend correctly enforces TLS minimum version and cipher suite configuration. The Cluster Observability Operator is scaled down to prevent it from reconciling the deployment while CLI args are patched directly for testing.
 
 Each TLS profile is a separate chainsaw test directory:
 
 | Directory | Description |
 |-----------|-------------|
 | `tls-profile-setup` | Installs the `tls-scanner` pod (nmap + openssl) and scales down the observability-operator |
-| `tls-profile-intermediate` | Verifies the default profile: TLS 1.2 + TLS 1.3 accepted |
-| `tls-profile-modern` | Patches `TLS_MIN_VERSION=VersionTLS13` and verifies only TLS 1.3 is accepted, TLS 1.2 is rejected |
-| `tls-profile-custom-ciphers` | Patches `TLS_CIPHER_SUITES` to restrict TLS 1.2 ciphers and verifies only specified ciphers are offered |
-| `tls-profile-old` | Patches `TLS_MIN_VERSION=VersionTLS10` and verifies TLS 1.0/1.1/1.2/1.3 are all accepted |
-| `tls-profile-revert` | Reverts env vars, verifies Intermediate profile is restored, scales operator back up, cleans up tls-scanner |
+| `tls-profile-intermediate` | Removes test TLS CLI args (default profile): verifies TLS 1.2 + TLS 1.3 accepted |
+| `tls-profile-modern` | Patches `-tls-min-version=VersionTLS13` and verifies only TLS 1.3 is accepted, TLS 1.2 is rejected |
+| `tls-profile-custom-ciphers` | Patches `-tls-cipher-suites` to restrict TLS 1.2 ciphers and verifies only specified ciphers are offered |
+| `tls-profile-old` | Patches `-tls-min-version=VersionTLS10` and verifies TLS 1.0/1.1/1.2/1.3 are all accepted |
+| `tls-profile-revert` | Reverts CLI args, verifies Intermediate profile is restored, scales operator back up, cleans up tls-scanner |
 
-Shared helper functions (`tls-helpers.sh`) and resource files live in `fixtures/chainsaw-tests/tls-profile/`.
+Shared helper functions (`tls-helpers.sh`) and resource files live in `fixtures/chainsaw-tests/tls-profile/`. Two helpers manage console availability during the test:
 
-The Cypress test (`[Capability:TLSProfile]`) runs each chainsaw test in order and verifies traces remain visible in the UI after each profile change.
+- **`scale_down_operator()`**: After scaling COO to 0, checks whether `distributed-tracing-console-plugin` is still present in `consoles.operator.openshift.io/cluster` spec.plugins (COO's graceful shutdown may remove it). Re-adds the plugin via `kubectl patch` if missing, then annotates the `distributed-tracing-console-plugin` ConsolePlugin CR to trigger an immediate console bridge re-check. Without this, the tracing UI disappears from the console even though the plugin pod is still running.
+- **`wait_for_rollout()`**: After each plugin pod restart caused by TLS arg patching, annotates the ConsolePlugin CR to bypass the console bridge's exponential backoff (which can otherwise delay plugin re-detection by 10+ minutes).
+
+The Cypress `[Capability:TLSProfile]` test runs each chainsaw test in order, calls `cy.verifyTracesVisible()` after `tls-profile-setup` (to confirm the operator scale-down did not break UI access) and after each profile change (to confirm traces remain accessible). It runs **after** the `[Capability:TLSCertRotation]` test so that cert rotation starts with the operator at 1 replica and no tls-scanner pod present.
 
 To run the TLS profile chainsaw tests standalone (without Cypress):
 ```bash
@@ -202,6 +208,30 @@ for test in tls-profile-setup tls-profile-intermediate tls-profile-modern tls-pr
   chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/chainsaw-tests/$test
 done
 ```
+
+### New Feature Tests (Perses 0.54 / PR bump-perses-0.54.0)
+
+Three new tests validate features introduced in Perses 0.54.0-beta.1:
+
+| Test | Capability Tag | PR |
+|------|---------------|-----|
+| Gantt chart span search | `[Capability:GanttSearch]` | [perses/plugins#661](https://github.com/perses/plugins/pull/661) |
+| Gantt chart attribute pane resizing | `[Capability:AttributePaneResize]` | [perses/plugins#636](https://github.com/perses/plugins/pull/636) |
+| Trace table Spans/Start time column word wrap | `[Capability:TraceTableColumns]` | [perses/plugins#655](https://github.com/perses/plugins/pull/655) |
+
+> **OCP version requirement:** The plugin SDK (`@openshift-console/dynamic-plugin-sdk: ^4.22.0-prerelease.2`) requires **OCP 4.22+**. Tests will fail on OCP 4.21 with `__load_plugin_entry__ is not defined` because the 4.21 console does not register the plugin handler for 4.22-prerelease builds.
+
+### Chainsaw TLS Certificate Rotation Testing
+The chainsaw test in `fixtures/chainsaw-tests/cert-rotation/` verifies that the plugin backend dynamically reloads its TLS certificate after the serving secret is rotated, **without requiring a pod restart**. The test:
+
+1. Records the pre-rotation certificate serial number served by the plugin
+2. Deletes the serving secret (service-ca regenerates it automatically)
+3. Waits for the new cert to propagate to the pod's volume mount
+4. Confirms the plugin serves the new certificate via openssl (within 3 minutes)
+5. Asserts the pod name and creation timestamp are unchanged (no restart occurred)
+6. Verifies `/health` returns HTTP 200 with the new cert
+
+This test runs **before** `[Capability:TLSProfile]` so it always starts with the operator at 1 replica and no tls-scanner pod present.
 
 ### Chainsaw Lightspeed Setup
 Chainsaw tests in `fixtures/lightspeed/` handle initial setup of OpenShift Lightspeed for AI-powered trace analysis integration:
