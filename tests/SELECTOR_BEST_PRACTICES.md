@@ -448,6 +448,63 @@ cy.pfMenuItem('http').within(() => {
 });
 ```
 
+### MUI DataGrid Column and Cell Selectors
+
+MUI DataGrid (`@mui/x-data-grid`) adds `data-field` attributes to both column headers and data cells. Always include the `.MuiDataGrid-cell` class when targeting data cells to avoid accidentally matching the column header.
+
+```typescript
+// ❌ BAD: matches the column header ("Spans") before data cells
+cy.get('[data-field="spanCount"]').first()  // → column header text "Spans"
+
+// ✅ GOOD: targets data cells only
+cy.get('.MuiDataGrid-cell[data-field="spanCount"]').first()
+cy.get('.MuiDataGrid-cell[data-field="startTimeUnixMs"]').first()
+
+// Column headers — use .MuiDataGrid-columnHeaderTitle for the text
+cy.contains('.MuiDataGrid-columnHeaderTitle', 'Spans').should('be.visible')
+cy.contains('.MuiDataGrid-columnHeaderTitle', 'Start time').should('be.visible')
+
+// Verify cell content
+cy.get('.MuiDataGrid-cell[data-field="spanCount"]').first()
+  .invoke('text').should('match', /\d+ spans/)
+
+// Verify a MUI Box wrapper inside a cell (structural change detection)
+cy.get('.MuiDataGrid-cell[data-field="spanCount"]').first()
+  .find('.MuiBox-root').should('exist')
+```
+
+### Gantt Chart Component Selectors
+
+The TracingGanttChart (from `@perses-dev/tracing-gantt-chart-plugin`) renders a search bar and a resizable attribute pane. Use `aria-label` attributes — they are stable across versions.
+
+```typescript
+// Search bar toggle (magnify icon in trace header)
+cy.get('button[aria-label="Toggle search"]').click()
+
+// Search input — appears after Toggle is clicked
+cy.get('input[placeholder="Search spans..."]').type('service-name')
+
+// Match counter in search adornment (format: "1/3", "0/0")
+cy.get('input[placeholder="Search spans..."]')
+  .closest('.MuiInputBase-root')
+  .find('.MuiInputAdornment-root')
+  .invoke('text').should('match', /\d+\/\d+/)
+
+// Prev / Next match navigation
+cy.get('button[aria-label="Next match"]').should('be.enabled').click()
+cy.get('button[aria-label="Previous match"]').should('be.enabled').click()
+
+// Clear search
+cy.get('button[aria-label="Clear search"]').click()
+
+// Attribute pane resizer — previousElementSibling of the detail pane Box
+// Detail pane Box has an inline min-width style (only set when a span is selected)
+cy.get('[style*="min-width"]').first().then(($pane) => {
+  const resizerEl = $pane[0].previousElementSibling as HTMLElement
+  cy.wrap(resizerEl).trigger('mousedown', { which: 1, force: true })
+})
+```
+
 ## Benefits
 
 - **Stability**: Tests survive UI refactoring

@@ -1,4 +1,4 @@
-import { otlpcommonv1, otlptracev1 } from '@perses-dev/core';
+import { otlpcommonv1, otlptracev1 } from '@perses-dev/spec';
 
 /**
  * Convert the trace from OTLP/JSON to a more LLM-friendly format:
