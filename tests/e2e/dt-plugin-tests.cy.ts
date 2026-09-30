@@ -30,8 +30,19 @@ const LIGHTSPEED = {
   operatorName: 'Lightspeed Operator',
 };
 
+// Lightspeed is not available on every OCP version. When the Lightspeed test is excluded
+// with --env grep=-Lightspeed (CYPRESS_SKIP_TESTS in CI), also skip its operator install and setup.
+const SKIP_LIGHTSPEED = String(Cypress.env('grep') || '').includes('-Lightspeed');
+
 describe('tracing-uiplugin', () => {
   before(() => {
+    // Always clean up TLS profile test leftovers first, in case a previous run was interrupted
+    cy.log('Pre-flight TLS cleanup: restore operator to 1 replica and remove tls-scanner resources');
+    cy.exec(
+      `oc scale deployment observability-operator -n ${DTP.namespace} --replicas=1 --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete pod tls-scanner -n ${DTP.namespace} --force --grace-period=0 --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete clusterrolebinding tls-scanner-pods-reader-dt-plugin --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete clusterrole tls-scanner-pods-reader-dt-plugin --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete scc tls-scanner-scc-dt-plugin --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete sa tls-scanner -n ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; echo "Pre-flight TLS cleanup done"`,
+      { failOnNonZeroExit: false, timeout: 60000 },
+    );
+
     // Cleanup any existing resources from interrupted tests
     cy.log('Cleanup any existing resources from previous interrupted tests');
     if (Cypress.env('SKIP_COO_INSTALL')) {
@@ -45,9 +56,19 @@ describe('tracing-uiplugin', () => {
         `oc delete secret openai-token -n ${LIGHTSPEED.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
       );
 
-      cy.log('Delete Distributed Tracing UI Plugin instance if exists.');
-      cy.executeAndDelete(
-        `oc delete ${DTP.config.kind} ${DTP.config.name} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      cy.log('Ensure UIPlugin exists — create if missing, leave in place if already running.');
+      // Avoid deleting and recreating the UIPlugin: the delete/recreate cycle causes the
+      // console browser cache to have a stale plugin URL that returns 404, triggering
+      // "__load_plugin_entry__ is not defined" during login. Instead, idempotently apply
+      // the UIPlugin so it is always present before the test suite starts.
+      cy.exec(
+        `echo '{"apiVersion":"observability.openshift.io/v1alpha1","kind":"UIPlugin","metadata":{"name":"${DTP.config.name}"},"spec":{"type":"DistributedTracing"}}' | oc apply -f - --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+        { failOnNonZeroExit: false, timeout: 30000 },
+      );
+      // Wait for COO to reconcile and the plugin pod to become Ready before visiting the console.
+      cy.exec(
+        `for i in $(seq 1 24); do oc get deployment distributed-tracing -n ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} >/dev/null 2>&1 && break || sleep 5; done; oc rollout status deployment/distributed-tracing -n ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} --timeout=120s`,
+        { failOnNonZeroExit: false, timeout: 180000 },
       );
 
       cy.log('Delete Chainsaw namespaces if they exist.');
@@ -58,6 +79,41 @@ describe('tracing-uiplugin', () => {
           failOnNonZeroExit: false
         }
       );
+
+      // Verify Tempo Operator is installed; install via CLI if missing.
+      // This prevents cascade failures when the after() hook from a previous run failed to reinstall it.
+      cy.log('Verify Tempo Operator is installed, install via CLI if missing');
+      cy.exec(
+        `oc get csv -l operators.coreos.com/tempo-product.${TEMPO.namespace} -n ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "not-found"`,
+        { failOnNonZeroExit: false },
+      ).then((result) => {
+        const phase = result.stdout.trim();
+        cy.log(`Tempo Operator CSV phase: '${phase}'`);
+        if (phase !== 'Succeeded') {
+          cy.log(`Tempo Operator not ready (phase: '${phase}'), installing via CLI...`);
+          cy.exec(
+            `oc create namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `oc label namespace ${TEMPO.namespace} openshift.io/cluster-monitoring=true --overwrite --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `echo '{"apiVersion":"operators.coreos.com/v1","kind":"OperatorGroup","metadata":{"name":"${TEMPO.namespace}","namespace":"${TEMPO.namespace}"},"spec":{"upgradeStrategy":"Default"}}' | oc apply -f - --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `echo '{"apiVersion":"operators.coreos.com/v1alpha1","kind":"Subscription","metadata":{"name":"tempo-product","namespace":"${TEMPO.namespace}"},"spec":{"channel":"stable","name":"tempo-product","source":"redhat-operators","sourceNamespace":"openshift-marketplace","installPlanApproval":"Automatic"}}' | oc apply -f - --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `for i in $(seq 1 90); do PHASE=$(oc get csv -l operators.coreos.com/tempo-product.${TEMPO.namespace} -n ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} -o jsonpath='{.items[0].status.phase}' 2>/dev/null); echo "CSV phase: $PHASE (attempt $i/90)"; if [ "$PHASE" = "Succeeded" ]; then exit 0; fi; sleep 5; done; echo "Tempo Operator did not reach Succeeded in 7.5 minutes"; exit 1`,
+            { timeout: 540000, failOnNonZeroExit: false },
+          );
+          cy.log('Tempo Operator installation completed');
+        }
+      });
 
       // Only remove cluster-admin role if provider is not kube:admin
       if (Cypress.env('LOGIN_IDP') !== 'kube:admin') {
@@ -158,14 +214,18 @@ describe('tracing-uiplugin', () => {
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
-      cy.log('Install Lightspeed Operator');
-      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
-      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-        const text = $el.text();
-        expect(text).to.satisfy((t) =>
-          t.includes('ready for use') || t.includes('Operator installed successfully')
-        );
-      });
+      if (SKIP_LIGHTSPEED) {
+        cy.log('Lightspeed tests are excluded. Skipping Lightspeed Operator installation.');
+      } else {
+        cy.log('Install Lightspeed Operator');
+        operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+        cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+          const text = $el.text();
+          expect(text).to.satisfy((t) =>
+            t.includes('ready for use') || t.includes('Operator installed successfully')
+          );
+        });
+      }
     } else if (Cypress.env('KONFLUX_COO_BUNDLE_IMAGE')) {
       cy.log('KONFLUX_COO_BUNDLE_IMAGE is set. COO operator will be installed from Konflux bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
@@ -198,14 +258,18 @@ describe('tracing-uiplugin', () => {
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
-      cy.log('Install Lightspeed Operator');
-      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
-      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-        const text = $el.text();
-        expect(text).to.satisfy((t) =>
-          t.includes('ready for use') || t.includes('Operator installed successfully')
-        );
-      });
+      if (SKIP_LIGHTSPEED) {
+        cy.log('Lightspeed tests are excluded. Skipping Lightspeed Operator installation.');
+      } else {
+        cy.log('Install Lightspeed Operator');
+        operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+        cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+          const text = $el.text();
+          expect(text).to.satisfy((t) =>
+            t.includes('ready for use') || t.includes('Operator installed successfully')
+          );
+        });
+      }
     } else if (Cypress.env('CUSTOM_COO_BUNDLE_IMAGE')) {
       cy.log('CUSTOM_COO_BUNDLE_IMAGE is set. COO operator will be installed from custom built bundle. Tempo, OpenTelemetry and Lightspeed operators will be installed from redhat-operators catalog source');
       cy.log('Install Cluster Observability Operator');
@@ -238,14 +302,18 @@ describe('tracing-uiplugin', () => {
           t.includes('ready for use') || t.includes('Operator installed successfully')
         );
       });
-      cy.log('Install Lightspeed Operator');
-      operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
-      cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-        const text = $el.text();
-        expect(text).to.satisfy((t) =>
-          t.includes('ready for use') || t.includes('Operator installed successfully')
-        );
-      });
+      if (SKIP_LIGHTSPEED) {
+        cy.log('Lightspeed tests are excluded. Skipping Lightspeed Operator installation.');
+      } else {
+        cy.log('Install Lightspeed Operator');
+        operatorHubPage.installOperator(LIGHTSPEED.packageName, 'redhat-operators');
+        cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
+          const text = $el.text();
+          expect(text).to.satisfy((t) =>
+            t.includes('ready for use') || t.includes('Operator installed successfully')
+          );
+        });
+      }
     } else {
       throw new Error('No CYPRESS env set for operator installation, check the README for more details.');
     }
@@ -265,63 +333,70 @@ describe('tracing-uiplugin', () => {
           failOnNonZeroExit: true
         }
       ) .then((result) => {
-        expect(result.code).to.eq(0);
+        expect(result.exitCode).to.eq(0);
         cy.log(`COO CSV updated successfully with Distributed Tracing Console Plugin image: ${result.stdout}`);
       });
     } else {
       cy.log('DT_CONSOLE_IMAGE is NOT set. Skipping patching the image in COO operator CSV.');
     }
 
-    cy.log('Set Lightspeed Console Plugin image in operator CSV');
-    if (Cypress.env('LIGHTSPEED_CONSOLE_IMAGE')) {
-      cy.log('LIGHTSPEED_CONSOLE_IMAGE is set. the image will be patched in Lightspeed operator CSV');
-      cy.exec(
-        './fixtures/update-lightspeed-plugin-image.sh',
-        {
-          env: {
-            LIGHTSPEED_CONSOLE_IMAGE: Cypress.env('LIGHTSPEED_CONSOLE_IMAGE'),
-            KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-            LIGHTSPEED_NAMESPACE: `${LIGHTSPEED.namespace}`
-          },
-          timeout: 240000,
-          failOnNonZeroExit: true
-        }
-      ) .then((result) => {
-        expect(result.code).to.eq(0);
-        cy.log(`Lightspeed CSV updated successfully with Lightspeed Console Plugin image: ${result.stdout}`);
-      });
+    if (SKIP_LIGHTSPEED) {
+      cy.log('Lightspeed tests are excluded. Skipping Lightspeed setup.');
     } else {
-      cy.log('LIGHTSPEED_CONSOLE_IMAGE is NOT set. Skipping patching the image in Lightspeed operator CSV.');
+      cy.log('Set Lightspeed Console Plugin image in operator CSV');
+      if (Cypress.env('LIGHTSPEED_CONSOLE_IMAGE')) {
+        cy.log('LIGHTSPEED_CONSOLE_IMAGE is set. the image will be patched in Lightspeed operator CSV');
+        cy.exec(
+          './fixtures/update-lightspeed-plugin-image.sh',
+          {
+            env: {
+              LIGHTSPEED_CONSOLE_IMAGE: Cypress.env('LIGHTSPEED_CONSOLE_IMAGE'),
+              KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
+              LIGHTSPEED_NAMESPACE: `${LIGHTSPEED.namespace}`
+            },
+            timeout: 240000,
+            failOnNonZeroExit: true
+          }
+        ) .then((result) => {
+          expect(result.exitCode).to.eq(0);
+          cy.log(`Lightspeed CSV updated successfully with Lightspeed Console Plugin image: ${result.stdout}`);
+        });
+      } else {
+        cy.log('LIGHTSPEED_CONSOLE_IMAGE is NOT set. Skipping patching the image in Lightspeed operator CSV.');
+      }
+
+      cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
+      // Written as JSON (valid YAML) without a shell and with logging off, so the token
+      // never reaches the Cypress command log, videos or screenshots.
+      cy.writeFile('/tmp/chainsaw-lightspeed-values.yaml', {
+        LIGHTSPEED_PROVIDER_URL: Cypress.env('LIGHTSPEED_PROVIDER_URL'),
+        LIGHTSPEED_PROVIDER_TOKEN: Cypress.env('LIGHTSPEED_PROVIDER_TOKEN'),
+      }, { log: false });
+      cy.runChainsawTest(
+        './fixtures/lightspeed',
+        'Lightspeed OLSConfig and credentials setup',
+        {
+          timeout: 1800000,
+          extraArgs: '--values /tmp/chainsaw-lightspeed-values.yaml',
+        },
+      );
+
+      cy.log('Wait for Lightspeed popover to open by default and close it');
+      cy.visit('/');
+      cy.dismissWelcomeModal();
+      olsHelpers.waitForPopoverAndClose();
     }
-
-    cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
-    cy.runChainsawTest(
-      './fixtures/lightspeed',
-      'Lightspeed OLSConfig and credentials setup',
-      {
-        timeout: 1800000,
-        extraArgs: `--values - <<EOF
-LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}
-LIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}
-EOF`,
-      },
-    );
-
-    cy.log('Wait for Lightspeed popover to open by default and close it');
-    cy.visit('/');
-    cy.dismissWelcomeModal();
-    olsHelpers.waitForPopoverAndClose();
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
     cy.exec(`oc apply -f ./fixtures/tracing-ui-plugin.yaml --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
     cy.exec(
-      `sleep 15 && oc wait --for=condition=Ready pods --selector=app.kubernetes.io/instance=distributed-tracing -n ${DTP.namespace} --timeout=60s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+      `for i in $(seq 1 36); do POD=$(oc get pods --selector=app.kubernetes.io/instance=distributed-tracing -n ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} -o name 2>/dev/null | head -1); if [ -n "$POD" ]; then oc wait --for=condition=Ready $POD -n ${DTP.namespace} --timeout=60s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} && exit 0; fi; echo "Pod not found yet, attempt $i/36, waiting 5s..."; sleep 5; done; echo "Pod not found after 3 minutes"; exit 1`,
       {
-        timeout: 80000,
+        timeout: 240000,
         failOnNonZeroExit: true
       }
     ).then((result) => {
-      expect(result.code).to.eq(0);
+      expect(result.exitCode).to.eq(0);
       cy.log(`Distributed Tracing Console plugin pod is now running in namespace: ${DTP.namespace}`);
     });    
     // Check for web console update alert for up to 2 minutes (especially important for Hypershift clusters)
@@ -356,22 +431,45 @@ EOF`,
   });
 
   after(() => {
+    // Always clean up TLS profile test leftovers in case the TLS profile test failed mid-way.
+    // This ensures the operator is running and tls-scanner is gone before other cleanup proceeds.
+    cy.log('TLS profile cleanup: scale operator back to 1 replica and remove tls-scanner resources');
+    cy.exec(
+      `oc scale deployment observability-operator -n ${DTP.namespace} --replicas=1 --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete pod tls-scanner -n ${DTP.namespace} --force --grace-period=0 --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete clusterrolebinding tls-scanner-pods-reader-dt-plugin --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete clusterrole tls-scanner-pods-reader-dt-plugin --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete scc tls-scanner-scc-dt-plugin --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; oc delete sa tls-scanner -n ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null; echo "TLS cleanup done"`,
+      { failOnNonZeroExit: false, timeout: 60000 },
+    );
+
     if (Cypress.env('SKIP_COO_INSTALL')) {
-      cy.log('Reinstall Tempo Operator');
+      // Reinstall Tempo via CLI if the Installation test deleted it. CLI-based reinstall is
+      // used here because the console may be in a bad state after a TLS profile test failure.
+      cy.log('Reinstall Tempo Operator via CLI if it was deleted by the Installation test');
       cy.exec(
         `oc get namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
-        { failOnNonZeroExit: false }
+        { failOnNonZeroExit: false },
       ).then((result) => {
-        if (result.code !== 0) {
-          cy.log('Tempo Operator namespace not found, reinstalling...');
-          operatorHubPage.installOperator(TEMPO.packageName, 'redhat-operators');
-          cy.get('.co-clusterserviceversion-install__heading', { timeout: 5 * 60 * 1000 }).should(($el) => {
-            const text = $el.text();
-            expect(text).to.satisfy((t: string) =>
-              t.includes('ready for use') || t.includes('Operator installed successfully')
-            );
-          });
-          cy.log('Tempo Operator reinstalled successfully');
+        if (result.exitCode !== 0) {
+          cy.log('Tempo Operator namespace not found, reinstalling via CLI...');
+          cy.exec(
+            `oc create namespace ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `oc label namespace ${TEMPO.namespace} openshift.io/cluster-monitoring=true --overwrite --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `echo '{"apiVersion":"operators.coreos.com/v1","kind":"OperatorGroup","metadata":{"name":"${TEMPO.namespace}","namespace":"${TEMPO.namespace}"},"spec":{"upgradeStrategy":"Default"}}' | oc apply -f - --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `echo '{"apiVersion":"operators.coreos.com/v1alpha1","kind":"Subscription","metadata":{"name":"tempo-product","namespace":"${TEMPO.namespace}"},"spec":{"channel":"stable","name":"tempo-product","source":"redhat-operators","sourceNamespace":"openshift-marketplace","installPlanApproval":"Automatic"}}' | oc apply -f - --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`,
+            { failOnNonZeroExit: false },
+          );
+          cy.exec(
+            `for i in $(seq 1 90); do PHASE=$(oc get csv -l operators.coreos.com/tempo-product.${TEMPO.namespace} -n ${TEMPO.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} -o jsonpath='{.items[0].status.phase}' 2>/dev/null); echo "CSV phase: $PHASE (attempt $i/90)"; if [ "$PHASE" = "Succeeded" ]; then exit 0; fi; sleep 5; done; echo "Tempo Operator CSV did not reach Succeeded in 7.5 minutes"; exit 1`,
+            { timeout: 540000, failOnNonZeroExit: false },
+          );
+          cy.log('Tempo Operator reinstalled successfully via CLI');
         } else {
           cy.log('Tempo Operator namespace exists, skipping reinstall');
         }
@@ -720,12 +818,11 @@ EOF`,
 
   it('[Capability:UIPlugin][Capability:TraceLimits] Test trace limit functionality', () => {
     cy.log('Navigate to the observe/traces page');
+    cy.reload();
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
     cy.dismissWelcomeModal();
-    cy.get('body').should('be.visible');
-    // Wait for the page to fully render
-    cy.wait(3000);
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
 
     cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
     cy.pfTypeahead('Select a Tempo instance').click();
@@ -744,11 +841,13 @@ EOF`,
 
     cy.log('Set trace limit to 50 (but verify actual available count)');
     cy.menuToggleContains('20');
+    cy.wait(500);
     cy.pfSelectMenuItem('50').click();
     cy.verifyTraceCount(50);
 
     cy.log('Set trace limit to 10 and verify fewer traces shown');
     cy.menuToggleContains('50');
+    cy.wait(500);
     cy.pfSelectMenuItem('20').click();
     cy.verifyTraceCount(20);
   });
@@ -841,7 +940,7 @@ EOF`,
     cy.log('Verify the trace context attachment is present');
     cy.get('.ols-plugin__context-label-text')
       .should('be.visible')
-      .and('have.text', 'frontend: /dispatch');
+      .and('have.text', 'frontend: GET /dispatch');
 
     olsHelpers.submitPrompt();
 
@@ -1125,15 +1224,12 @@ EOF`,
       .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
     cy.pfSelectMenuItem('Span Name').click();
 
-    cy.log('Open Span Name multi-select and verify options appear');
-    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
-    cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]', { timeout: 10000 })
-      .should('have.length.greaterThan', 0);
-
-    cy.log('Select the first span name option');
-    cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]')
-      .first()
-      .check();
+    cy.log('Open Span Name typeahead and type a known span name to filter');
+    cy.get('#multi-typeahead-select-checkbox-input', { timeout: 10000 }).should('be.visible').click();
+    cy.get('#multi-typeahead-select-checkbox-input').type('GET /dispatch');
+    cy.get('.pf-v6-c-menu__item, .pf-v5-c-menu__item', { timeout: 10000 })
+      .contains('GET /dispatch')
+      .click();
 
     cy.log('Verify traces are still visible after Span Name filter');
     cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
@@ -1202,13 +1298,156 @@ EOF`,
     cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
   });
 
+  it('[Capability:UIPlugin][Capability:GanttSearch] Test Gantt chart span search functionality', () => {
+    cy.log('Navigate to a trace detail page to access the Gantt chart');
+    cy.setupTracePage('chainsaw-rbac / simplst', 'dev', 'Last 1 hour');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+    cy.muiFirstTraceLink().click();
+    cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 0);
+
+    cy.log('Read root span service name from trace header for use as search query');
+    cy.get('.MuiTypography-h3', { timeout: 10000 })
+      .first()
+      .invoke('text')
+      .then((headerText) => {
+        // Header format: "serviceName: spanName (duration)"
+        const serviceName = headerText.split(':')[0].trim();
+        cy.log(`Using service name "${serviceName}" as search query`);
+
+        cy.log('Click Toggle search button (magnify icon) to reveal the search bar');
+        cy.get('button[aria-label="Toggle search"]').click();
+        cy.get('input[placeholder="Search spans..."]', { timeout: 5000 }).should('be.visible');
+
+        cy.log('Type service name — all spans from this service should match');
+        cy.get('input[placeholder="Search spans..."]').type(serviceName);
+
+        cy.log('Verify match counter shows at least one result (not 0/0)');
+        cy.get('input[placeholder="Search spans..."]')
+          .closest('.MuiInputBase-root')
+          .find('.MuiInputAdornment-root')
+          .should('be.visible')
+          .invoke('text')
+          .should('match', /^[1-9]\d*\/\d+$/);
+
+        cy.log('Next match button navigates to next matching span');
+        cy.get('button[aria-label="Next match"]').should('be.enabled').click();
+        cy.get('input[placeholder="Search spans..."]')
+          .closest('.MuiInputBase-root')
+          .find('.MuiInputAdornment-root')
+          .invoke('text')
+          .should('match', /^\d+\/\d+$/);
+
+        cy.log('Previous match button navigates back');
+        cy.get('button[aria-label="Previous match"]').should('be.enabled').click();
+
+        cy.log('Searching for non-existent text shows 0/0 and disables navigation buttons');
+        cy.get('button[aria-label="Clear search"]').click();
+        cy.get('input[placeholder="Search spans..."]').type('__nonexistent_span_xyz__');
+        cy.get('input[placeholder="Search spans..."]')
+          .closest('.MuiInputBase-root')
+          .find('.MuiInputAdornment-root')
+          .should('be.visible')
+          .and('contain.text', '0/0');
+        cy.get('button[aria-label="Next match"]').should('be.disabled');
+        cy.get('button[aria-label="Previous match"]').should('be.disabled');
+
+        cy.log('Clear search button resets the input to empty');
+        cy.get('button[aria-label="Clear search"]').click();
+        cy.get('input[placeholder="Search spans..."]').should('have.value', '');
+
+        cy.log('Clicking Toggle search again hides the search bar');
+        cy.get('button[aria-label="Toggle search"]').click();
+        cy.get('input[placeholder="Search spans..."]').should('not.exist');
+      });
+  });
+
+  it('[Capability:UIPlugin][Capability:AttributePaneResize] Test Gantt chart attribute pane resizing', () => {
+    cy.log('Navigate to trace details and open the span attribute pane');
+    cy.setupTracePage('chainsaw-rbac / simplst', 'dev', 'Last 1 hour');
+    cy.navigateToTraceDetails();
+
+    cy.log('Verify the attribute pane is open (detail Box has inline min-width style)');
+    // The detail pane Box only renders when a span is selected, with an inline
+    // style "min-width: <n>%" set by TracingGanttChart when a span is clicked.
+    cy.get('[style*="min-width"]', { timeout: 10000 }).first().should('be.visible');
+
+    cy.log('Record initial pane width and drag the ResizableDivider to expand it');
+    cy.get('[style*="min-width"]').first().then(($detailPane) => {
+      const initialWidth = $detailPane[0].getBoundingClientRect().width;
+      cy.log(`Initial attribute pane width: ${initialWidth}px`);
+
+      // The ResizableDivider is the previousElementSibling of the detail pane Box.
+      // mousemove is captured on window (attached after mousedown sets isResizing=true),
+      // but synthetic events bubble from the element up to window.
+      const resizerEl = $detailPane[0].previousElementSibling as HTMLElement;
+      const resizerRect = resizerEl.getBoundingClientRect();
+      const ganttRect = resizerEl.parentElement!.getBoundingClientRect();
+
+      // Target 40% from the left edge — valid within the [5%, 95%] clamp.
+      // This moves the divider left so the detail pane grows from ~18% to ~60%.
+      const targetX = ganttRect.left + ganttRect.width * 0.4;
+
+      cy.wrap(resizerEl)
+        .trigger('mousedown', { which: 1, force: true })
+        .wait(100) // wait for React state update: isResizing→true adds mousemove to window
+        .trigger('mousemove', {
+          clientX: targetX,
+          clientY: resizerRect.top + resizerRect.height / 2,
+          force: true,
+        })
+        .wait(100)
+        .trigger('mouseup', { force: true });
+
+      cy.wait(500); // allow React state to settle after drag
+
+      cy.log('Verify the attribute pane width increased after drag');
+      cy.get('[style*="min-width"]').first().then(($resizedPane) => {
+        const newWidth = $resizedPane[0].getBoundingClientRect().width;
+        cy.log(`Attribute pane expanded: ${initialWidth}px → ${newWidth}px`);
+        expect(newWidth).to.be.greaterThan(initialWidth);
+      });
+    });
+  });
+
+  it('[Capability:UIPlugin][Capability:TraceTableColumns] Test trace table Spans and Start time column rendering with word wrap', () => {
+    cy.log('Set up the traces page and wait for trace data to load');
+    cy.setupTracePage('chainsaw-rbac / simplst', 'dev', 'Last 1 hour');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Verify the Spans column header is present');
+    cy.contains('.MuiDataGrid-columnHeaderTitle', 'Spans').should('be.visible');
+
+    cy.log('Verify Spans cells show span count text wrapped in a flex Box container');
+    // PR #655 changed the Spans cell renderer from a bare React Fragment (<>...</>)
+    // to a Box with flexWrap:wrap so the span count and error chip wrap on narrow columns.
+    // Use .MuiDataGrid-cell to exclude the column header which also has data-field="spanCount".
+    cy.get('.MuiDataGrid-cell[data-field="spanCount"]', { timeout: 10000 }).first().as('spansCell');
+    cy.get('@spansCell').invoke('text').should('match', /\d+ spans/);
+    cy.get('@spansCell').find('.MuiBox-root').should('exist');
+
+    cy.log('Verify the Start time column header is present');
+    cy.contains('.MuiDataGrid-columnHeaderTitle', 'Start time').should('be.visible');
+
+    cy.log('Verify Start time cells contain a date/time value');
+    // PR #655 reduced the Start time column minWidth (240→110) and flex (3→2)
+    // to enable word wrap; the cell itself renders a locale date string.
+    cy.get('.MuiDataGrid-cell[data-field="startTimeUnixMs"]').first().invoke('text').should('not.be.empty');
+  });
+
   it('[Capability:UIPlugin][Capability:TLSCertRotation] Test dynamic TLS certificate rotation without pod restart', function () {
     cy.runChainsawTest('cert-rotation', 'TLS certificate rotation', { timeout: 600000 });
   });
 
   it('[Capability:UIPlugin][Capability:TLSProfile] Test TLS profile configuration on plugin endpoints', function () {
-    // Setup: install tls-scanner and scale down operator
+    // Setup: install tls-scanner and scale down operator.
+    // scale_down_operator() in tls-helpers.sh re-registers the plugin in
+    // consoles/cluster spec.plugins and annotates the ConsolePlugin CR so the
+    // console bridge re-checks the plugin immediately after the operator stops.
     cy.runChainsawTest('tls-profile-setup', 'TLS profile setup');
+    // Verify the plugin is still accessible after the operator scale-down before
+    // proceeding with profile-specific changes. Fails fast if scale_down_operator()
+    // did not fully restore console registration.
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
 
     // Test default Intermediate profile (TLS 1.2 + TLS 1.3)
     cy.runChainsawTest('tls-profile-intermediate', 'Intermediate TLS profile');
@@ -1232,6 +1471,18 @@ EOF`,
   });
 
   it('[Capability:OperatorLifecycle][Capability:Installation] Test "Install Tempo operator" if operator is not installed', () => {
+    // Pre-flight: scale COO operator to 1 in case TLSProfile test left it at 0 replicas.
+    // Without this, the plugin pod is unavailable and the page shows 404.
+    cy.log('Pre-flight: Ensure COO operator is running at 1 replica');
+    cy.exec(
+      `oc scale deployment observability-operator -n ${DTP.namespace} --replicas=1 --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; echo "done"`,
+      { failOnNonZeroExit: false, timeout: 30000 },
+    );
+    cy.exec(
+      `for i in $(seq 1 24); do POD=$(oc get pods --selector=app.kubernetes.io/instance=distributed-tracing -n ${DTP.namespace} --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} -o name 2>/dev/null | head -1); if [ -n "$POD" ]; then oc wait --for=condition=Ready $POD -n ${DTP.namespace} --timeout=30s --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null && exit 0; fi; echo "Plugin pod not ready yet (attempt $i/24), waiting 5s..."; sleep 5; done; echo "Plugin pod check done"; exit 0`,
+      { failOnNonZeroExit: false, timeout: 150000 },
+    );
+
     cy.log('Delete Chainsaw test namespaces and resources');
     cy.exec(
       `for ns in $(oc get projects -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} | grep "chainsaw-" | sed 's|project.project.openshift.io/||'); do oc get opentelemetrycollectors.opentelemetry.io,tempostacks.tempo.grafana.com,tempomonolithics.tempo.grafana.com,pvc -n $ns -o name --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null | xargs --no-run-if-empty -I {} oc patch {} -n $ns --type merge -p '{"metadata":{"finalizers":[]}}' --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} 2>/dev/null || true; oc delete project $ns --kubeconfig ${Cypress.env('KUBECONFIG_PATH')} || true; done`,
@@ -1250,12 +1501,31 @@ EOF`,
     cy.log('Delete Tempo CustomResourceDefinitions');
     cy.executeAndDelete(`oc delete customresourcedefinitions.apiextensions.k8s.io tempomonolithics.tempo.grafana.com tempostacks.tempo.grafana.com --kubeconfig ${Cypress.env('KUBECONFIG_PATH')}`);
 
-    cy.log('Navigate to the observe/traces page');
-    cy.visit('/observe/traces');
-    cy.url().should('include', '/observe/traces');
-    cy.dismissWelcomeModal();
-    cy.get('body').should('be.visible');
-    cy.wait(3000);
+    cy.log('Navigate to the observe/traces page, retrying until plugin shows "Tempo operator isn\'t installed yet"');
+    // After deleting Tempo CRDs the plugin shows the correct empty state. If the console
+    // hasn't refreshed its plugin routes (e.g. after TLSProfile left operator at 0 replicas),
+    // the page may show 404. Retry until the plugin page loads correctly.
+    const retryIntervalInstallMs = 10000;
+    const maxInstallRetries = 18; // 3 minutes
+    const waitForInstallationPage = (retriesLeft: number) => {
+      cy.visit('/observe/traces');
+      cy.url().should('include', '/observe/traces');
+      cy.dismissWelcomeModal();
+      // Give the console time to load plugins and render the page before checking it;
+      // checking right after the visit can run before the plugin page has rendered.
+      cy.wait(retryIntervalInstallMs);
+      cy.get('body').then(($body) => {
+        if ($body.text().includes('Tempo operator isn\'t installed yet')) {
+          cy.log('Plugin shows correct "Tempo operator isn\'t installed yet" state');
+        } else if (retriesLeft > 0) {
+          cy.log(`Plugin not ready yet (body: "${$body.text().substring(0, 100)}..."), retrying (${retriesLeft} left)...`);
+          waitForInstallationPage(retriesLeft - 1);
+        } else {
+          cy.log('WARNING: Plugin did not show expected state after maximum retries');
+        }
+      });
+    };
+    waitForInstallationPage(maxInstallRetries);
 
     cy.log('Verify empty state shows "Tempo operator isn\'t installed yet"');
     cy.pfEmptyState().within(() => {
