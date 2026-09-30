@@ -10,7 +10,7 @@ spec:
         timeout: 5m
         content: |
           . ../tls-profile/tls-helpers.sh
-          patch_tls_env "VersionTLS13" ""
+          patch_tls_args "VersionTLS13" ""
           echo "PASS: Deployment patched with TLS_MIN_VERSION=VersionTLS13"
   - name: Verify Modern TLS profile
     try:

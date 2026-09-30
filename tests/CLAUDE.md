@@ -24,12 +24,6 @@ npx cypress run --spec "e2e/dt-plugin-tests.cy.ts"
 
 # Skip debug files during CI runs
 npx cypress run --ignore-pattern "**/*debug*.cy.ts"
-
-# Lint tests
-npm run lint
-
-# Fix linting issues
-npm run lint-fix
 ```
 
 ### Environment Setup
@@ -80,12 +74,12 @@ The test suite includes comprehensive PatternFly-aware custom commands:
 - **Trace testing**: `cy.muiTraceLink()`, `cy.muiSpanBar()`, `cy.muiTraceAttributes()`
 - **Bulk validation**: Commands for validating multiple trace attributes efficiently
 - **Chainsaw integration**: `cy.runChainsawTest(testDirs, description, options?)` runs chainsaw tests from Cypress; accepts a single directory name, an array of directories, or full paths starting with `./`; supports optional `timeout` and `extraArgs`
-- **Trace UI verification**: `cy.verifyTracesVisible(tempoInstance, tenant)` navigates to traces page and asserts traces are visible for the given Tempo instance and tenant
+- **Trace UI verification**: `cy.verifyTracesVisible(tempoInstance, tenant)` navigates to traces page and asserts traces are visible for the given Tempo instance and tenant; retries every 15 s for up to 4 minutes to handle the console bridge's backoff delay after a pod restart
 - **OCP compatibility**: `cy.dismissWelcomeModal()` handles the OCP 4.22+ "Welcome to the new OpenShift experience!" modal overlay
 
 #### Test Types
-1. **Cypress E2E Tests**: Main UI automation testing the plugin functionality (11 tests covering empty state, trace visualization, RBAC, trace limits, cutoff box, AI analysis, TraceQL queries, custom time range, scatter plot, attribute-based filtering, TLS profiles, and operator installation). Validated on OCP 4.22 nightly.
-2. **Chainsaw Tests**: Kubernetes-native testing for RBAC, TLS profiles, and operator behavior
+1. **Cypress E2E Tests**: Main UI automation testing the plugin functionality (15 tests covering empty state, trace visualization, RBAC, trace limits, cutoff box, AI analysis, TraceQL queries, custom time range, scatter plot, attribute-based filtering, Gantt chart span search (perses/plugins#661), Gantt chart attribute pane resizing (perses/plugins#636), trace table column word wrap (perses/plugins#655), TLS certificate rotation, TLS profiles, and operator installation). Validated on OCP 4.22 nightly. Test order: TLSCertRotation runs before TLSProfile so that cert rotation starts with the operator at 1 replica and no tls-scanner pod present.
+2. **Chainsaw Tests**: Kubernetes-native testing for RBAC, TLS profiles, cert rotation, and operator behavior
 3. **Debug Tests**: Rapid iteration tests without full setup/teardown
 
 ### Operator Testing
@@ -123,6 +117,25 @@ Chainsaw tests in `fixtures/chainsaw-tests/tls-profile-*` verify the plugin back
 Profiles tested: Intermediate (default), Modern (TLS 1.3 only), Custom cipher suites, Old (TLS 1.0+).
 
 Shared helpers live in `fixtures/chainsaw-tests/tls-profile/tls-helpers.sh`. Each profile is a separate chainsaw test directory invoked via `cy.runChainsawTest()` from the Cypress `[Capability:TLSProfile]` test, with `cy.verifyTracesVisible()` called after each to confirm the UI still works.
+
+**Operator scale-down console registration fix:** When COO is scaled to 0 replicas, its graceful shutdown may remove the plugin from `consoles.operator.openshift.io/cluster` spec.plugins, making the tracing UI disappear from the console even though the plugin pod is still running. `scale_down_operator()` in `tls-helpers.sh` addresses this in two ways:
+1. Re-adds `distributed-tracing-console-plugin` to `consoles/cluster` spec.plugins via `kubectl patch` if it is missing after scale-down.
+2. Annotates the `distributed-tracing-console-plugin` ConsolePlugin CR to trigger an immediate console bridge health re-check.
+
+After each deployment rollout triggered by `wait_for_rollout()`, the shared helper also annotates the ConsolePlugin CR. Without this annotation, the console's exponential backoff can delay plugin re-detection by 10+ minutes after a pod restart.
+
+A `cy.verifyTracesVisible()` call is placed immediately after `tls-profile-setup` in the Cypress test to confirm the plugin is still accessible before any profile-specific changes begin. This gives a clear failure signal if `scale_down_operator()` does not fully restore console registration.
+
+The `[Capability:TLSCertRotation]` test runs **before** `[Capability:TLSProfile]` so that cert rotation starts with the operator at 1 replica and no tls-scanner pod present. The `[Capability:TLSProfile]` revert step restores the operator to 1 replica before the `[Capability:Installation]` test begins.
+
+### UIPlugin lifecycle in the `before` hook (SKIP_COO_INSTALL=true)
+
+When `CYPRESS_SKIP_COO_INSTALL=true`, the `before` hook uses `oc apply` (idempotent) to ensure the `distributed-tracing` UIPlugin exists — creating it if missing, no-op if already present. It then polls up to 120 s for the plugin `Deployment` to appear and waits for `rollout status`. This avoids the delete/recreate cycle that previously caused `__load_plugin_entry__ is not defined` errors: deleting the UIPlugin removes it from `consoles/cluster spec.plugins`, so the console tries to load a stale cached plugin script with no handler registered. The idempotent apply pattern works equally well in CI (where no UIPlugin exists at test start) and in repeated manual runs (where one is already present).
+
+**OCP version requirement:** The plugin is built with `@openshift-console/dynamic-plugin-sdk: ^4.22.0-prerelease.2`, which requires **OCP 4.22+**. On OCP 4.21 the console does not register the `__load_plugin_entry__` handler for 4.22-prerelease plugins, causing all browser-based tests to fail.
+
+### TLS Certificate Rotation Testing
+The chainsaw test in `fixtures/chainsaw-tests/cert-rotation/` verifies that the plugin backend dynamically reloads its TLS certificate after the serving secret is rotated, **without a pod restart**. It rotates the serving secret, waits for the new cert to propagate via volume mount, confirms the plugin serves the new cert via openssl, and asserts the pod was not restarted throughout.
 
 ## Cypress MCP Setup
 

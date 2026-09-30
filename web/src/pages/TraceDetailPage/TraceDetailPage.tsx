@@ -12,7 +12,6 @@ import {
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { TracingApp } from '../../TracingApp';
-import { memo } from 'react';
 import { linkToSpan, linkToTrace, spanAttributeLinks } from '../../links';
 import { StringParam, useQueryParam } from 'use-query-params';
 import './TraceDetailPage.css';
@@ -29,7 +28,7 @@ function TraceDetailPage() {
   );
 }
 
-export default memo(TraceDetailPage);
+export default TraceDetailPage;
 
 function TraceDetailPageBody() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -41,7 +40,12 @@ function TraceDetailPageBody() {
   return (
     <PersesTempoDatasourceWrapper
       tempo={tempo}
-      queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+      definitions={[
+        {
+          kind: 'TraceQuery',
+          spec: { plugin: { kind: 'TempoTraceQuery', spec: { query: traceId } } },
+        },
+      ]}
     >
       <PageSection variant="light">
         <Breadcrumb>
