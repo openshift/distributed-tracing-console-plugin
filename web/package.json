@@ -106,6 +106,7 @@
   "overrides": {
     "cheerio": "1.0.0-rc.12",
     "echarts": "^5.6.0",
+    "qs": "^6.16.0",
     "adm-zip": "0.6.1"
   }
 }
