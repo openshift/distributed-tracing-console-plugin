@@ -72,7 +72,12 @@ export function QueryBrowserBody() {
           <FilterToolbar tempo={tempo} setTempo={setTempo} query={query} runQuery={runQuery} />
           <PersesTempoDatasourceWrapper
             tempo={tempo}
-            queries={[{ kind: 'TempoTraceQuery', spec: { query, limit } }]}
+            definitions={[
+              {
+                kind: 'TraceQuery',
+                spec: { plugin: { kind: 'TempoTraceQuery', spec: { query, limit } } },
+              },
+            ]}
           >
             <TraceSearchResults setQuery={setQuery} />
           </PersesTempoDatasourceWrapper>
