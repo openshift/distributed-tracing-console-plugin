@@ -106,6 +106,7 @@
     "react-router-dom": "<7"
   },
   "overrides": {
+    "undici": "8.10.2",
     "cheerio": "1.0.0-rc.12",
     "echarts": "^5.6.0",
     "qs": "^6.16.0",
