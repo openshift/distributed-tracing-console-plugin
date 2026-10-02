@@ -91,6 +91,7 @@
     "react-router-dom": "^7"
   },
   "overrides": {
+    "undici": "8.10.2",
     "echarts": "^5.6.0",
     "qs": "^6.15.2",
     "adm-zip": "0.6.1"
