@@ -11,7 +11,7 @@ spec:
         content: |
           . ../tls-profile/tls-helpers.sh
           detect_fips
-          remove_tls_env
+          remove_tls_args
           verify_nmap_tls_profile "intermediate" "Default Intermediate profile"
           verify_all_endpoints "Default Intermediate profile"
           echo "PASS: Intermediate TLS profile verified (TLS 1.2 + TLS 1.3)"

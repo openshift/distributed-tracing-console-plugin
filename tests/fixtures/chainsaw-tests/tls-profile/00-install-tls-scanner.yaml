@@ -54,7 +54,7 @@ spec:
   serviceAccountName: tls-scanner
   containers:
   - name: tls-scanner
-    image: quay.io/rhn_support_ikanse/tls-scanner:latest
+    image: quay.io/redhat-distributed-tracing-qe/tls-scanner@sha256:97eb0e39012ff6e37f951ae13d952434e8669690552bcfc177c2bdd79aeccd76
     command: ["sleep", "infinity"]
     securityContext:
       privileged: true
