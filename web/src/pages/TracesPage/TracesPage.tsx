@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { useState } from 'react';
 import { useTempoResources } from '../../hooks/useTempoResources';
 import { QueryBrowser } from './QueryBrowser';
 import {
@@ -53,7 +53,7 @@ function TracesPage() {
   );
 }
 
-export default memo(TracesPage);
+export default TracesPage;
 
 /**
  * TracesPageBody catches major error states like "Tempo Operator not installed" or "No Tempo instances created yet"

@@ -1,4 +1,14 @@
-import React, { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  CSSProperties,
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  ReactNode,
+  Ref,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Select,
   SelectOption,
@@ -16,7 +26,7 @@ import { TypeaheadSelectOption } from './TypeaheadSelect';
 
 export interface TypeaheadCheckboxSelectProps {
   placeholder: string;
-  noResultsFoundText?: React.ReactNode;
+  noResultsFoundText?: ReactNode;
   toggleWidth?: string;
   isCreatable?: boolean;
   style?: CSSProperties;
@@ -184,7 +194,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
     setActiveAndFocusedItem(indexToFocus);
   };
 
-  const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const onInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     const focusedItem = focusedItemIndex !== null ? selectOptions[focusedItemIndex] : null;
 
     switch (event.key) {
@@ -216,7 +226,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
     textInputRef?.current?.focus();
   };
 
-  const onTextInputChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
+  const onTextInputChange = (_event: FormEvent<HTMLInputElement>, value: string) => {
     setInputValue(value);
     resetActiveAndFocusedItem();
   };
@@ -240,7 +250,7 @@ export function TypeaheadCheckboxSelect(props: TypeaheadCheckboxSelectProps) {
     textInputRef?.current?.focus();
   };
 
-  const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
+  const toggle = (toggleRef: Ref<MenuToggleElement>) => (
     <MenuToggle
       variant="typeahead"
       aria-label="Multi typeahead checkbox menu toggle"

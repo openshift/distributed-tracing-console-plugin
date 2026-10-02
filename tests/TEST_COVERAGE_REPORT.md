@@ -1,15 +1,18 @@
 # Test Coverage Report - Distributed Tracing Console Plugin
-**Generated:** April 30, 2026
+**Generated:** May 29, 2026
 **Test Framework:** Cypress E2E
 **Test File:** `tests/e2e/dt-plugin-tests.cy.ts`
+**Plugin branch:** `bump-perses-0.54.0` (Perses 0.54.0-beta.1)
+**Validated on:** OCP 4.22 nightly
 
 ## Executive Summary
 
-This report provides a comprehensive analysis of the current Cypress E2E test coverage for the OpenShift Distributed Tracing Console Plugin. The test suite covers core functionality across plugin installation, trace visualization, RBAC, span links navigation, TraceQL queries, AI-powered trace analysis, custom time range selection, scatter plot interaction, attribute-based filtering, and operator installation workflows.
+This report provides a comprehensive analysis of the current Cypress E2E test coverage for the OpenShift Distributed Tracing Console Plugin. The test suite covers core functionality across plugin installation, trace visualization, RBAC, span links navigation, TraceQL queries, AI-powered trace analysis, custom time range selection, scatter plot interaction, attribute-based filtering, Gantt chart span search, Gantt chart attribute pane resizing, trace table column word-wrap, TLS profile configuration, TLS certificate rotation, and operator installation workflows.
 
-**Overall Coverage:** ~97% of core features
-**Total Tests:** 11 main test cases
-**Lines of Test Code:** ~1300 lines
+**Overall Coverage:** ~98% of core features
+**Total Tests:** 15 main test cases (12 original + 3 new for Perses 0.54.0-beta.1 features)
+**Lines of Test Code:** ~1650 lines
+**Last full run result:** 15/15 passing (25m 36s)
 
 ---
 
@@ -226,16 +229,70 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 
 ---
 
-### 12. TLS Profile Configuration
+### 12. Gantt Chart Span Search (perses/plugins#661)
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| - Toggle search bar via magnify icon | Test 10, `button[aria-label="Toggle search"]` click | Full |
+| - Search input with placeholder "Search spans…" | Test 10, type into `input[placeholder="Search spans..."]` | Full |
+| - Match counter shows `X/Y` (service name query) | Test 10, `.MuiInputAdornment-root` text matches `/^[1-9]\d*\/\d+$/` | Full |
+| - Next match button advances index | Test 10, `button[aria-label="Next match"]` enabled + click | Full |
+| - Previous match button wraps back | Test 10, `button[aria-label="Previous match"]` enabled + click | Full |
+| - No-results query shows `0/0` | Test 10, unique string → adornment contains `0/0` | Full |
+| - Nav buttons disabled for no results | Test 10, both buttons asserted `.should('be.disabled')` | Full |
+| - Clear button resets input | Test 10, `button[aria-label="Clear search"]` → input value empty | Full |
+| - Toggle button hides search bar | Test 10, second toggle click → input `should('not.exist')` | Full |
+
+---
+
+### 13. Gantt Chart Attribute Pane Resizing (perses/plugins#636)
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| - Attribute pane opens on span click | Test 11, after `navigateToTraceDetails()` + `[style*="min-width"]` visible | Full |
+| - ResizableDivider drag changes pane width | Test 11, mousedown → mousemove to 40% → mouseup on resizerEl | Full |
+| - Width increases after drag (quantitative assert) | Test 11, `newWidth > initialWidth` via `getBoundingClientRect()` | Full |
+| - `getComputedStyle()`-based spacing fix | Test 11 exercises the PR#636 fix (was broken with MUI CSS vars) | Full |
+
+---
+
+### 14. Trace Table Column Word Wrap (perses/plugins#655)
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| - "Spans" column header visible | Test 12, `cy.contains('.MuiDataGrid-columnHeaderTitle', 'Spans')` | Full |
+| - Spans cells show `N spans` text | Test 12, `.MuiDataGrid-cell[data-field="spanCount"]` text matches `/\d+ spans/` | Full |
+| - Spans cell wrapped in `Box` with `flexWrap:wrap` | Test 12, `.MuiDataGrid-cell[data-field="spanCount"] .MuiBox-root` exists | Full |
+| - "Start time" column header visible | Test 12, `cy.contains('.MuiDataGrid-columnHeaderTitle', 'Start time')` | Full |
+| - Start time cells contain date/time text | Test 12, `.MuiDataGrid-cell[data-field="startTimeUnixMs"]` text not empty | Full |
+| - Column minWidth reduction (145→90, 240→110) | Implicitly exercised; narrower columns still render correctly | Partial |
+
+---
+
+### 15. TLS Certificate Rotation
+
+| Feature | Test Coverage | Coverage Level |
+|---------|--------------|---------------|
+| **Certificate Rotation Workflow** | | |
+| - Pre-rotation cert serial recording | Test 13, cert-rotation chainsaw test | Full |
+| - Secret deletion and service-ca regeneration | Test 13, cert-rotation chainsaw test | Full |
+| - New cert propagation to pod volume mount | Test 13, cert-rotation chainsaw test | Full |
+| - Dynamic cert reload verification (openssl serial match) | Test 13, cert-rotation chainsaw test | Full |
+| - No pod restart assertion | Test 13, cert-rotation chainsaw test | Full |
+| - /health endpoint post-rotation | Test 13, cert-rotation chainsaw test | Full |
+
+---
+
+### 16. TLS Profile Configuration
 
 | Feature | Test Coverage | Coverage Level |
 |---------|--------------|---------------|
 | **TLS Profile Verification** | | |
-| - Default Intermediate profile (TLS 1.2 + 1.3) | Test 7, tls-profile-intermediate chainsaw test | Full |
-| - Modern profile (TLS 1.3 only) | Test 7, tls-profile-modern chainsaw test | Full |
-| - Custom cipher suites | Test 7, tls-profile-custom-ciphers chainsaw test | Full |
-| - Old profile (TLS 1.0+) | Test 7, tls-profile-old chainsaw test | Full |
-| - Profile revert to default | Test 7, tls-profile-revert chainsaw test | Full |
+| - Default Intermediate profile (TLS 1.2 + 1.3) | Test 14, tls-profile-intermediate chainsaw test | Full |
+| - Modern profile (TLS 1.3 only) | Test 14, tls-profile-modern chainsaw test | Full |
+| - Custom cipher suites | Test 14, tls-profile-custom-ciphers chainsaw test | Full |
+| - Old profile (TLS 1.0+) | Test 14, tls-profile-old chainsaw test | Full |
+| - Profile revert to default | Test 14, tls-profile-revert chainsaw test | Full |
 | **nmap Endpoint Scanning** | | |
 | - TLS version enumeration (ssl-enum-ciphers) | All TLS chainsaw tests | Full |
 | - Cipher suite verification | tls-profile-custom-ciphers | Full |
@@ -245,11 +302,16 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 | - /features endpoint under each profile | All TLS chainsaw tests | Full |
 | - /plugin-manifest.json under each profile | All TLS chainsaw tests | Full |
 | **UI Verification** | | |
-| - Traces visible after each profile change | Test 7, cy.verifyTracesVisible() | Full |
+| - Traces visible after each profile change | Test 14, cy.verifyTracesVisible() | Full |
 | **Operator Management** | | |
 | - Operator scale-down for testing | tls-profile-setup | Full |
 | - Operator scale-up after testing | tls-profile-revert | Full |
 | - tls-scanner pod lifecycle | tls-profile-setup/revert | Full |
+| **Console Re-detection** | | |
+| - consoles/cluster spec.plugins re-registration after scale-down | tls-helpers.sh scale_down_operator() | Full |
+| - ConsolePlugin CR annotation to trigger bridge re-check (scale-down) | tls-helpers.sh scale_down_operator() | Full |
+| - ConsolePlugin CR annotation to trigger bridge re-check (rollout) | tls-helpers.sh wait_for_rollout() | Full |
+| - Plugin accessible after operator scale-down | Test 14, cy.verifyTracesVisible() after tls-profile-setup | Full |
 
 ---
 
@@ -303,24 +365,31 @@ This report provides a comprehensive analysis of the current Cypress E2E test co
 
 ```mermaid
 graph TD
-    A[before hook] --> B[Setup & Login]
-    B --> C[Install Operators]
-    C --> D[Configure Plugins]
-    D --> E[Create UIPlugin Instance]
-    E --> F[Run Test Cases]
-    F --> G[Test 1: Empty State]
-    F --> H[Test 2: Traces & RBAC]
-    F --> I[Test 3: Trace Limit]
-    F --> J[Test 4: Cutoff Box]
-    F --> K[Test 5: AI Analysis]
-    F --> L[Test 6: TraceQL Query]
-    F --> O[Test 7: Custom Time Range]
-    F --> P[Test 8: Scatter Plot]
-    F --> Q[Test 9: Attribute Filters]
-    F --> S[Test 10: TLS Profiles]
-    F --> R[Test 11: Install Operator]
-    R --> M[after hook]
-    M --> N[Cleanup Resources]
+    A[before hook] --> B[Pre-flight TLS cleanup + Tempo auto-install]
+    B --> B2[Idempotent UIPlugin apply + rollout wait]
+    B2 --> C[Setup & Login]
+    C --> D[Install Operators]
+    D --> E[Configure Plugins]
+    E --> F[Create UIPlugin Instance]
+    F --> G[Run Test Cases]
+    G --> T1[Test 1: Empty State]
+    G --> T2[Test 2: Traces & RBAC]
+    G --> T3[Test 3: Trace Limit]
+    G --> T4[Test 4: Cutoff Box]
+    G --> T5[Test 5: AI Analysis]
+    G --> T6[Test 6: TraceQL Query]
+    G --> T7[Test 7: Custom Time Range]
+    G --> T8[Test 8: Scatter Plot]
+    G --> T9[Test 9: Attribute Filters]
+    G --> T10[Test 10: Gantt Search NEW]
+    G --> T11[Test 11: Attr Pane Resize NEW]
+    G --> T12[Test 12: Trace Table Cols NEW]
+    G --> T13[Test 13: TLS Cert Rotation]
+    G --> T14[Test 14: TLS Profiles]
+    G --> T15[Test 15: Install Operator]
+    T15 --> H[after hook]
+    H --> I[TLS cleanup + Tempo CLI reinstall]
+    I --> J[Cleanup Resources]
 ```
 
 ### Custom Command Coverage
@@ -369,15 +438,26 @@ graph TD
 
 ### Recently Completed
 
+- **Three new Perses 0.54.0-beta.1 feature tests:** Tests 10, 11, and 12 cover the features shipped in `bump-perses-0.54.0` (PR #270). All 15 tests pass on OCP 4.22 nightly with the custom-built plugin image.
+  - **Test 10 — Gantt Search** ([perses/plugins#661](https://github.com/perses/plugins/pull/661)): toggle, search by service name, match counter, Next/Prev navigation, no-results 0/0, disabled buttons, clear, toggle-hide.
+  - **Test 11 — Attribute Pane Resize** ([perses/plugins#636](https://github.com/perses/plugins/pull/636)): validates `getComputedStyle()`-based spacing fix for MUI CSS vars; drags the `ResizableDivider` (previousElementSibling of `[style*="min-width"]`) and asserts the pane grows.
+  - **Test 12 — Trace Table Columns** ([perses/plugins#655](https://github.com/perses/plugins/pull/655)): verifies the Spans cell uses a `Box` with `flexWrap:wrap` (was a React Fragment), checks `N spans` text, and validates the Start time column; uses `.MuiDataGrid-cell[data-field="..."]` to exclude column headers.
+- **UIPlugin lifecycle fix in `before` hook:** Replaced delete+recreate of the UIPlugin (which caused `__load_plugin_entry__ is not defined` due to browser caching the stale plugin URL) with an idempotent `oc apply`. Polls up to 120 s for the deployment to appear then waits for `rollout status`. Works in CI (no UIPlugin initially) and repeated manual runs.
+- **OCP version requirement documented:** Plugin SDK `^4.22.0-prerelease.2` requires OCP 4.22+. OCP 4.21 console does not register the `__load_plugin_entry__` handler for 4.22-prerelease builds.
 - **OCP 4.22 compatibility:** Added `dismissWelcomeModal` command to handle the "Welcome to the new OpenShift experience!" modal introduced in OCP 4.22. Uses `cy.document().querySelector()` for reliable detection and targets the modal's close button via `aria-label="Close"`. Also added `before initialization` pattern to the uncaught exception handler for Lightspeed plugin errors on OCP 4.22.
 - **Attribute-based filtering:** Test 9 covers switching between filter types (Span Name, Status, Span Duration), selecting values via multi-select checkboxes, entering min/max duration with debounced inputs, verifying toolbar chip labels, and clearing filters to recover unfiltered results.
 - **Custom time range selection:** Test 7 covers the Perses `TimeRangeControls` custom time range workflow — opening the DateTimeRangePicker popover, verifying its structure (calendar, Start/End fields, Apply/Cancel), applying the pre-populated absolute range, verifying URL switches from relative (`start=1h`) to absolute (`start=<ms>&end=<ms>`), testing Cancel preserves the range, and switching back to a preset.
 - **Scatter plot visualization:** Test 8 covers the ECharts-based scatter plot — verifying the container (`[data-testid="ScatterChartPanel_ScatterPlot"]`) and canvas render, testing the Hide/Show graph toggle, confirming ECharts initialization via `_echarts_instance_` attribute, triggering tooltip via mousemove, and validating canvas pixel content is non-empty.
-- **Operator not installed empty state:** Test 11 covers the full "Install Tempo operator" workflow including empty state verification ("Tempo operator isn't installed yet"), button visibility, OperatorHub redirect, and operator details page verification.
-- **OperatorHub integration:** Test 11 validates the end-to-end flow from empty state through to the OperatorHub catalog page and operator install button.
+- **ConsolePlugin re-detection fix:** `wait_for_rollout()` in `tls-helpers.sh` now annotates the `distributed-tracing-console-plugin` ConsolePlugin CR after each pod restart. The console bridge's SharedIndexInformer fires on any CR change (including metadata), triggering immediate plugin health re-check instead of waiting for the 10+ minute exponential backoff.
+- **Extended verifyTracesVisible retry window:** Increased `maxRetries` from 24 to 36 (6 min → 9 min) to provide a safety net for the console bridge backoff. In practice the ConsolePlugin annotation shortens the wait to under a minute.
+- **Test reorder — TLSCertRotation before TLSProfile:** TLS Certificate Rotation (Test 13) runs before TLS Profile (Test 14) and before Operator Installation (Test 15). This ensures cert rotation starts with the operator at 1 replica and no tls-scanner pod present.
+- **TLS certificate rotation testing:** Test 13 verifies the plugin dynamically reloads its TLS certificate after the serving secret is deleted/regenerated by service-ca, without any pod restart. Validates pre/post serial mismatch, pod name/creationTimestamp unchanged, and /health returns HTTP 200 with the new cert.
+- **Cascade failure fixes (before/after hooks):** Added pre-flight TLS cleanup and Tempo auto-install to `before()` to recover from previous failed runs; `after()` reinstalls Tempo via CLI with a correct AllNamespaces OperatorGroup; Installation test adds a pre-flight COO scale-to-1 step.
+- **Operator not installed empty state:** Test 15 covers the full "Install Tempo operator" workflow including empty state verification ("Tempo operator isn't installed yet"), button visibility, OperatorHub redirect, and operator details page verification.
+- **OperatorHub integration:** Test 15 validates the end-to-end flow from empty state through to the OperatorHub catalog page and operator install button.
 - **TraceQL query and empty results:** Test 6 covers TraceQL query editor interaction, custom query execution (`{ name = "/test" }`), "No results found" empty state verification, "Clear all filters" button functionality, query reset to default `{}`, and trace list recovery after clearing filters.
 - **Headless mode stability:** Added deterministic waits for span bar rendering across all trace detail interactions, and page reload guards for navigation after long-running commands, reducing intermittent failures in headless Chrome.
-- **TLS profile testing:** Test 7 validates plugin backend TLS configuration (min version, cipher suites) across Intermediate, Modern, Custom cipher, and Old profiles using nmap/openssl scanning via chainsaw tests, with UI trace verification after each profile change.
+- **TLS profile testing:** Test 10 validates plugin backend TLS configuration (min version, cipher suites) across Intermediate, Modern, Custom cipher, and Old profiles using nmap/openssl scanning via chainsaw tests, with UI trace verification after each profile change.
 - **Chainsaw integration command:** `cy.runChainsawTest()` provides a reusable command for invoking chainsaw tests from Cypress, supporting single/multiple test directories, custom timeouts, and extra arguments. `cy.verifyTracesVisible()` provides quick UI-level trace verification.
 
 ### Immediate Actions (Sprint 1)
@@ -413,33 +493,37 @@ graph TD
 
 ## Feature-to-Test Mapping Matrix
 
-| Feature | Test 1 | Test 2 | Test 3 | Test 4 | Test 5 | Test 6 | Test 7 | Test 8 | Test 9 | Test 10 | Test 11 | Coverage % |
-|---------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|---------|-----------|
-| Empty State UI | Y | - | - | - | - | - | - | - | - | - | - | 100% |
-| Install Operator Flow | - | - | - | - | - | - | - | - | - | - | Y | 100% |
-| Tempo Instance Selection | - | Y | Y | Y | Y | Y | Y | Y | Y | - | - | 100% |
-| Tenant Selection | - | Y | Y | Y | Y | Y | Y | Y | Y | - | - | 100% |
-| Time Range Selection | - | Y | - | - | Y | - | Y | Y | Y | - | - | 100% |
-| Custom Time Range | - | - | - | - | - | - | Y | - | - | - | - | 100% |
-| Service Filtering | - | Y | - | - | Y | - | - | - | - | - | - | 100% |
-| Namespace Filtering | - | - | Y | - | - | - | - | - | - | - | - | 100% |
-| Span Name Filtering | - | - | - | - | - | - | - | - | Y | - | - | 100% |
-| Status Filtering | - | - | - | - | - | - | - | - | Y | - | - | 100% |
-| Duration Filtering | - | - | - | - | - | - | - | - | Y | - | - | 100% |
-| Trace Limit Control | - | - | Y | - | - | - | - | - | - | - | - | 100% |
-| Trace Navigation | - | Y | - | - | Y | - | - | - | - | - | - | 100% |
-| Span Details | - | Y | - | Y | - | - | - | - | - | - | - | 100% |
-| Span Links | - | Y | - | - | - | - | - | - | - | - | - | 100% |
-| Breadcrumb Navigation | - | Y | - | - | - | - | - | Y | - | - | - | 100% |
-| Timeline Cutoff | - | - | - | Y | - | - | - | - | - | - | - | 100% |
-| AI Analysis | - | - | - | - | Y | - | - | - | - | - | - | 100% |
-| TraceQL Queries | - | - | - | - | - | Y | - | - | - | - | - | 100% |
-| Empty Query Results | - | - | - | - | - | Y | - | - | - | - | - | 100% |
-| Clear Filters | - | - | - | - | - | Y | - | - | Y | - | - | 100% |
-| TLS Profile Config | - | - | - | - | - | - | - | - | - | Y | - | 100% |
-| Scatter Plot | - | - | - | - | - | - | - | Y | - | - | - | 100% |
-| Error Handling | - | - | - | - | - | - | - | - | - | - | - | 0% |
-| Documentation Links | Partial | - | - | - | - | - | - | - | - | - | - | 25% |
+| Feature | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 | Coverage % |
+|---------|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----------|
+| Empty State UI | Y | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 100% |
+| Install Operator Flow | - | - | - | - | - | - | - | - | - | - | - | - | - | - | Y | 100% |
+| Tempo Instance Selection | - | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - | - | - | 100% |
+| Tenant Selection | - | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - | - | - | 100% |
+| Time Range Selection | - | Y | - | - | Y | - | Y | Y | Y | - | - | - | - | - | - | 100% |
+| Custom Time Range | - | - | - | - | - | - | Y | - | - | - | - | - | - | - | - | 100% |
+| Service Filtering | - | Y | - | - | Y | - | - | - | - | - | - | - | - | - | - | 100% |
+| Namespace Filtering | - | - | Y | - | - | - | - | - | - | - | - | - | - | - | - | 100% |
+| Span Name Filtering | - | - | - | - | - | - | - | - | Y | - | - | - | - | - | - | 100% |
+| Status Filtering | - | - | - | - | - | - | - | - | Y | - | - | - | - | - | - | 100% |
+| Duration Filtering | - | - | - | - | - | - | - | - | Y | - | - | - | - | - | - | 100% |
+| Trace Limit Control | - | - | Y | - | - | - | - | - | - | - | - | - | - | - | - | 100% |
+| Trace Navigation | - | Y | - | - | Y | - | - | - | - | - | - | - | - | - | - | 100% |
+| Span Details | - | Y | - | Y | - | - | - | - | - | - | - | - | - | - | - | 100% |
+| Span Links | - | Y | - | - | - | - | - | - | - | - | - | - | - | - | - | 100% |
+| Breadcrumb Navigation | - | Y | - | - | - | - | - | Y | - | - | - | - | - | - | - | 100% |
+| Timeline Cutoff | - | - | - | Y | - | - | - | - | - | - | - | - | - | - | - | 100% |
+| AI Analysis | - | - | - | - | Y | - | - | - | - | - | - | - | - | - | - | 100% |
+| TraceQL Queries | - | - | - | - | - | Y | - | - | - | - | - | - | - | - | - | 100% |
+| Empty Query Results | - | - | - | - | - | Y | - | - | - | - | - | - | - | - | - | 100% |
+| Clear Filters | - | - | - | - | - | Y | - | - | Y | - | - | - | - | - | - | 100% |
+| Gantt Search | - | - | - | - | - | - | - | - | - | Y | - | - | - | - | - | 100% |
+| Attr Pane Resize | - | - | - | - | - | - | - | - | - | - | Y | - | - | - | - | 100% |
+| Trace Table Columns | - | - | - | - | - | - | - | - | - | - | - | Y | - | - | - | 100% |
+| TLS Cert Rotation | - | - | - | - | - | - | - | - | - | - | - | - | Y | - | - | 100% |
+| TLS Profile Config | - | - | - | - | - | - | - | - | - | - | - | - | - | Y | - | 100% |
+| Scatter Plot | - | - | - | - | - | - | - | Y | - | - | - | - | - | - | - | 100% |
+| Error Handling | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 0% |
+| Documentation Links | P | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 25% |
 
 ---
 
@@ -545,7 +629,52 @@ graph TD
 - Toolbar filter chip labels ("between 1ms and 10s")
 - Filter clear and recovery to unfiltered state
 
-### Test 10: TLS Profile Configuration
+### Test 10: Gantt Chart Span Search *(new — perses/plugins#661)*
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:GanttSearch]` test
+**Purpose:** Verify the search bar added to the TracingGanttChart header
+**Features Covered:**
+- Toggle search bar via magnify icon button (`aria-label="Toggle search"`)
+- Search input (`placeholder="Search spans..."`) with dynamic match counter
+- Match counter format `X/Y` in `MuiInputAdornment` — asserted with `/^[1-9]\d*\/\d+$/`
+- "Next match" (`aria-label="Next match"`) and "Previous match" buttons navigate results
+- Non-existent query shows `0/0` and both nav buttons are disabled
+- "Clear search" (`aria-label="Clear search"`) resets input value
+- Second toggle click removes search bar from DOM
+
+### Test 11: Gantt Chart Attribute Pane Resizing *(new — perses/plugins#636)*
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:AttributePaneResize]` test
+**Purpose:** Verify the ResizableDivider drag works correctly under MUI CSS variables
+**Features Covered:**
+- Attribute pane opens via `navigateToTraceDetails()` (span click)
+- Attribute pane identified via inline `[style*="min-width"]` (only set when span selected)
+- `ResizableDivider` found as `previousElementSibling` of detail pane Box
+- Drag sequence: `mousedown` → `mousemove` to 40% of gantt width → `mouseup`
+- Post-drag width asserted strictly greater than pre-drag width via `getBoundingClientRect()`
+- Exercises the `getComputedStyle()`-based spacing fix (PR#636 bug: `theme.spacing()` returned CSS var string, not pixels, when MUI CSS vars enabled)
+
+### Test 12: Trace Table Spans and Start Time Column Word Wrap *(new — perses/plugins#655)*
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:TraceTableColumns]` test
+**Purpose:** Verify the Spans and Start time columns after minWidth reduction and structural changes
+**Features Covered:**
+- "Spans" column header visible via `.MuiDataGrid-columnHeaderTitle`
+- Spans data cells targeted with `.MuiDataGrid-cell[data-field="spanCount"]` (not the header)
+- Cell text matches `/\d+ spans/` pattern
+- Cell contains `.MuiBox-root` — confirms the `<Box flexWrap="wrap">` wrapper (was `<>` React Fragment)
+- "Start time" column header visible
+- Start time data cells have non-empty text (locale date string)
+
+### Test 13: TLS Certificate Rotation
+**File:** `dt-plugin-tests.cy.ts`, `[Capability:TLSCertRotation]` test
+**Purpose:** Verify dynamic TLS certificate reload without pod restart
+**Features Covered:**
+- Pre-rotation cert serial number recording (openssl)
+- Serving secret deletion triggering service-ca regeneration
+- New cert propagation to pod volume mount (within 3 minutes)
+- Dynamic cert reload verification (new serial served by plugin)
+- Pod name and creationTimestamp unchanged (no restart occurred)
+- /health endpoint returns HTTP 200 with new certificate
+
+### Test 14: TLS Profile Configuration
 **File:** `dt-plugin-tests.cy.ts`, `[Capability:TLSProfile]` test
 **Purpose:** Verify plugin backend TLS min version and cipher suite enforcement
 **Features Covered:**
@@ -556,10 +685,13 @@ graph TD
 - Custom cipher suite verification (restricted TLS 1.2 ciphers, nmap enumeration)
 - Old profile verification (TLS 1.0/1.1/1.2/1.3, nmap)
 - Revert to default and verify Intermediate restored
-- UI trace visibility after each profile change (cy.verifyTracesVisible)
+- UI trace visibility after operator scale-down (cy.verifyTracesVisible after tls-profile-setup)
+- UI trace visibility after each profile change (cy.verifyTracesVisible after each chainsaw test)
 - Uses 6 individual chainsaw tests invoked via cy.runChainsawTest()
+- scale_down_operator() re-registers plugin in consoles/cluster spec.plugins if removed during COO shutdown
+- ConsolePlugin CR annotation in scale_down_operator() and wait_for_rollout() triggers immediate console bridge re-detection
 
-### Test 11: Install Operator
+### Test 15: Install Operator
 **File:** `dt-plugin-tests.cy.ts`, `[Capability:OperatorLifecycle]` test
 **Purpose:** Test "Install Tempo operator" button workflow
 **Features Covered:**
@@ -575,17 +707,27 @@ graph TD
 
 ## Conclusion
 
-The current test suite provides **excellent coverage** of core tracing functionality, RBAC, TraceQL queries, AI integration, custom time range selection, scatter plot visualization, attribute-based filtering, TLS profile configuration, and operator installation workflows. The suite is validated on OCP 4.22 nightly with backwards-compatible handling of the new welcome modal. Test 7 covers custom time range selection, Test 8 covers scatter plot visualization, Test 9 covers attribute-based filtering, and Test 10 covers TLS profile configuration. The main remaining gaps are in:
-1. **Error handling scenarios**
-2. **UI edge cases**
+The current test suite provides **excellent coverage** of core tracing functionality, RBAC, TraceQL queries, AI integration, custom time range selection, scatter plot visualization, attribute-based filtering, Gantt chart span search, Gantt chart attribute pane resizing, trace table column word-wrap, TLS profile configuration, TLS certificate rotation, and operator installation workflows. The suite now contains **15 main test cases** all passing on OCP 4.22 nightly with the `bump-perses-0.54.0` custom plugin image:
+
+- Tests 1–9: core plugin functionality (unchanged)
+- **Test 10**: Gantt chart span search (perses/plugins#661)
+- **Test 11**: Gantt chart attribute pane resizing (perses/plugins#636)
+- **Test 12**: Trace table Spans/Start time column word wrap (perses/plugins#655)
+- Test 13: TLS certificate rotation without pod restart
+- Test 14: TLS profile configuration (Intermediate, Modern, Custom, Old)
+- Test 15: Operator installation flow
+
+The main remaining gaps are:
+1. **Error handling scenarios** — test behavior when Tempo is unavailable or returns errors
+2. **UI edge cases** — boundary conditions for time range, filter combinations
 
 **Recommended Next Steps:**
 1. Split Test 2 into focused tests (maintainability)
 2. Expand error handling tests (robustness)
 
-The test suite demonstrates excellent use of custom commands, page object patterns, PatternFly version-agnostic selectors, and CodeMirror EditorView API integration, making it maintainable and extensible for future feature additions.
+The test suite demonstrates excellent use of custom commands, page object patterns, PatternFly version-agnostic selectors, MUI DataGrid cell-scoped selectors (`.MuiDataGrid-cell[data-field="..."]`), ARIA-label-based Gantt chart selectors, and CodeMirror EditorView API integration, making it maintainable and extensible for future feature additions.
 
 ---
 
 **Report prepared by:** Claude Code
-**Last updated:** April 30, 2026
+**Last updated:** May 29, 2026

@@ -1,5 +1,5 @@
 import './commands';
-import registerCypressGrep from '@cypress/grep';
+import { register as registerCypressGrep } from '@cypress/grep';
 
 registerCypressGrep();
 
@@ -11,7 +11,10 @@ Cypress.on('uncaught:exception', (err, runnable) => {
       err.message.includes('Cannot read prop') ||
       err.message.includes('undefined is not a function') ||
       err.message.includes('Cannot read properties of undefined') ||
-      err.message.includes('before initialization')) {
+      err.message.includes('before initialization') ||
+      // Console plugin module loading errors (e.g. Lightspeed OverviewDetail) are
+      // transient and should not fail our tests — the plugin itself is tested separately.
+      err.message.includes('Failed to load module')) {
     console.log('Caught application error:', err.message);
     return false;
   }

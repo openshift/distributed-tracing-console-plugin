@@ -10,7 +10,7 @@ spec:
         timeout: 5m
         content: |
           . ../tls-profile/tls-helpers.sh
-          patch_tls_env "VersionTLS12" "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+          patch_tls_args "VersionTLS12" "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
           echo "PASS: Deployment patched with custom cipher suites"
   - name: Verify custom cipher suites
     try:

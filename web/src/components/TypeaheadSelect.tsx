@@ -1,4 +1,4 @@
-import React, {
+import {
   forwardRef,
   useCallback,
   useEffect,
@@ -51,15 +51,12 @@ export interface TypeaheadSelectProps extends Omit<
   'toggle' | 'onSelect' | 'onToggle'
 > {
   /** @hide Forwarded ref */
-  innerRef?: React.Ref<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  innerRef?: Ref<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   /** Initial options of the select. */
   initialOptions: TypeaheadSelectOption[];
   /** Callback triggered on selection. */
   onSelect?: (
-    _event:
-      | React.MouseEvent<Element, MouseEvent>
-      | React.KeyboardEvent<HTMLInputElement>
-      | undefined,
+    _event: ReactMouseEvent<Element, MouseEvent> | ReactKeyboardEvent<HTMLInputElement> | undefined,
     selection: TypeaheadSelectOption['value'],
   ) => void;
   /** Callback triggered when the select opens or closes. */
@@ -69,7 +66,7 @@ export interface TypeaheadSelectProps extends Omit<
   /** Custom callback triggered when the input field has focus and a keyboard event is triggered.
    * This will override the default keydown behavior for the input field.
    */
-  onInputKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onInputKeyDown?: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
   /** Callback triggered when the clear button is selected */
   onClearSelection?: () => void;
   /** Placeholder text for the select input. */

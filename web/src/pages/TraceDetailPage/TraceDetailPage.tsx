@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,7 +20,6 @@ import {
 import { useDataQueries } from '@perses-dev/plugin-system';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
 import { TracingApp } from '../../TracingApp';
-import { memo } from 'react';
 import { linkToSpan, linkToTrace, spanAttributeLinks } from '../../links';
 import { StringParam, useQueryParam } from 'use-query-params';
 import './TraceDetailPage.css';
@@ -42,7 +41,7 @@ function TraceDetailPage() {
   );
 }
 
-export default memo(TraceDetailPage);
+export default TraceDetailPage;
 
 function TraceDetailPageBody() {
   const { t } = useTranslation('plugin__distributed-tracing-console-plugin');
@@ -54,7 +53,12 @@ function TraceDetailPageBody() {
   return (
     <PersesTempoDatasourceWrapper
       tempo={tempo}
-      queries={[{ kind: 'TempoTraceQuery', spec: { query: traceId } }]}
+      definitions={[
+        {
+          kind: 'TraceQuery',
+          spec: { plugin: { kind: 'TempoTraceQuery', spec: { query: traceId } } },
+        },
+      ]}
     >
       <PageSection>
         <Breadcrumb>
@@ -95,7 +99,7 @@ function GanttChart({ traceId, selectedSpanId }: GanttChartProps) {
 
   // Due to some Perses <Panel> internals, useMemo() doesn't work reliably inside panelOptions.extra
   // Therefore we'll perform the trace transformation in this component and pass it to <LightspeedButton> as a prop.
-  const lightspeedBtn = React.useMemo(() => {
+  const lightspeedBtn = useMemo(() => {
     if (!useOpenOLS) return null;
     if (!trace) return null;
 
