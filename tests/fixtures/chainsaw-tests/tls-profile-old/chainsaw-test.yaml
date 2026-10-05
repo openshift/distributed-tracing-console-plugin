@@ -10,7 +10,7 @@ spec:
         timeout: 5m
         content: |
           . ../tls-profile/tls-helpers.sh
-          patch_tls_env "VersionTLS10" ""
+          patch_tls_args "VersionTLS10" ""
           echo "PASS: Deployment patched with TLS_MIN_VERSION=VersionTLS10"
   - name: Verify Old TLS profile
     try:
