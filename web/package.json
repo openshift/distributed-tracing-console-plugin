@@ -1,6 +1,6 @@
 {
   "name": "distributed-tracing-console-plugin",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "repository": "git@github.com:openshift/distributed-tracing-console-plugin.git",
   "license": "Apache-2.0",
@@ -51,7 +51,7 @@
   },
   "consolePlugin": {
     "name": "distributed-tracing-console-plugin",
-    "version": "0.0.1",
+    "version": "1.2.0",
     "displayName": "Distributed Tracing Plugin",
     "description": "This plugin adds a distributed tracing UI to the Openshift console.",
     "exposedModules": {
