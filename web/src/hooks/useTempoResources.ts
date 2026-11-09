@@ -12,6 +12,10 @@ export type TempoResource = {
   name: string;
   /** list of tenants for multi-tenant instances, undefined for single-tenant instances */
   tenants?: string[];
+  /** true if all components of the instance are up and the instance can be queried */
+  ready: boolean;
+  /** human readable message explaining why the instance is not ready, if the operator reported one */
+  statusMessage?: string;
 };
 
 type ListTempoResourcesResponse = APIResponse<TempoResource[]>;
