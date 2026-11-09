@@ -15,6 +15,8 @@ import { useDataQueries, useTimeRange } from '@perses-dev/plugin-system';
 import { FilterToolbar } from './Toolbar/FilterToolbar';
 import { DEFAULT_LIMIT, LimitSelect } from './LimitSelect';
 import { ClosableAlert } from '../../components/ClosableAlert';
+import { useTempoResources } from '../../hooks/useTempoResources';
+import { TempoInstanceNotReadyState } from '../../components/TempoInstanceNotReadyState';
 
 export function QueryBrowser() {
   return (
@@ -32,7 +34,12 @@ export function QueryBrowserBody() {
   const [query, setQuery] = useQueryParam('q', withDefault(StringParam, '{}'));
   const [limit, setLimit] = useQueryParam('limit', withDefault(NumberParam, DEFAULT_LIMIT));
   const { refresh } = useTimeRange();
+  const { data: tempoResources } = useTempoResources();
   const isInitialRender = useRef(true);
+
+  const selectedTempoResource = tempoResources?.find(
+    (resource) => resource.namespace === tempo?.namespace && resource.name === tempo?.name,
+  );
 
   // Refresh query if Tempo instance or tenant changes.
   // The Perses data source is selected via a mock DatasourceApiImpl implementation in <PersesWrapper>,
@@ -70,17 +77,21 @@ export function QueryBrowserBody() {
       <PageSection className="mui-pf-theme">
         <Stack hasGutter>
           <FilterToolbar tempo={tempo} setTempo={setTempo} query={query} runQuery={runQuery} />
-          <PersesTempoDatasourceWrapper
-            tempo={tempo}
-            definitions={[
-              {
-                kind: 'TraceQuery',
-                spec: { plugin: { kind: 'TempoTraceQuery', spec: { query, limit } } },
-              },
-            ]}
-          >
-            <TraceSearchResults setQuery={setQuery} />
-          </PersesTempoDatasourceWrapper>
+          {tempo && selectedTempoResource && !selectedTempoResource.ready ? (
+            <TempoInstanceNotReadyState statusMessage={selectedTempoResource.statusMessage} />
+          ) : (
+            <PersesTempoDatasourceWrapper
+              tempo={tempo}
+              definitions={[
+                {
+                  kind: 'TraceQuery',
+                  spec: { plugin: { kind: 'TempoTraceQuery', spec: { query, limit } } },
+                },
+              ]}
+            >
+              <TraceSearchResults setQuery={setQuery} />
+            </PersesTempoDatasourceWrapper>
+          )}
         </Stack>
       </PageSection>
     </>
