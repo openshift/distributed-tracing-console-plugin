@@ -26,10 +26,8 @@ import (
 )
 
 type httpClientConfig struct {
-	CertFile       string
-	PrivateKeyFile string
-	TLSConfig      *tls.Config
-	HTTPTransport  *http.Transport
+	TLSConfig     *tls.Config
+	HTTPTransport *http.Transport
 }
 
 const (
@@ -51,8 +49,7 @@ func TestServerRunning(t *testing.T) {
 	serverURL := fmt.Sprintf("http://%s", testServerHostPort)
 
 	// Prepare directory to serve web files
-	tmpDir := prepareServerAssets(t)
-	defer os.RemoveAll(tmpDir)
+	prepareServerAssets(t)
 
 	go func() {
 		Start(&Config{
@@ -90,101 +87,22 @@ func TestServerRunning(t *testing.T) {
 }
 
 func TestSecureServerRunning(t *testing.T) {
-	testPort, err := getFreePort(testHostname)
-	if err != nil {
-		t.Fatalf("Cannot get a free port to run tests on host [%v]", testHostname)
-	} else {
-		t.Logf("Will use free port [%v] on host [%v] for tests", testPort, testHostname)
-	}
-	testMetricsPort, err := getFreePort(testHostname)
-	if err != nil {
-		t.Fatalf("Cannot get a free metrics port to run tests on host [%v]", testHostname)
-	} else {
-		t.Logf("Will use free metrics port [%v] on host [%v] for tests", testMetricsPort, testHostname)
-	}
+	srv := startTLSTestServer(t, &Config{})
+	httpClient := srv.client(t, &tls.Config{})
 
-	tmpDir, err := os.MkdirTemp("", "server-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	_, err := getRequestResults(t, httpClient, srv.url)
+	require.NoError(t, err, "could not fetch static files on / (root)")
 
-	testServerCertFile := tmpDir + "/server-test-server.cert"
-	testServerKeyFile := tmpDir + "/server-test-server.key"
-	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
-	err = generateCertificate(t, testServerCertFile, testServerKeyFile, testServerHostPort)
-	if err != nil {
-		t.Fatalf("Failed to create server cert/key files: %v", err)
-	}
-	defer os.Remove(testServerCertFile)
-	defer os.Remove(testServerKeyFile)
-
-	testClientCertFile := tmpDir + "/server-test-client.cert"
-	testClientKeyFile := tmpDir + "/server-test-client.key"
-	testClientHost := testHostname
-	err = generateCertificate(t, testClientCertFile, testClientKeyFile, testClientHost)
-	if err != nil {
-		t.Fatalf("Failed to create client cert/key files: %v", err)
-	}
-	defer os.Remove(testClientCertFile)
-	defer os.Remove(testClientKeyFile)
-
-	rnd.Seed(time.Now().UnixNano())
-	conf := &Config{
-		CertFile:       testServerCertFile,
-		PrivateKeyFile: testServerKeyFile,
-		Port:           testPort,
-	}
-
-	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
-
-	// Prepare directory to serve web files
-	tmpDirAssets := prepareServerAssets(t)
-	defer os.RemoveAll(tmpDirAssets)
-
-	go func() {
-		Start(conf)
-	}()
-	t.Logf("Started test http server: %v", serverURL)
-
-	httpConfig := httpClientConfig{
-		CertFile:       testClientCertFile,
-		PrivateKeyFile: testClientKeyFile,
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	httpClient, err := httpConfig.buildHTTPClient()
-	if err != nil {
-		t.Fatalf("Failed to create http client")
-	}
-
-	// Wait for our test http server to come up
-	checkHTTPReady(httpClient, serverURL+"/status")
-
-	if _, err = getRequestResults(t, httpClient, serverURL); err != nil {
-		t.Fatalf("Failed: could not fetch static files on / (root): %v", err)
-	}
-
-	if _, err = getRequestResults(t, httpClient, serverURL+"/health"); err != nil {
-		t.Fatalf("Failed: could not fetch API endpoint: %v", err)
-	}
+	_, err = getRequestResults(t, httpClient, srv.url+"/health")
+	require.NoError(t, err, "could not fetch API endpoint")
 
 	// Make sure the server rejects anything trying to use TLS 1.1 or under
-	httpConfigTLS11 := httpClientConfig{
-		CertFile:       testClientCertFile,
-		PrivateKeyFile: testClientKeyFile,
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-			MinVersion:         tls.VersionTLS10,
-			MaxVersion:         tls.VersionTLS11,
-		},
-	}
-	httpClientTLS11, err := httpConfigTLS11.buildHTTPClient()
-	if err != nil {
-		t.Fatalf("Failed to create http client with TLS 1.1")
-	}
-	if _, err = getRequestResults(t, httpClientTLS11, serverURL); err == nil {
-		t.Fatalf("Failed: should not have been able to use TLS 1.1")
-	}
+	httpClientTLS11 := srv.client(t, &tls.Config{
+		MinVersion: tls.VersionTLS10,
+		MaxVersion: tls.VersionTLS11,
+	})
+	_, err = getRequestResults(t, httpClientTLS11, srv.url)
+	require.Error(t, err, "should not have been able to use TLS 1.1")
 }
 
 func getFreePort(host string) (int, error) {
@@ -201,18 +119,19 @@ func getFreePort(host string) (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func prepareServerAssets(t *testing.T) string {
-	tmpDir, err := os.MkdirTemp("", "server-test")
-	require.NoError(t, err)
+// prepareServerAssets creates a temporary directory with the web assets and
+// changes into it. Both the directory and the working directory change are
+// undone on cleanup.
+func prepareServerAssets(t *testing.T) {
+	t.Helper()
+
+	tmpDir := t.TempDir()
 	distpath := filepath.Join(tmpDir, "web/dist")
-	err = os.MkdirAll(distpath, os.ModePerm)
+	require.NoError(t, os.MkdirAll(distpath, os.ModePerm))
+	dummyfile, err := os.Create(filepath.Join(distpath, "dummy"))
 	require.NoError(t, err)
-	dummyfile := filepath.Join(distpath, "dummy")
-	_, err = os.Create(dummyfile)
-	require.NoError(t, err)
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
-	return tmpDir
+	require.NoError(t, dummyfile.Close())
+	t.Chdir(tmpDir)
 }
 
 func getRequestResults(t *testing.T, httpClient *http.Client, url string) (string, error) {
@@ -255,14 +174,6 @@ func (conf *httpClientConfig) buildHTTPClient() (*http.Client, error) {
 	tlsConfig := &tls.Config{}
 	if conf.TLSConfig != nil {
 		tlsConfig = conf.TLSConfig
-	}
-
-	if conf.CertFile != "" {
-		cert, err := tls.LoadX509KeyPair(conf.CertFile, conf.PrivateKeyFile)
-		if err != nil {
-			return nil, fmt.Errorf("Error loading the client certificates: %w", err)
-		}
-		tlsConfig.Certificates = append(tlsConfig.Certificates, cert)
 	}
 
 	// Make our own copy of HTTP transport
@@ -350,121 +261,137 @@ func generateCertificate(t *testing.T, certPath string, keyPath string, host str
 	return nil
 }
 
-func TestSecureServerTLS13MinVersion(t *testing.T) {
+type tlsTestServer struct {
+	url  string
+	port int
+}
+
+// startTLSTestServer starts a TLS server with conf, filling in its Port and
+// cert files, and waits until it is ready. Temporary files and the working
+// directory are cleaned up automatically. Start never returns, so the server
+// itself keeps running until the test binary exits.
+func startTLSTestServer(t *testing.T, conf *Config) tlsTestServer {
+	t.Helper()
+
 	testPort, err := getFreePort(testHostname)
 	require.NoError(t, err)
 
-	tmpDir, err := os.MkdirTemp("", "server-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
+	conf.Port = testPort
+	conf.CertFile = filepath.Join(tmpDir, "server.cert")
+	conf.PrivateKeyFile = filepath.Join(tmpDir, "server.key")
+	require.NoError(t, generateCertificate(t, conf.CertFile, conf.PrivateKeyFile, testHostname))
 
-	testServerCertFile := tmpDir + "/server-test-server.cert"
-	testServerKeyFile := tmpDir + "/server-test-server.key"
-	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
-	err = generateCertificate(t, testServerCertFile, testServerKeyFile, testServerHostPort)
-	require.NoError(t, err)
+	prepareServerAssets(t)
 
-	tmpDirAssets := prepareServerAssets(t)
-	defer os.RemoveAll(tmpDirAssets)
+	go Start(conf)
 
-	go func() {
-		Start(&Config{
-			CertFile:       testServerCertFile,
-			PrivateKeyFile: testServerKeyFile,
-			Port:           testPort,
-			TLSMinVersion:  "VersionTLS13",
-		})
-	}()
-
-	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
-
-	// TLS 1.3 client should succeed
-	httpConfigTLS13 := httpClientConfig{
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-			MinVersion:         tls.VersionTLS13,
-		},
+	srv := tlsTestServer{
+		url:  fmt.Sprintf("https://%s:%d", testHostname, testPort),
+		port: testPort,
 	}
-	httpClientTLS13, err := httpConfigTLS13.buildHTTPClient()
-	require.NoError(t, err)
-	checkHTTPReady(httpClientTLS13, serverURL+"/health")
+	readyClient := srv.client(t, &tls.Config{})
+	require.Eventually(t, func() bool {
+		_, err := getRequestResults(t, readyClient, srv.url+"/health")
+		return err == nil
+	}, 30*time.Second, 50*time.Millisecond, "test https server did not become ready")
+	t.Logf("Started test https server: %v", srv.url)
 
-	_, err = getRequestResults(t, httpClientTLS13, serverURL+"/health")
+	return srv
+}
+
+// client returns a client using a copy of tlsConfig with InsecureSkipVerify.
+func (s tlsTestServer) client(t *testing.T, tlsConfig *tls.Config) *http.Client {
+	t.Helper()
+
+	tlsConfig = tlsConfig.Clone()
+	tlsConfig.InsecureSkipVerify = true
+	httpClient, err := (&httpClientConfig{TLSConfig: tlsConfig}).buildHTTPClient()
+	require.NoError(t, err)
+
+	return httpClient
+}
+
+func TestSecureServerTLS13MinVersion(t *testing.T) {
+	srv := startTLSTestServer(t, &Config{TLSMinVersion: tls.VersionTLS13})
+	healthURL := srv.url + "/health"
+
+	httpClientTLS13 := srv.client(t, &tls.Config{MinVersion: tls.VersionTLS13})
+	_, err := getRequestResults(t, httpClientTLS13, healthURL)
 	require.NoError(t, err, "TLS 1.3 client should be able to connect")
 
-	// TLS 1.2 client should be rejected
-	httpConfigTLS12 := httpClientConfig{
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-			MinVersion:         tls.VersionTLS10,
-			MaxVersion:         tls.VersionTLS12,
-		},
-	}
-	httpClientTLS12, err := httpConfigTLS12.buildHTTPClient()
-	require.NoError(t, err)
-
-	_, err = getRequestResults(t, httpClientTLS12, serverURL+"/health")
+	httpClientTLS12 := srv.client(t, &tls.Config{
+		MinVersion: tls.VersionTLS10,
+		MaxVersion: tls.VersionTLS12,
+	})
+	_, err = getRequestResults(t, httpClientTLS12, healthURL)
 	require.Error(t, err, "TLS 1.2 client should be rejected when server requires TLS 1.3")
 }
 
+func TestSecureServerTLS12MaxVersion(t *testing.T) {
+	srv := startTLSTestServer(t, &Config{TLSMaxVersion: tls.VersionTLS12})
+	healthURL := srv.url + "/health"
+
+	httpClientTLS12 := srv.client(t, &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		MaxVersion: tls.VersionTLS12,
+	})
+	_, err := getRequestResults(t, httpClientTLS12, healthURL)
+	require.NoError(t, err, "TLS 1.2 client should be able to connect")
+
+	httpClientTLS13 := srv.client(t, &tls.Config{MinVersion: tls.VersionTLS13})
+	_, err = getRequestResults(t, httpClientTLS13, healthURL)
+	require.ErrorContains(t, err, "tls: protocol version not supported",
+		"TLS 1.3 client should be rejected when server allows at most TLS 1.2")
+}
+
 func TestSecureServerCipherSuites(t *testing.T) {
-	testPort, err := getFreePort(testHostname)
-	require.NoError(t, err)
+	srv := startTLSTestServer(t, &Config{
+		TLSCipherSuites: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+	})
+	healthURL := srv.url + "/health"
 
-	tmpDir, err := os.MkdirTemp("", "server-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
-
-	testServerCertFile := tmpDir + "/server-test-server.cert"
-	testServerKeyFile := tmpDir + "/server-test-server.key"
-	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
-	err = generateCertificate(t, testServerCertFile, testServerKeyFile, testServerHostPort)
-	require.NoError(t, err)
-
-	tmpDirAssets := prepareServerAssets(t)
-	defer os.RemoveAll(tmpDirAssets)
-
-	serverCipherSuite := "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
-
-	go func() {
-		Start(&Config{
-			CertFile:        testServerCertFile,
-			PrivateKeyFile:  testServerKeyFile,
-			Port:            testPort,
-			TLSCipherSuites: []string{serverCipherSuite},
-		})
-	}()
-
-	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
-
-	// Client offering the matching cipher suite should succeed
-	httpConfigMatch := httpClientConfig{
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-			MaxVersion:         tls.VersionTLS12,
-			CipherSuites:       []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
-		},
-	}
-	httpClientMatch, err := httpConfigMatch.buildHTTPClient()
-	require.NoError(t, err)
-	checkHTTPReady(httpClientMatch, serverURL+"/health")
-
-	_, err = getRequestResults(t, httpClientMatch, serverURL+"/health")
+	httpClientMatch := srv.client(t, &tls.Config{
+		MaxVersion:   tls.VersionTLS12,
+		CipherSuites: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+	})
+	_, err := getRequestResults(t, httpClientMatch, healthURL)
 	require.NoError(t, err, "Client with matching cipher suite should connect")
 
-	// Client offering only a different cipher suite should be rejected
-	httpConfigMismatch := httpClientConfig{
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-			MaxVersion:         tls.VersionTLS12,
-			CipherSuites:       []uint16{tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384},
-		},
-	}
-	httpClientMismatch, err := httpConfigMismatch.buildHTTPClient()
-	require.NoError(t, err)
-
-	_, err = getRequestResults(t, httpClientMismatch, serverURL+"/health")
+	httpClientMismatch := srv.client(t, &tls.Config{
+		MaxVersion:   tls.VersionTLS12,
+		CipherSuites: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384},
+	})
+	_, err = getRequestResults(t, httpClientMismatch, healthURL)
 	require.Error(t, err, "Client with non-matching cipher suite should be rejected")
+}
+
+func TestSecureServerCurvePreferences(t *testing.T) {
+	srv := startTLSTestServer(t, &Config{
+		TLSCurvePreferences: []tls.CurveID{tls.CurveP384},
+	})
+	healthURL := srv.url + "/health"
+
+	for _, version := range []uint16{tls.VersionTLS12, tls.VersionTLS13} {
+		t.Run(tls.VersionName(version), func(t *testing.T) {
+			httpClientP384 := srv.client(t, &tls.Config{
+				MinVersion:       version,
+				MaxVersion:       version,
+				CurvePreferences: []tls.CurveID{tls.CurveP384},
+			})
+			_, err := getRequestResults(t, httpClientP384, healthURL)
+			require.NoError(t, err, "could not connect with allowed curve CurveP384")
+
+			httpClientX25519 := srv.client(t, &tls.Config{
+				MinVersion:       version,
+				MaxVersion:       version,
+				CurvePreferences: []tls.CurveID{tls.X25519},
+			})
+			// Must be a handshake rejection, not an unrelated failure.
+			_, err = getRequestResults(t, httpClientX25519, healthURL)
+			require.ErrorContains(t, err, "tls: handshake failure")
+		})
+	}
 }
 
 // TestSecureServerCertRotation verifies that the server dynamically reloads its
@@ -476,55 +403,16 @@ func TestSecureServerCipherSuites(t *testing.T) {
 // The test intentionally connects by IP (no SNI) to exercise the non-SNI code
 // path in GetConfigForClient — exactly the path the original bug exposed.
 func TestSecureServerCertRotation(t *testing.T) {
-	testPort, err := getFreePort(testHostname)
-	require.NoError(t, err)
+	conf := &Config{}
+	srv := startTLSTestServer(t, conf)
+	httpClient := srv.client(t, &tls.Config{})
 
-	tmpDir, err := os.MkdirTemp("", "server-test-cert-rotation")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
-
-	certFile := filepath.Join(tmpDir, "server.cert")
-	keyFile := filepath.Join(tmpDir, "server.key")
-	testServerHostPort := fmt.Sprintf("%v:%v", testHostname, testPort)
-
-	err = generateCertificate(t, certFile, keyFile, testServerHostPort)
-	require.NoError(t, err)
-
-	// Save the working directory so we can restore it after the test.
-	// prepareServerAssets calls os.Chdir; without restoring, subsequent tests
-	// that use relative paths (e.g. TestFilesHandler → http.Dir("testdata"))
-	// would run from the deleted tmpDir and fail.
-	originalDir, err := os.Getwd()
-	require.NoError(t, err)
-
-	tmpDirAssets := prepareServerAssets(t)
-	defer func() {
-		os.RemoveAll(tmpDirAssets)
-		os.Chdir(originalDir) //nolint:errcheck
-	}()
-
-	go func() {
-		Start(&Config{
-			CertFile:       certFile,
-			PrivateKeyFile: keyFile,
-			Port:           testPort,
-		})
-	}()
-
-	serverURL := fmt.Sprintf("https://%s", testServerHostPort)
-	httpClient, err := (&httpClientConfig{
-		TLSConfig: &tls.Config{InsecureSkipVerify: true},
-	}).buildHTTPClient()
-	require.NoError(t, err)
-
-	checkHTTPReady(httpClient, serverURL+"/health")
-
-	initialSerial, err := getServedCertSerial(testHostname, testPort)
+	initialSerial, err := getServedCertSerial(testHostname, srv.port)
 	require.NoError(t, err)
 	t.Logf("Initial cert serial: %X", initialSerial)
 
 	// Replace the cert/key files on disk to simulate certificate rotation.
-	err = generateCertificate(t, certFile, keyFile, testServerHostPort)
+	err = generateCertificate(t, conf.CertFile, conf.PrivateKeyFile, testHostname)
 	require.NoError(t, err)
 	t.Logf("Cert/key files replaced on disk")
 
@@ -533,7 +421,7 @@ func TestSecureServerCertRotation(t *testing.T) {
 	var rotatedSerial *big.Int
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		serial, dialErr := getServedCertSerial(testHostname, testPort)
+		serial, dialErr := getServedCertSerial(testHostname, srv.port)
 		if dialErr == nil && serial.Cmp(initialSerial) != 0 {
 			rotatedSerial = serial
 			break
@@ -544,7 +432,7 @@ func TestSecureServerCertRotation(t *testing.T) {
 	require.NotNil(t, rotatedSerial, "server must serve the new cert within 30s of file replacement")
 	t.Logf("Rotated cert serial: %X", rotatedSerial)
 
-	_, err = getRequestResults(t, httpClient, serverURL+"/health")
+	_, err = getRequestResults(t, httpClient, srv.url+"/health")
 	require.NoError(t, err, "server must remain healthy after cert rotation")
 }
 
